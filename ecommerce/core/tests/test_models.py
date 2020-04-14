@@ -291,6 +291,45 @@ class SiteConfigurationTests(TestCase):
         site_config = SiteConfigurationFactory(from_email=expected_from_email)
         self.assertEqual(site_config.get_from_email(), expected_from_email)
 
+    def test_edly_configuration_values(self):
+        """
+        Test that method "get_edly_configuration_value" returns correct value for any given key.
+        """
+        test_configuration_value = {
+            "CACHE_TIMEOUT": 900,
+            "SERVICES_NOTIFICATIONS_COOKIE_EXPIRY": "360",
+            "PANEL_NOTIFICATIONS_BASE_URL": "http://panel.backend.dev.edly.com:9999"
+        }
+
+        # add SiteConfiguration to database
+        site_configuration = SiteConfigurationFactory.create(
+            edly_client_theme_branding_settings=test_configuration_value,
+        )
+
+        # Make sure entry is saved and retrieved correctly
+        self.assertEqual(
+            site_configuration.get_edly_configuration_value(
+                'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY'
+            ),
+            test_configuration_value['SERVICES_NOTIFICATIONS_COOKIE_EXPIRY']
+        )
+
+        self.assertEqual(
+            site_configuration.get_edly_configuration_value(
+                'PANEL_NOTIFICATIONS_BASE_URL'
+            ),
+            test_configuration_value['PANEL_NOTIFICATIONS_BASE_URL']
+        )
+
+        # Test that the default value is returned if the value for the given key is not found in the configuration
+        self.assertEqual(
+            site_configuration.get_edly_configuration_value(
+                'non_existent_name',
+                'dummy-default-value'
+            ),
+            'dummy-default-value',
+        )
+
     @httpretty.activate
     def test_access_token(self):
         """ Verify the property retrieves, and caches, an access token from the OAuth 2.0 provider. """

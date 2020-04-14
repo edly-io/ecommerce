@@ -198,7 +198,8 @@ TEMPLATES = [
                 'ecommerce.extensions.analytics.context_processors.analytics',
                 
                 # edly context processor to apply dynamic theming
-                'ecommerce.extensions.edly_ecommerce_app.context_processor.dynamic_theming_context'
+                'ecommerce.extensions.edly_ecommerce_app.context_processor.dynamic_theming_context',
+                'ecommerce.extensions.edly_ecommerce_app.context_processor.edly_app_context'
             ),
             'debug': True,  # Django will only display debug pages if the global DEBUG setting is set to True.
         }

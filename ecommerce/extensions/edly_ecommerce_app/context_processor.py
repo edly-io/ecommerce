@@ -1,10 +1,12 @@
 from math import floor
 
+from django.conf import settings
 from django.core.cache import cache
 
-
+EDLY_CACHE_NAME = 'context_processor.edly_app'
 CACHE_NAME = 'context_processor.dynamic_theming'
-CACHE_TIMEOUT = 60
+DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY = 180  # value in seconds
+DEFAULT_EDLY_CACHE_TIMEOUT = 900  # value in seconds
 DEFAULT_COLOR_DICT = {
     'primary': '#3E99D4',
     'secondary': '#1197EA'
@@ -25,6 +27,8 @@ def dynamic_theming_context(request):  # pylint: disable=unused-argument
     Context processor responsible for dynamic theming.
     """
     configuration_helpers = request.site.siteconfiguration.edly_client_theme_branding_settings
+    cache_timeout = configuration_helpers.get('EDLY_CACHE_TIMEOUT', DEFAULT_EDLY_CACHE_TIMEOUT)
+
     fonts_configuration = configuration_helpers.get('FONTS', DEFAULT_FONTS_DICT)
     fonts_configuration.update({
         'font_path': fonts_configuration.pop('font-path', DEFAULT_FONTS_DICT.get('font-path'))
@@ -41,9 +45,54 @@ def dynamic_theming_context(request):  # pylint: disable=unused-argument
         theming_context.update(
             {'edly_branding_config': configuration_helpers.get('BRANDING', DEFAULT_BRANDING_DICT)}
         )
-        cache.set(CACHE_NAME, theming_context, CACHE_TIMEOUT)
+
+        cache.set(CACHE_NAME, theming_context, cache_timeout)
 
     return theming_context
+
+
+def edly_app_context(request):  # pylint: disable=unused-argument
+    """
+    Context processor responsible for edly.
+    """
+    site_configuration = request.site.siteconfiguration
+    edly_context = cache.get(EDLY_CACHE_NAME)
+    cache_timeout = site_configuration.get_edly_configuration_value('EDLY_CACHE_TIMEOUT', DEFAULT_EDLY_CACHE_TIMEOUT)
+
+    if not edly_context:
+        edly_context = {}
+        panel_services_notifications_url = ''
+
+        panel_notifications_base_url = site_configuration.get_edly_configuration_value('PANEL_NOTIFICATIONS_BASE_URL', '')
+        if panel_notifications_base_url:
+            panel_services_notifications_url = '{base_url}/api/v1/all_services_notifications/'.format(
+                base_url=panel_notifications_base_url
+            )
+
+        edly_context.update(
+            {
+                'services_notifications_url': panel_services_notifications_url
+            }
+        )
+
+        edly_context.update(
+            {
+                'session_cookie_domain': site_configuration.base_cookie_domain
+            }
+        )
+
+        edly_context.update(
+            {
+                'services_notifications_cookie_expiry': site_configuration.get_edly_configuration_value(
+                    'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY',
+                    DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY
+                )
+            }
+        )
+
+        cache.set(EDLY_CACHE_NAME, edly_context, cache_timeout)
+
+    return edly_context
 
 
 def get_theme_colors(configuration_helpers):
