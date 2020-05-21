@@ -754,6 +754,16 @@ define([
                 this.stickit();
 
                 this.toggleCatalogTypeField();
+
+                if (window.waffle.SWITCHES['enable_non_edly_cloud_options_switch']) {
+                    this.toggleEnterpriseRelatedFields(false);
+                } else {
+                    this.toggleEnterpriseRelatedFields(true);
+                    this.toggleCourseCatalogRelatedFields(true);
+                    this.$('.catalog-type input').attr('disabled', true);
+                    this.$('.catalog-type').parent().addClass('hidden');
+                }
+
                 this.dynamic_catalog_view.setElement(this.$('.catalog_buttons')).render();
 
                 this.$('.row:first').before(AlertDivTemplate);
