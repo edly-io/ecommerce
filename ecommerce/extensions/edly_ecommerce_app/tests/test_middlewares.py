@@ -4,6 +4,7 @@ Unit tests for middlewares.
 """
 from testfixtures import LogCapture
 from django.conf import settings
+from django.contrib import auth
 from django.urls import reverse
 
 from ecommerce.core.models import SiteConfiguration
@@ -88,7 +89,7 @@ class EdlyOrganizationAccessMiddlewareTests(TestCase):
         Create environment for Edly organization access middleware tests.
         """
         super(EdlyOrganizationAccessMiddlewareTests, self).setUp()
-        self.dashboard_url = reverse('dashboard:index')
+        self.basket_url = reverse('basket:summary')
         self.user = self.create_user()
         self.client.login(username=self.user.username, password='test')
         self.test_edly_user_info_cookie_data = {
@@ -113,7 +114,7 @@ class EdlyOrganizationAccessMiddlewareTests(TestCase):
         """
         self._set_edly_user_info_cookie()
 
-        response = self.client.get(self.dashboard_url)
+        response = self.client.get(self.basket_url)
         assert response.status_code == 200
 
     def test_user_without_edly_organization_access(self):
@@ -125,8 +126,10 @@ class EdlyOrganizationAccessMiddlewareTests(TestCase):
         """
 
         with LogCapture(logger.name) as logs:
-            response = self.client.get(self.dashboard_url)
-            assert response.status_code == 404
+            response = self.client.get(self.basket_url)
+            self.assertRedirects(response, '/logout/', target_status_code=302)
+            user = auth.get_user(self.client)
+            assert not user.is_authenticated()
 
             logs.check(
                 (
@@ -139,7 +142,11 @@ class EdlyOrganizationAccessMiddlewareTests(TestCase):
                     'ERROR',
                     'Edly user %s has no access for site %s.' % (self.user.email, self.site)
                 ),
-
+                (
+                    logger.name,
+                    'WARNING',
+                    'Site configuration for site ({site}) has no django settings overrides.'.format(site=self.site)
+                ),
             )
 
     def test_super_user_has_all_sites_access(self):
@@ -150,5 +157,5 @@ class EdlyOrganizationAccessMiddlewareTests(TestCase):
         self.client.logout()
         self.client.login(username=edly_user.username, password='test')
 
-        response = self.client.get(self.dashboard_url)
+        response = self.client.get(self.basket_url)
         assert response.status_code == 200
