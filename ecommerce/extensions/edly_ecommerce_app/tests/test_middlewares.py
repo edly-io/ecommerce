@@ -119,9 +119,9 @@ class EdlyOrganizationAccessMiddlewareTests(TestCase):
 
     def test_user_without_edly_organization_access(self):
         """
-        Verify that logged in user gets valid error and log message response if user has no access.
+        Verify that logged in user gets redirected to logout page and valid log message response if user has no access.
 
-        Test that logged in user gets 404 and valid log message if user has no access for
+        Test that logged in user gets redirected to logout page and valid log message if user has no access for
         request site's edly sub organization.
         """
 
