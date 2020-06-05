@@ -127,7 +127,7 @@ class EdlyOrganizationAccessMiddlewareTests(TestCase):
 
         with LogCapture(logger.name) as logs:
             response = self.client.get(self.basket_url)
-            self.assertRedirects(response, '/logout/', target_status_code=302)
+            self.assertRedirects(response, settings.FRONTEND_LOGOUT_URL, target_status_code=302)
             user = auth.get_user(self.client)
             assert not user.is_authenticated()
 
