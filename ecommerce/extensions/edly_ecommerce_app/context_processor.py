@@ -1,8 +1,5 @@
 from math import floor
 
-from django.core.cache import cache
-
-DEFAULT_EDLY_CACHE_TIMEOUT = 900  # value in seconds
 DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY = 180  # value in seconds
 DEFAULT_THEME_BRANDING_DICT = {
     'logo': "https://edly-edx-theme-files.s3.amazonaws.com/st-lutherx-logo.png",
@@ -17,8 +14,6 @@ DEFAULT_THEME_FONTS_DICT = {
     'heading-font': "'Open Sans', sans-serif",
     'font-path': "https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&display=swap",
 }
-DYNAMIC_THEMING_CACHE_NAME = 'context_processor.dynamic_theming'
-EDLY_APP_CACHE_NAME = 'context_processor.edly_app'
 
 
 def dynamic_theming_context(request):  # pylint: disable=unused-argument
@@ -26,26 +21,22 @@ def dynamic_theming_context(request):  # pylint: disable=unused-argument
     Context processor responsible for dynamic theming.
     """
     configuration_helpers = request.site.siteconfiguration.edly_client_theme_branding_settings
-    cache_timeout = configuration_helpers.get('EDLY_CACHE_TIMEOUT', DEFAULT_EDLY_CACHE_TIMEOUT)
 
     fonts_configuration = configuration_helpers.get('FONTS', DEFAULT_THEME_FONTS_DICT)
     fonts_configuration.update({
         'font_path': fonts_configuration.pop('font-path', DEFAULT_THEME_FONTS_DICT.get('font-path'))
     })
-    theming_context = cache.get(DYNAMIC_THEMING_CACHE_NAME)
-    if not theming_context:
-        theming_context = {}
-        theming_context.update(
-            {'edly_colors_config': get_theme_colors(configuration_helpers)}
-        )
-        theming_context.update(
-            {'edly_fonts_config': fonts_configuration}
-        )
-        theming_context.update(
-            {'edly_branding_config': configuration_helpers.get('BRANDING', DEFAULT_THEME_BRANDING_DICT)}
-        )
 
-        cache.set(DYNAMIC_THEMING_CACHE_NAME, theming_context, cache_timeout)
+    theming_context = {}
+    theming_context.update(
+        {'edly_colors_config': get_theme_colors(configuration_helpers)}
+    )
+    theming_context.update(
+        {'edly_fonts_config': fonts_configuration}
+    )
+    theming_context.update(
+        {'edly_branding_config': configuration_helpers.get('BRANDING', DEFAULT_THEME_BRANDING_DICT)}
+    )
 
     return theming_context
 
@@ -55,41 +46,36 @@ def edly_app_context(request):  # pylint: disable=unused-argument
     Context processor responsible for edly.
     """
     site_configuration = request.site.siteconfiguration
-    edly_context = cache.get(EDLY_APP_CACHE_NAME)
-    cache_timeout = site_configuration.get_edly_configuration_value('EDLY_CACHE_TIMEOUT', DEFAULT_EDLY_CACHE_TIMEOUT)
 
-    if not edly_context:
-        edly_context = {}
-        panel_services_notifications_url = ''
+    edly_context = {}
+    panel_services_notifications_url = ''
 
-        panel_notifications_base_url = site_configuration.get_edly_configuration_value('PANEL_NOTIFICATIONS_BASE_URL', '')
-        if panel_notifications_base_url:
-            panel_services_notifications_url = '{base_url}/api/v1/all_services_notifications/'.format(
-                base_url=panel_notifications_base_url
+    panel_notifications_base_url = site_configuration.get_edly_configuration_value('PANEL_NOTIFICATIONS_BASE_URL', '')
+    if panel_notifications_base_url:
+        panel_services_notifications_url = '{base_url}/api/v1/all_services_notifications/'.format(
+            base_url=panel_notifications_base_url
+        )
+
+    edly_context.update(
+        {
+            'services_notifications_url': panel_services_notifications_url
+        }
+    )
+
+    edly_context.update(
+        {
+            'session_cookie_domain': site_configuration.base_cookie_domain
+        }
+    )
+
+    edly_context.update(
+        {
+            'services_notifications_cookie_expiry': site_configuration.get_edly_configuration_value(
+                'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY',
+                DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY
             )
-
-        edly_context.update(
-            {
-                'services_notifications_url': panel_services_notifications_url
-            }
-        )
-
-        edly_context.update(
-            {
-                'session_cookie_domain': site_configuration.base_cookie_domain
-            }
-        )
-
-        edly_context.update(
-            {
-                'services_notifications_cookie_expiry': site_configuration.get_edly_configuration_value(
-                    'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY',
-                    DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY
-                )
-            }
-        )
-
-        cache.set(EDLY_APP_CACHE_NAME, edly_context, cache_timeout)
+        }
+    )
 
     return edly_context
 
