@@ -1,9 +1,10 @@
 """HTTP endpoints for course publication."""
 from rest_framework import generics, status
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ecommerce.extensions.api import serializers
+from ecommerce.extensions.edly_ecommerce_app.permissions import IsAdminOrCourseCreator
 from ecommerce.extensions.partner.shortcuts import get_partner_for_site
 
 
@@ -12,7 +13,7 @@ class AtomicPublicationView(generics.CreateAPIView, generics.UpdateAPIView):
 
     If either fails, the entire operation is rolled back. This keeps Otto and the LMS in sync.
     """
-    permission_classes = (IsAuthenticated, IsAdminUser,)
+    permission_classes = (IsAuthenticated, IsAdminOrCourseCreator,)
     serializer_class = serializers.AtomicPublicationSerializer
 
     def get_serializer_context(self):

@@ -11,7 +11,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from oscar.core.loading import get_model
 from rest_framework import filters, generics, serializers, status, viewsets
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ecommerce.core.constants import COUPON_PRODUCT_CLASS_NAME
@@ -25,6 +25,7 @@ from ecommerce.extensions.api.serializers import CategorySerializer, CouponListS
 from ecommerce.extensions.basket.utils import prepare_basket
 from ecommerce.extensions.catalogue.utils import create_coupon_product, get_or_create_catalog
 from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
+from ecommerce.extensions.edly_ecommerce_app.permissions import IsAdminOrCourseCreator
 from ecommerce.extensions.payment.processors.invoice import InvoicePayment
 from ecommerce.extensions.voucher.models import CouponVouchers
 from ecommerce.extensions.voucher.utils import (
@@ -53,7 +54,7 @@ DEPRECATED_COUPON_CATEGORIES = ['Bulk Enrollment']
 
 class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
     """ Coupon resource. """
-    permission_classes = (IsAuthenticated, IsAdminUser)
+    permission_classes = (IsAuthenticated, IsAdminOrCourseCreator)
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = ProductFilter
 

@@ -4,7 +4,7 @@ from django.db.models import Prefetch
 from oscar.core.loading import get_model
 from rest_framework import status
 from rest_framework.decorators import detail_route
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ecommerce.core.constants import COURSE_ID_REGEX
