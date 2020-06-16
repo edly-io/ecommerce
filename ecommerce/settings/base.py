@@ -75,89 +75,89 @@ SITE_ID = 1
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#use-i18n
 USE_I18N = True
 
-LANGUAGES = [
-    ('en', u'English'),
-    ('rtl', u'Right-to-Left Test Language'),
-    ('eo', u'Dummy Language (Esperanto)'),  # Dummy languaged used for testing
-    ('fake2', u'Fake translations'),        # Another dummy language for testing (not pushed to prod)
+LANGUAGES = (
+    ('en', _('English')),
+    ('rtl', _('Right-to-Left Test Language')),
+    ('eo', _('Dummy Language (Esperanto)')),  # Dummy languaged used for testing
+    ('fake2', _('Fake translations')),        # Another dummy language for testing (not pushed to prod)
 
-    ('am', u'አማርኛ'),  # Amharic
-    ('ar', u'العربية'),  # Arabic
-    ('az', u'azərbaycanca'),  # Azerbaijani
-    ('bg-bg', u'български (България)'),  # Bulgarian (Bulgaria)
-    ('bn-bd', u'বাংলা (বাংলাদেশ)'),  # Bengali (Bangladesh)
-    ('bn-in', u'বাংলা (ভারত)'),  # Bengali (India)
-    ('bs', u'bosanski'),  # Bosnian
-    ('ca', u'Català'),  # Catalan
-    ('ca@valencia', u'Català (València)'),  # Catalan (Valencia)
-    ('cs', u'Čeština'),  # Czech
-    ('cy', u'Cymraeg'),  # Welsh
-    ('da', u'dansk'),  # Danish
-    ('de-de', u'Deutsch (Deutschland)'),  # German (Germany)
-    ('el', u'Ελληνικά'),  # Greek
-    ('en-uk', u'English (United Kingdom)'),  # English (United Kingdom)
-    ('en@lolcat', u'LOLCAT English'),  # LOLCAT English
-    ('en@pirate', u'Pirate English'),  # Pirate English
-    ('es-419', u'Español (Latinoamérica)'),  # Spanish (Latin America)
-    ('es-ar', u'Español (Argentina)'),  # Spanish (Argentina)
-    ('es-ec', u'Español (Ecuador)'),  # Spanish (Ecuador)
-    ('es-es', u'Español (España)'),  # Spanish (Spain)
-    ('es-mx', u'Español (México)'),  # Spanish (Mexico)
-    ('es-pe', u'Español (Perú)'),  # Spanish (Peru)
-    ('et-ee', u'Eesti (Eesti)'),  # Estonian (Estonia)
-    ('eu-es', u'euskara (Espainia)'),  # Basque (Spain)
-    ('fa', u'فارسی'),  # Persian
-    ('fa-ir', u'فارسی (ایران)'),  # Persian (Iran)
-    ('fi-fi', u'Suomi (Suomi)'),  # Finnish (Finland)
-    ('fil', u'Filipino'),  # Filipino
-    ('fr', u'Français'),  # French
-    ('gl', u'Galego'),  # Galician
-    ('gu', u'ગુજરાતી'),  # Gujarati
-    ('he', u'עברית'),  # Hebrew
-    ('hi', u'हिन्दी'),  # Hindi
-    ('hr', u'hrvatski'),  # Croatian
-    ('hu', u'magyar'),  # Hungarian
-    ('hy-am', u'Հայերեն (Հայաստան)'),  # Armenian (Armenia)
-    ('id', u'Bahasa Indonesia'),  # Indonesian
-    ('it-it', u'Italiano (Italia)'),  # Italian (Italy)
-    ('ja-jp', u'日本語 (日本)'),  # Japanese (Japan)
-    ('kk-kz', u'қазақ тілі (Қазақстан)'),  # Kazakh (Kazakhstan)
-    ('km-kh', u'ភាសាខ្មែរ (កម្ពុជា)'),  # Khmer (Cambodia)
-    ('kn', u'ಕನ್ನಡ'),  # Kannada
-    ('ko-kr', u'한국어 (대한민국)'),  # Korean (Korea)
-    ('lt-lt', u'Lietuvių (Lietuva)'),  # Lithuanian (Lithuania)
-    ('ml', u'മലയാളം'),  # Malayalam
-    ('mn', u'Монгол хэл'),  # Mongolian
-    ('mr', u'मराठी'),  # Marathi
-    ('ms', u'Bahasa Melayu'),  # Malay
-    ('nb', u'Norsk bokmål'),  # Norwegian Bokmål
-    ('ne', u'नेपाली'),  # Nepali
-    ('nl-nl', u'Nederlands (Nederland)'),  # Dutch (Netherlands)
-    ('or', u'ଓଡ଼ିଆ'),  # Oriya
-    ('pl', u'Polski'),  # Polish
-    ('pt-br', u'Português (Brasil)'),  # Portuguese (Brazil)
-    ('pt-pt', u'Português (Portugal)'),  # Portuguese (Portugal)
-    ('ro', u'română'),  # Romanian
-    ('ru', u'Русский'),  # Russian
-    ('si', u'සිංහල'),  # Sinhala
-    ('sk', u'Slovenčina'),  # Slovak
-    ('sl', u'Slovenščina'),  # Slovenian
-    ('sq', u'shqip'),  # Albanian
-    ('sr', u'Српски'),  # Serbian
-    ('sv', u'svenska'),  # Swedish
-    ('sw', u'Kiswahili'),  # Swahili
-    ('ta', u'தமிழ்'),  # Tamil
-    ('te', u'తెలుగు'),  # Telugu
-    ('th', u'ไทย'),  # Thai
-    ('tr-tr', u'Türkçe (Türkiye)'),  # Turkish (Turkey)
-    ('uk', u'Українська'),  # Ukranian
-    ('ur', u'اردو'),  # Urdu
-    ('vi', u'Tiếng Việt'),  # Vietnamese
-    ('uz', u'Ўзбек'),  # Uzbek
-    ('zh-cn', u'中文 (简体)'),  # Chinese (China)
-    ('zh-hk', u'中文 (香港)'),  # Chinese (Hong Kong)
-    ('zh-tw', u'中文 (台灣)'),  # Chinese (Taiwan)
-]
+    ('am', _('አማርኛ')),  # Amharic
+    ('ar', _('العربية')),  # Arabic
+    ('az', _('azərbaycanca')),  # Azerbaijani
+    ('bg-bg', _('български (България)')),  # Bulgarian (Bulgaria)
+    ('bn-bd', _('বাংলা (বাংলাদেশ)')),  # Bengali (Bangladesh)
+    ('bn-in', _('বাংলা (ভারত)')),  # Bengali (India)
+    ('bs', _('bosanski')),  # Bosnian
+    ('ca', _('Català')),  # Catalan
+    ('ca@valencia', _('Català (València)')),  # Catalan (Valencia)
+    ('cs', _('Čeština')),  # Czech
+    ('cy', _('Cymraeg')),  # Welsh
+    ('da', _('dansk')),  # Danish
+    ('de-de', _('Deutsch (Deutschland)')),  # German (Germany)
+    ('el', _('Ελληνικά')),  # Greek
+    ('en-uk', _('English (United Kingdom)')),  # English (United Kingdom)
+    ('en@lolcat', _('LOLCAT English')),  # LOLCAT English
+    ('en@pirate', _('Pirate English')),  # Pirate English
+    ('es-419', _('Español (Latinoamérica)')),  # Spanish (Latin America)
+    ('es-ar', _('Español (Argentina)')),  # Spanish (Argentina)
+    ('es-ec', _('Español (Ecuador)')),  # Spanish (Ecuador)
+    ('es-es', _('Español (España)')),  # Spanish (Spain)
+    ('es-mx', _('Español (México)')),  # Spanish (Mexico)
+    ('es-pe', _('Español (Perú)')),  # Spanish (Peru)
+    ('et-ee', _('Eesti (Eesti)')),  # Estonian (Estonia)
+    ('eu-es', _('euskara (Espainia)')),  # Basque (Spain)
+    ('fa', _('فارسی')),  # Persian
+    ('fa-ir', _('فارسی (ایران)')),  # Persian (Iran)
+    ('fi-fi', _('Suomi (Suomi)')),  # Finnish (Finland)
+    ('fil', _('Filipino')),  # Filipino
+    ('fr', _('Français')),  # French
+    ('gl', _('Galego')),  # Galician
+    ('gu', _('ગુજરાતી')),  # Gujarati
+    ('he', _('עברית')),  # Hebrew
+    ('hi', _('हिन्दी')),  # Hindi
+    ('hr', _('hrvatski')),  # Croatian
+    ('hu', _('magyar')),  # Hungarian
+    ('hy-am', _('Հայերեն (Հայաստան)')),  # Armenian (Armenia)
+    ('id', _('Bahasa Indonesia')),  # Indonesian
+    ('it-it', _('Italiano (Italia)')),  # Italian (Italy)
+    ('ja-jp', _('日本語 (日本)')),  # Japanese (Japan)
+    ('kk-kz', _('қазақ тілі (Қазақстан)')),  # Kazakh (Kazakhstan)
+    ('km-kh', _('ភាសាខ្មែរ (កម្ពុជា)')),  # Khmer (Cambodia)
+    ('kn', _('ಕನ್ನಡ')),  # Kannada
+    ('ko-kr', _('한국어 (대한민국)')),  # Korean (Korea)
+    ('lt-lt', _('Lietuvių (Lietuva)')),  # Lithuanian (Lithuania)
+    ('ml', _('മലയാളം')),  # Malayalam
+    ('mn', _('Монгол хэл')),  # Mongolian
+    ('mr', _('मराठी')),  # Marathi
+    ('ms', _('Bahasa Melayu')),  # Malay
+    ('nb', _('Norsk bokmål')),  # Norwegian Bokmål
+    ('ne', _('नेपाली')),  # Nepali
+    ('nl-nl', _('Nederlands (Nederland)')),  # Dutch (Netherlands)
+    ('or', _('ଓଡ଼ିଆ')),  # Oriya
+    ('pl', _('Polski')),  # Polish
+    ('pt-br', _('Português (Brasil)')),  # Portuguese (Brazil)
+    ('pt-pt', _('Português (Portugal)')),  # Portuguese (Portugal)
+    ('ro', _('română')),  # Romanian
+    ('ru', _('Русский')),  # Russian
+    ('si', _('සිංහල')),  # Sinhala
+    ('sk', _('Slovenčina')),  # Slovak
+    ('sl', _('Slovenščina')),  # Slovenian
+    ('sq', _('shqip')),  # Albanian
+    ('sr', _('Српски')),  # Serbian
+    ('sv', _('svenska')),  # Swedish
+    ('sw', _('Kiswahili')),  # Swahili
+    ('ta', _('தமிழ்')),  # Tamil
+    ('te', _('తెలుగు')),  # Telugu
+    ('th', _('ไทย')),  # Thai
+    ('tr-tr', _('Türkçe (Türkiye)')),  # Turkish (Turkey)
+    ('uk', _('Українська')),  # Ukranian
+    ('ur', _('اردو')),  # Urdu
+    ('vi', _('Tiếng Việt')),  # Vietnamese
+    ('uz', _('Ўзбек')),  # Uzbek
+    ('zh-cn', _('中文 (简体)')),  # Chinese (China)
+    ('zh-hk', _('中文 (香港)')),  # Chinese (Hong Kong)
+    ('zh-tw', _('中文 (台灣)')),  # Chinese (Taiwan)
+)
 
 LOCALE_PATHS = (
     join(DJANGO_ROOT, 'conf', 'locale'),
