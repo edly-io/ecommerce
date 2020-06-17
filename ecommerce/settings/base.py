@@ -81,82 +81,82 @@ LANGUAGES = (
     ('eo', _('Dummy Language (Esperanto)')),  # Dummy languaged used for testing
     ('fake2', _('Fake translations')),        # Another dummy language for testing (not pushed to prod)
 
-    ('am', _('አማርኛ')),  # Amharic
-    ('ar', _('العربية')),  # Arabic
-    ('az', _('azərbaycanca')),  # Azerbaijani
-    ('bg-bg', _('български (България)')),  # Bulgarian (Bulgaria)
-    ('bn-bd', _('বাংলা (বাংলাদেশ)')),  # Bengali (Bangladesh)
-    ('bn-in', _('বাংলা (ভারত)')),  # Bengali (India)
-    ('bs', _('bosanski')),  # Bosnian
-    ('ca', _('Català')),  # Catalan
-    ('ca@valencia', _('Català (València)')),  # Catalan (Valencia)
-    ('cs', _('Čeština')),  # Czech
-    ('cy', _('Cymraeg')),  # Welsh
-    ('da', _('dansk')),  # Danish
-    ('de-de', _('Deutsch (Deutschland)')),  # German (Germany)
-    ('el', _('Ελληνικά')),  # Greek
-    ('en-uk', _('English (United Kingdom)')),  # English (United Kingdom)
-    ('en@lolcat', _('LOLCAT English')),  # LOLCAT English
-    ('en@pirate', _('Pirate English')),  # Pirate English
-    ('es-419', _('Español (Latinoamérica)')),  # Spanish (Latin America)
-    ('es-ar', _('Español (Argentina)')),  # Spanish (Argentina)
-    ('es-ec', _('Español (Ecuador)')),  # Spanish (Ecuador)
-    ('es-es', _('Español (España)')),  # Spanish (Spain)
-    ('es-mx', _('Español (México)')),  # Spanish (Mexico)
-    ('es-pe', _('Español (Perú)')),  # Spanish (Peru)
-    ('et-ee', _('Eesti (Eesti)')),  # Estonian (Estonia)
-    ('eu-es', _('euskara (Espainia)')),  # Basque (Spain)
-    ('fa', _('فارسی')),  # Persian
-    ('fa-ir', _('فارسی (ایران)')),  # Persian (Iran)
-    ('fi-fi', _('Suomi (Suomi)')),  # Finnish (Finland)
-    ('fil', _('Filipino')),  # Filipino
-    ('fr', _('Français')),  # French
-    ('gl', _('Galego')),  # Galician
-    ('gu', _('ગુજરાતી')),  # Gujarati
-    ('he', _('עברית')),  # Hebrew
-    ('hi', _('हिन्दी')),  # Hindi
-    ('hr', _('hrvatski')),  # Croatian
-    ('hu', _('magyar')),  # Hungarian
-    ('hy-am', _('Հայերեն (Հայաստան)')),  # Armenian (Armenia)
-    ('id', _('Bahasa Indonesia')),  # Indonesian
-    ('it-it', _('Italiano (Italia)')),  # Italian (Italy)
-    ('ja-jp', _('日本語 (日本)')),  # Japanese (Japan)
-    ('kk-kz', _('қазақ тілі (Қазақстан)')),  # Kazakh (Kazakhstan)
-    ('km-kh', _('ភាសាខ្មែរ (កម្ពុជា)')),  # Khmer (Cambodia)
-    ('kn', _('ಕನ್ನಡ')),  # Kannada
-    ('ko-kr', _('한국어 (대한민국)')),  # Korean (Korea)
-    ('lt-lt', _('Lietuvių (Lietuva)')),  # Lithuanian (Lithuania)
-    ('ml', _('മലയാളം')),  # Malayalam
-    ('mn', _('Монгол хэл')),  # Mongolian
-    ('mr', _('मराठी')),  # Marathi
-    ('ms', _('Bahasa Melayu')),  # Malay
-    ('nb', _('Norsk bokmål')),  # Norwegian Bokmål
-    ('ne', _('नेपाली')),  # Nepali
-    ('nl-nl', _('Nederlands (Nederland)')),  # Dutch (Netherlands)
-    ('or', _('ଓଡ଼ିଆ')),  # Oriya
-    ('pl', _('Polski')),  # Polish
-    ('pt-br', _('Português (Brasil)')),  # Portuguese (Brazil)
-    ('pt-pt', _('Português (Portugal)')),  # Portuguese (Portugal)
-    ('ro', _('română')),  # Romanian
-    ('ru', _('Русский')),  # Russian
-    ('si', _('සිංහල')),  # Sinhala
-    ('sk', _('Slovenčina')),  # Slovak
-    ('sl', _('Slovenščina')),  # Slovenian
-    ('sq', _('shqip')),  # Albanian
-    ('sr', _('Српски')),  # Serbian
-    ('sv', _('svenska')),  # Swedish
-    ('sw', _('Kiswahili')),  # Swahili
-    ('ta', _('தமிழ்')),  # Tamil
-    ('te', _('తెలుగు')),  # Telugu
-    ('th', _('ไทย')),  # Thai
-    ('tr-tr', _('Türkçe (Türkiye)')),  # Turkish (Turkey)
-    ('uk', _('Українська')),  # Ukranian
-    ('ur', _('اردو')),  # Urdu
-    ('vi', _('Tiếng Việt')),  # Vietnamese
-    ('uz', _('Ўзбек')),  # Uzbek
-    ('zh-cn', _('中文 (简体)')),  # Chinese (China)
-    ('zh-hk', _('中文 (香港)')),  # Chinese (Hong Kong)
-    ('zh-tw', _('中文 (台灣)')),  # Chinese (Taiwan)
+    ('am', _('Amharic')),
+    ('ar', _('Arabic')),
+    ('az', _('Azerbaijani')),
+    ('bg-bg', _('Bulgarian (Bulgaria)')),
+    ('bn-bd', _('Bengali (Bangladesh)')),
+    ('bn-in', _('Bengali (India)')),
+    ('bs', _('Bosnian')),
+    ('ca', _('Catalan')),
+    ('ca@valencia', _('Catalan (Valencia)')),
+    ('cs', _('Czech')),
+    ('cy', _('Welsh')),
+    ('da', _('Danish')),
+    ('de-de', _('German (Germany)')),
+    ('el', _('Greek')),
+    ('en-uk', _('English (United Kingdom)')),
+    ('en@lolcat', _('LOLCAT English')),
+    ('en@pirate', _('Pirate English')),
+    ('es-419', _('Spanish (Latin America)')),
+    ('es-ar', _('Spanish (Argentina)')),
+    ('es-ec', _('Spanish (Ecuador)')),
+    ('es-es', _('Spanish (Spain)')),
+    ('es-mx', _('Spanish (Mexico)')),
+    ('es-pe', _('Spanish (Peru)')),
+    ('et-ee', _('Estonian (Estonia)')),
+    ('eu-es', _('Basque (Spain)')),
+    ('fa', _('Persian')),
+    ('fa-ir', _('Persian (Iran)')),
+    ('fi-fi', _('Finnish (Finland)')),
+    ('fil', _('Filipino')),
+    ('fr', _('French')),
+    ('gl', _('Galician')),
+    ('gu', _('Gujarati')),
+    ('he', _('Hebrew')),
+    ('hi', _('Hindi')),
+    ('hr', _('Croatian')),
+    ('hu', _('Hungarian')),
+    ('hy-am', _('Armenian (Armenia)')),
+    ('id', _('Indonesian')),
+    ('it-it', _('Italian (Italy)')),
+    ('ja-jp', _('Japanese (Japan)')),
+    ('kk-kz', _('Kazakh (Kazakhstan)')),
+    ('km-kh', _('Khmer (Cambodia)')),
+    ('kn', _('Kannada')),
+    ('ko-kr', _('Korean (Korea)')),
+    ('lt-lt', _('Lithuanian (Lithuania)')),
+    ('ml', _('Malayalam')),
+    ('mn', _('Mongolian')),
+    ('mr', _('Marathi')),
+    ('ms', _('Malay')),
+    ('nb', _('Norwegian Bokmal')),
+    ('ne', _('Nepali')),
+    ('nl-nl', _('Dutch (Netherlands)')),
+    ('or', _('Oriya')),
+    ('pl', _('Polish')),
+    ('pt-br', _('Portuguese (Brazil)')),
+    ('pt-pt', _('Portuguese (Portugal)')),
+    ('ro', _('Romanian')),
+    ('ru', _('Russian')),
+    ('si', _('Sinhala')),
+    ('sk', _('Slovak')),
+    ('sl', _('Slovenian')),
+    ('sq', _('Albanian')),
+    ('sr', _('Serbian')),
+    ('sv', _('Swedish')),
+    ('sw', _('Swahili')),
+    ('ta', _('Tamil')),
+    ('te', _('Telugu')),
+    ('th', _('Thai')),
+    ('tr-tr', _('Turkish (Turkey)')),
+    ('uk', _('Ukranian')),
+    ('ur', _('Urdu')),
+    ('vi', _('Vietnamese')),
+    ('uz', _('Uzbek')),
+    ('zh-cn', _('Chinese (China)')),
+    ('zh-hk', _('Chinese (Hong Kong)')),
+    ('zh-tw', _('Chinese (Taiwan)')),
 )
 
 LOCALE_PATHS = (
@@ -274,7 +274,7 @@ TEMPLATES = [
                 'oscar.core.context_processors.metadata',
                 'ecommerce.core.context_processors.core',
                 'ecommerce.extensions.analytics.context_processors.analytics',
-                
+
                 # edly context processor to apply dynamic theming
                 'ecommerce.extensions.edly_ecommerce_app.context_processor.dynamic_theming_context',
                 'ecommerce.extensions.edly_ecommerce_app.context_processor.edly_app_context'
