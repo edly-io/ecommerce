@@ -2,7 +2,7 @@
 # edX translation file
 # Copyright (C) 2018 edX
 # This file is distributed under the GNU AFFERO GENERAL PUBLIC LICENSE.
-# 
+#
 # Translators:
 # Ahmed Jazzar <ahmed.mojaz@gmail.com>, 2015
 # AR C2 <e2f458fd4s512@outlook.com>, 2016
@@ -22,7 +22,7 @@ msgstr ""
 "Project-Id-Version: edx-platform\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2018-04-05 11:00+0000\n"
-"PO-Revision-Date: 2018-03-26 19:44+0000\n"
+"PO-Revision-Date: 2020-07-08 15:59+0500\n"
 "Last-Translator: Sahbi BG <sahbi.g@gmail.com>\n"
 "Language-Team: Arabic (http://www.transifex.com/open-edx/edx-platform/language/ar/)\n"
 "MIME-Version: 1.0\n"
@@ -70,7 +70,7 @@ msgstr "يجب أن يكون الحد الأقصى لاستخدام القسائ
 
 #: ecommerce/static/js/models/coupon_model.js:166
 msgid "A valid Program UUID is required."
-msgstr ""
+msgstr "مطلوب UUID برنامج صالح."
 
 #: ecommerce/static/js/models/coupon_model.js:190
 msgid "Must occur before end date"
@@ -120,7 +120,7 @@ msgstr "يجب أن يكون لجميع مقاعد المساق سعر."
 
 #: ecommerce/static/js/models/course_seats/course_seat.js:45
 msgid "Verified seats must have an upgrade deadline."
-msgstr ""
+msgstr "يجب أن يكون للمقاعد التي تم التحقق منها موعدًا نهائيًا للترقية."
 
 #: ecommerce/static/js/models/course_seats/course_seat.js:53
 msgid "The upgrade deadline must occur BEFORE the verification deadline."
@@ -129,7 +129,7 @@ msgstr "يجب أن يُحدّد الموعد النهائي الترقية قب
 #: ecommerce/static/js/models/course_seats/course_seat.js:84
 #: ecommerce/static/js/views/course_form_view.js:60
 msgid "Verified"
-msgstr "موثَّقة"
+msgstr "موثَّقة"
 
 #: ecommerce/static/js/models/course_seats/course_seat.js:86
 #: ecommerce/static/js/views/course_form_view.js:71
@@ -170,7 +170,7 @@ msgstr "يجب أن يتوفّر لجميع مقاعد حضور المادّة �
 
 #: ecommerce/static/js/models/course_seats/credit_seat.js:30
 msgid "Please select a valid credit provider."
-msgstr "يرجى اختيار مقدِّم مادة دراسية صالح."
+msgstr "يرجى اختيار مقدِّم مادة دراسية صالح."
 
 #: ecommerce/static/js/models/course_seats/credit_seat.js:39
 msgid "All credit seats must designate a number of credit hours."
@@ -178,43 +178,43 @@ msgstr "يجب أن يُحدّد لجميع مقاعد حضور المادّة �
 
 #: ecommerce/static/js/pages/basket_page.js:27
 msgid "Problem occurred during checkout. Please contact support."
-msgstr ""
+msgstr "حدثت مشكلة أثناء الخروج. يرجى الاتصال بالدعم."
 
 #: ecommerce/static/js/pages/basket_page.js:101
 msgid "This field is required"
-msgstr ""
+msgstr "هذه الخانة مطلوبه"
 
 #: ecommerce/static/js/pages/basket_page.js:136
 msgid "Invalid card number"
-msgstr ""
+msgstr "رقم البطاقة غير صالحة"
 
 #: ecommerce/static/js/pages/basket_page.js:138
 msgid "Unsupported card type"
-msgstr ""
+msgstr "نوع البطاقة غير مدعوم"
 
 #: ecommerce/static/js/pages/basket_page.js:140
 msgid "Invalid security number"
-msgstr ""
+msgstr "رقم أمان غير صالح"
 
 #: ecommerce/static/js/pages/basket_page.js:145
 msgid "Invalid month"
-msgstr ""
+msgstr "شهر غير صالح"
 
 #: ecommerce/static/js/pages/basket_page.js:147
 msgid "Invalid year"
-msgstr ""
+msgstr "عام غير صالح"
 
 #: ecommerce/static/js/pages/basket_page.js:149
 msgid "Card expired"
-msgstr ""
+msgstr "انتهت صلاحية البطاقة"
 
 #: ecommerce/static/js/pages/basket_page.js:485
 msgid "<Choose state/province>"
-msgstr ""
+msgstr "<اختر الولاية / المقاطعة>"
 
 #: ecommerce/static/js/pages/basket_page.js:486
 msgid "State/Province (required)"
-msgstr ""
+msgstr "الولاية / المقاطعة (مطلوب)"
 
 #: ecommerce/static/js/pages/coupon_create_page.js:12
 msgid "Create New Coupon"
@@ -257,32 +257,39 @@ msgid ""
 "Caution! Using the back button on this page may cause you to be charged "
 "again."
 msgstr ""
+"الحذر! قد يؤدي استخدام زر الرجوع في هذه الصفحة إلى تحصيل رسوم منك"
+"مرة أخرى."
 
 #. Translators: Do not translate "Apple Pay".
 #: ecommerce/static/js/payment_processors/cybersource.js:218
 msgid ""
 "Apple Pay is not available at this time. Please try another payment method."
 msgstr ""
+"Apple Pay غير متاح في الوقت الحالي. يرجى تجربة طريقة دفع أخرى."
 
 #: ecommerce/static/js/payment_processors/cybersource.js:249
 msgid ""
 "An error occurred while processing your payment. You have NOT been charged. "
 "Please try again, or select another payment method."
 msgstr ""
+"حدث خطأ أثناء معالجة دفعتك. لم يتم تحصيل رسوم منك."
+"يرجى المحاولة مرة أخرى ، أو تحديد طريقة دفع أخرى."
 
 #: ecommerce/static/js/payment_processors/stripe.js:71
 msgid ""
 "An error occurred while attempting to process your payment. You have not "
 "been charged. Please check your payment details, and try again."
 msgstr ""
+"حدث خطأ أثناء محاولة معالجة دفعتك. لم تفعل"
+"اتهم. يرجى التحقق من تفاصيل الدفع وإعادة المحاولة."
 
 #: ecommerce/static/js/payment_processors/stripe.js:110
 msgid "An error occurred while processing your payment. Please try again."
-msgstr ""
+msgstr "حدث خطأ أثناء معالجة دفعتك. حاول مرة اخرى."
 
 #: ecommerce/static/js/utils/utils.js:184
 msgid "Trailing comma not allowed."
-msgstr " الزائدة الفاصلة غير مسموحة."
+msgstr "الفاصلة اللاحقة غير مسموح بها."
 
 #: ecommerce/static/js/views/coupon_detail_view.js:107
 #: ecommerce/static/js/views/coupon_form_view.js:60
@@ -352,7 +359,7 @@ msgstr "الاسم"
 
 #: ecommerce/static/js/views/coupon_list_view.js:81
 msgid "Created"
-msgstr ""
+msgstr "خلقت"
 
 #: ecommerce/static/js/views/coupon_list_view.js:85
 msgid "Custom Code"
@@ -381,7 +388,8 @@ msgstr "مساق استماع مجاني. لا تُمنح شهادة."
 #: ecommerce/static/js/views/course_form_view.js:61
 msgid ""
 "Paid certificate track with initial verification and Verified Certificate"
-msgstr "مسار نيل شهادة مدفوع ذا مصادقة مبدئيّة وشهادة موثّقة"
+msgstr ""
+"مسار الشهادة المدفوعة مع التحقق الأولي وشهادة التحقق"
 
 #: ecommerce/static/js/views/course_form_view.js:65
 msgid "Professional Education"
@@ -392,12 +400,16 @@ msgid ""
 "Paid certificate track with initial verification and Professional Education "
 "Certificate"
 msgstr ""
+"مسار الشهادة المدفوعة مع التحقق الأولي والتعليم المهني"
+"شهادة"
 
 #: ecommerce/static/js/views/course_form_view.js:72
 msgid ""
 "Paid certificate track with initial verification and Verified Certificate, "
 "and option to purchase credit"
 msgstr ""
+"مسار الشهادة المدفوعة مع التحقق الأولي وشهادة التحقق ،"
+"وخيار شراء الائتمان"
 
 #. Translators: _START_, _END_, and _TOTAL_ are placeholders. Do NOT translate
 #. them.
@@ -496,4 +508,4 @@ msgstr "حدث خطأ"
 msgid ""
 "Failed to process refund #%(refund_id)s: %(error)s. Please try again, or "
 "contact the E-Commerce Development Team."
-msgstr "تعذّرت معالجة طلب إعادة المبلغ ذا الرقم #%(refund_id)s: %(error)s. يُرجى إعادة المحاولة أو الاتصال بفريق تطوير التجارة الإلكترونية."
+msgstr ""
