@@ -33,6 +33,12 @@ class CourseViewSet(NonDestroyableModelViewSet):
 
     def get_queryset(self):
         site_configuration = self.request.site.siteconfiguration
+
+        if bool(self.request.GET.get('include_all_partners'), False):
+            return Course.objects.all().prefetch_related(
+                self.products_prefetch, self.product_attribute_value_prefetch, 'products__stockrecords'
+            )
+
         return Course.objects.filter(partner=site_configuration.partner).prefetch_related(
             self.products_prefetch, self.product_attribute_value_prefetch, 'products__stockrecords'
         )
@@ -44,6 +50,12 @@ class CourseViewSet(NonDestroyableModelViewSet):
         parameters:
             - name: include_products
               description: Indicates if the related products should be included in the response.
+              required: false
+              type: boolean
+              paramType: query
+              multiple: false
+            - name: include_all_partners
+              description: Indicates if the all parnters data needs to be pulled.
               required: false
               type: boolean
               paramType: query

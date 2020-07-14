@@ -17,6 +17,10 @@ from ecommerce.courses.tests.factories import CourseFactory
 from ecommerce.extensions.api.v2.tests.views import JSON_CONTENT_TYPE, ProductSerializerMixin
 from ecommerce.extensions.catalogue.tests.mixins import DiscoveryTestMixin
 from ecommerce.tests.testcases import TestCase
+from ecommerce.tests.factories import (
+    PartnerFactory,
+    SiteFactory
+)
 
 Product = get_model('catalogue', 'Product')
 ProductClass = get_model('catalogue', 'ProductClass')
@@ -108,6 +112,35 @@ class CourseViewSetTests(ProductSerializerMixin, DiscoveryTestMixin, TestCase):
         Course.objects.all().delete()
         response = self.client.get(self.list_path)
         self.assertDictEqual(json.loads(response.content), {'count': 0, 'next': None, 'previous': None, 'results': []})
+
+    def test_list_with_all_partners_parameter(self):
+        """
+        Verify the view returns a list of Courses from all Partners.
+        """
+        primary_site_partner = PartnerFactory()
+        primary_site = SiteFactory()
+        primary_site_client = self.client_class(SERVER_NAME=primary_site.domain)
+        CourseFactory(site=primary_site, partner=primary_site_partner)
+
+        secondary_site_partner = PartnerFactory()
+        secondary_site = SiteFactory()
+        secondary_site_client = self.client_class(SERVER_NAME=secondary_site.domain)
+        CourseFactory(site=secondary_site, partner=secondary_site_partner)
+
+        response = secondary_site_client.get(self.list_path)
+        assert response.status_code == 200
+        assert len(json.loads(response.content['results'])) == 1
+
+        list_path_with_all_partners_parameter = reverse('api:v2:course-list', kwargs={'include_all_partners': True})
+
+        response = primary_site_client.get(list_path_with_all_partners_parameter)
+        assert response.status_code == 200
+        assert len(json.loads(response.content['results'])) == 2
+
+        # If no Courses exist, the view should return an empty results list.
+        Course.objects.all().delete()
+        response = primary_site_client.get(list_path_with_all_partners_parameter)
+        assert len(json.loads(response.content['results'])) == 0
 
     def test_create(self):
         """ Verify the view can create a new Course."""
