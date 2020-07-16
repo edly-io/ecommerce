@@ -6,6 +6,7 @@ from testfixtures import LogCapture
 from django.conf import settings
 from django.contrib import auth
 from django.urls import reverse
+from django.test.client import Client
 
 from ecommerce.core.models import SiteConfiguration
 from ecommerce.extensions.edly_ecommerce_app.helpers import encode_edly_user_info_cookie
@@ -182,6 +183,11 @@ class EdlyOrganizationAccessMiddlewareTests(TestCase):
                     'WARNING',
                     'Site configuration for site ({site}) has no django settings overrides.'.format(site=self.site)
                 ),
+                (
+                    logger.name,
+                    'ERROR',
+                    'Edly user %s has no access for site %s.' % (self.user.email, self.site)
+                ),
             )
 
     def test_super_user_has_all_sites_access(self):
@@ -193,4 +199,15 @@ class EdlyOrganizationAccessMiddlewareTests(TestCase):
         self.client.login(username=edly_user.username, password='test')
 
         response = self.client.get(self.basket_url)
+        assert response.status_code == 200
+
+    def test_staff_user_has_all_sites_access(self):
+        """
+        Test logged in staff user has access to all sites.
+        """
+        edly_user = self.create_user(is_staff=True)
+        client = Client()
+        client.login(username=edly_user.username, password='test')
+
+        response = client.get(self.basket_url)
         assert response.status_code == 200
