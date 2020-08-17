@@ -10,7 +10,8 @@ from ecommerce.core.constants import (
     COUPON_PRODUCT_CLASS_NAME,
     COURSE_ENTITLEMENT_PRODUCT_CLASS_NAME,
     ENROLLMENT_CODE_PRODUCT_CLASS_NAME,
-    SEAT_PRODUCT_CLASS_NAME
+    SEAT_PRODUCT_CLASS_NAME,
+    SUBSCRIPTION_PRODUCT_CLASS_NAME,
 )
 from ecommerce.core.utils import log_message_and_raise_validation_error
 from ecommerce.journals.constants import JOURNAL_PRODUCT_CLASS_NAME  # TODO: journals dependency
@@ -44,6 +45,10 @@ class Product(AbstractProduct):
     @property
     def is_coupon_product(self):
         return self.get_product_class().name == COUPON_PRODUCT_CLASS_NAME
+
+    @property
+    def is_subscription_product(self):
+        return self.get_product_class().name == SUBSCRIPTION_PRODUCT_CLASS_NAME
 
     def save(self, *args, **kwargs):
         try:

@@ -9,6 +9,7 @@ from ecommerce.extensions.api.v2.views import catalog as catalog_views
 from ecommerce.extensions.api.v2.views import checkout as checkout_views
 from ecommerce.extensions.api.v2.views import coupons as coupon_views
 from ecommerce.extensions.api.v2.views import courses as course_views
+from ecommerce.subscriptions.api.v2 import views as subscription_views
 from ecommerce.extensions.api.v2.views import enterprise as enterprise_views
 from ecommerce.extensions.api.v2.views import orders as order_views
 from ecommerce.extensions.api.v2.views import partners as partner_views
@@ -117,6 +118,7 @@ router.register(r'enterprise/coupons', enterprise_views.EnterpriseCouponViewSet,
 router.register(r'courses', course_views.CourseViewSet, base_name='course') \
     .register(r'products', product_views.ProductViewSet,
               base_name='course-product', parents_query_lookups=['course_id'])
+router.register(r'subscriptions', subscription_views.SubscriptionViewSet, base_name='subscriptions')
 router.register(r'orders', order_views.OrderViewSet, base_name='order')
 router.register(r'partners', partner_views.PartnerViewSet) \
     .register(r'catalogs', catalog_views.CatalogViewSet,

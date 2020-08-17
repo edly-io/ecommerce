@@ -10,6 +10,12 @@ COURSE_ID_PATTERN = r'(?P<course_id>{})'.format(COURSE_ID_REGEX)
 # Seat constants
 SEAT_PRODUCT_CLASS_NAME = 'Seat'
 
+# Subscription constants
+SUBSCRIPTION_PRODUCT_CLASS_NAME = 'Subscription'
+SUBSCRIPTION_CATEGORY_NAME = 'Subscriptions'
+# Name for waffle switch to use for enabling subscriptions feature on runtime.
+ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH = 'enable_subscriptions'
+
 # switch is used to disable/enable USER table list/change view in django admin
 USER_LIST_VIEW_SWITCH = 'enable_user_list_view'
 

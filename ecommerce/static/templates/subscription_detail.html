@@ -1,0 +1,59 @@
+<div class="container">
+    <ol class="breadcrumb">
+        <li><a href="/subscriptions/"><%= gettext('Subscriptions') %></a></li>
+        <li class="active"><%= title %></li>
+    </ol>
+    <div class="page-header">
+        <h1 class="hd-1 emphasized">
+            <span class="coupon-title"><%= title %></span>
+
+            <div class="pull-right">
+                <a class="btn btn-primary btn-small" href="/subscriptions/<%= id %>/edit/" id="SubscriptionEdit">
+                    <%= gettext('Edit Subscription') %>
+                </a>
+            </div>
+        </h1>
+        <h3 class="hd-3">
+            <span class="coupon-type"><%= subscription_type %></span>
+        </h3>
+    </div>
+    <div class="coupon-information">
+        <div class="heading"><%= gettext('Subscriptions Status:') %>
+            <span class="code-status value <% if(subscription_status) { %>active <% } %>"><%= subscription_status ? 'ACTIVE' : 'INACTIVE' %></span>
+            <div class="pull-right">
+                <%= gettext('Last edit:') %>
+                <span><%= dateEdited %></span>
+            </div>
+        </div>
+        <% if(subscription_actual_price) {%>
+        <div class="info-item grid-item">
+            <div class="heading"><%= gettext('Subscription Actual Price:') %></div>
+            <div class="value"><%= subscription_actual_price %></div>
+        </div>
+        <%}%>
+        <% if(subscription_price) {%>
+        <div class="info-item grid-item">
+            <div class="heading"><%= gettext('Subscription Price:') %></div>
+            <div class="value"><%= subscription_price %></div>
+        </div>
+        <%}%>
+        <% if(subscription_duration_value && subscription_duration_unit) {%>
+        <div class="info-item grid-item">
+            <div class="heading"><%= gettext('Subscription Duration:') %></div>
+            <div class="value"><%= subscription_duration_value %> <%= subscription_duration_unit %></div>
+        </div>
+        <%}%>
+        <% if(number_of_courses) {%>
+        <div class="info-item grid-item">
+            <div class="heading"><%= gettext('Number of Courses:') %></div>
+            <div class="value"><%= number_of_courses %></div>
+        </div>
+        <%}%>
+        <% if(dateCreated) {%>
+        <div class="info-item grid-item">
+            <div class="heading"><%= gettext('Created:') %></div>
+            <div class="value"><%= dateCreated %></div>
+        </div>
+        <%}%>
+    </div>
+</div>

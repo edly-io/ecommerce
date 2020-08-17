@@ -12,7 +12,9 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import waffle
 
+from ecommerce.core.constants import ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH
 from ecommerce.extensions.edly_ecommerce_app.api.v1.constants import ERROR_MESSAGES
 from ecommerce.extensions.edly_ecommerce_app.helpers import user_is_course_creator
 from ecommerce.theming.models import SiteTheme
@@ -84,3 +86,16 @@ class StaffOrCourseCreatorOnlyMixin(object):
             raise Http404
 
         return super(StaffOrCourseCreatorOnlyMixin, self).dispatch(request, *args, **kwargs)
+
+
+class SubscriptionEnabledMixin(object):
+    """
+    Makes sure subscription app is visible only if subscriptions waffle switch is enabled.
+    """
+
+    @method_decorator(login_required)
+    def dispatch(self, request, *args, **kwargs):
+        if not waffle.switch_is_active(ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH):
+            raise Http404
+
+        return super(SubscriptionEnabledMixin, self).dispatch(request, *args, **kwargs)

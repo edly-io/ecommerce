@@ -285,6 +285,13 @@ class BasketSummaryView(BasketView):
                     ul_end='</ul>',
                     user_email=self.request.user.email
                 )
+            elif line.product.is_subscription_product:
+                line_data = {
+                    'product_title': line.product.title,
+                    'image_url': None,
+                    'product_description': line.product.description
+                }
+                show_voucher_form = False
             else:
                 line_data = {
                     'product_title': line.product.title,
