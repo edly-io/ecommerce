@@ -10,6 +10,7 @@ from django.db import transaction, IntegrityError
 from django.utils.translation import ugettext_lazy as _
 
 from ecommerce.core.constants import (
+    ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH,
     SUBSCRIPTION_CATEGORY_NAME,
     SUBSCRIPTION_PRODUCT_CLASS_NAME,
 )
@@ -168,7 +169,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         """
         Create a new subscription product and corresponding stock records.
         """
-        if not waffle.switch_is_active('enable_subscriptions'):
+        if not waffle.switch_is_active(ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH):
             message = _(
                 u'Subscription was not published to LMS '
                 u'because the switch [enable_subscriptions] is disabled. '
