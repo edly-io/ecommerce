@@ -155,7 +155,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'number_of_courses': obj.get('number_of_courses', 0),
             'subscription_duration_value': obj.get('subscription_duration_value', 0),
             'subscription_duration_unit': obj.get('subscription_duration_unit', 'days'),
-            'subscription_duration_unit': obj.get('subscription_duration_unit', 'days'),
             'subscription_display_order': obj.get('subscription_display_order', 1),
         })
 
