@@ -57,13 +57,13 @@
 
         <div class="form-group">
             <label for="duration-value"><%= gettext('Subscription Duration Value') %> *</label>
-            <input id="duration-value" type="number" step="1" class="form-control non-editable" name="duration_value" value="1" min="1" >
+            <input id="duration-value" type="number" step="1" class="form-control non-editable" name="duration_value" min="1" >
             <p class="help-block"><%= gettext('Provide subscription duration value according to your selected unit. After this date/time, students can no longer access their subscribed courses.') %></p>
         </div>
 
         <div class="form-group">
             <label for="number-of-courses"><%= gettext('Number of Courses') %> *</label>
-            <input id="number-of-courses" type="number" step="1" class="form-control non-editable" name="number_of_courses" value="1" min="1" >
+            <input id="number-of-courses" type="number" step="1" class="form-control non-editable" name="number_of_courses" min="1" >
             <p class="help-block"><%= gettext('Provide the number of courses which students can access using this subscription.') %></p>
         </div>
 
@@ -93,6 +93,14 @@
                 </div>
                 <p class="help-block"><%= gettext('Price that the user will pay. (Intended for marketing purposes)') %></p>
             </div>
+        </div>
+
+        <div class="form-group">
+            <label class="hd-4" for="display-order"><%= gettext('Subscription Display Order') %></label>
+            <div class="input-group">
+                <input id="display-order" type="number" step="1" class="form-control non-editable" name="display_order" min="1" >
+            </div>
+            <p class="help-block"><%= gettext('Display order for the subscription in which learners will see it in the list of subscriptions. (1 being the highest order)') %></p>
         </div>
 
         <div class="form-group">

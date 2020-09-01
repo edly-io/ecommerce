@@ -86,6 +86,9 @@ define([
                 'input[name=subscription_active_status]': {
                     observe: 'subscription_active_status'
                 },
+                'input[name=display_order]': {
+                    observe: 'subscription_display_order'
+                },
             },
 
             bindings: function() {
