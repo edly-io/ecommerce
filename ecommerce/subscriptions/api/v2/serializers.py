@@ -29,9 +29,9 @@ ProductCategory = get_model('catalogue', 'ProductCategory')
 StockRecord = get_model('partner', 'StockRecord')
 
 SUBSCRIPTION_TYPE_ATTRIBUTES = {
-    'limited-access': ['number_of_courses', 'subscription_duration_value', 'subscription_duration_unit', ],
+    'limited-access': ['subscription_number_of_courses', 'subscription_duration_value', 'subscription_duration_unit', ],
     'full-access-courses': ['subscription_duration_value', 'subscription_duration_unit', ],
-    'full-access-time-period': ['number_of_courses', ],
+    'full-access-time-period': ['subscription_number_of_courses', ],
     'lifetime-access': [],
 }
 SUBSCRIPTION_GENERAL_ATTRIBUTES = ['subscription_type', 'subscription_actual_price', 'subscription_price', 'subscription_status', 'subscription_display_order']
@@ -102,7 +102,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     subscription_actual_price = serializers.SerializerMethodField()
     subscription_price = serializers.SerializerMethodField()
     subscription_status = serializers.SerializerMethodField()
-    number_of_courses = serializers.SerializerMethodField()
+    subscription_number_of_courses = serializers.SerializerMethodField()
     subscription_duration_value = serializers.SerializerMethodField()
     subscription_duration_unit = serializers.SerializerMethodField()
 
@@ -130,13 +130,13 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         """
         return product.attr.subscription_status
 
-    def get_number_of_courses(self, product):
+    def get_subscription_number_of_courses(self, product):
         """
         Get number of courses depending on the subscription type.
         """
         subscription_type = product.attribute_values.get(attribute__code='subscription_type').value.option
         if subscription_type == 'limited-access' or subscription_type == 'full-access-time-period':
-            return product.attr.number_of_courses
+            return product.attr.subscription_number_of_courses
         return None
 
     def get_subscription_duration_value(self, product):
@@ -171,7 +171,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'subscription_actual_price': obj.get('subscription_actual_price', 0.0),
             'subscription_price': obj.get('subscription_price', 0.0),
             'subscription_status': subscription_status,
-            'number_of_courses': obj.get('number_of_courses', 0),
+            'subscription_number_of_courses': obj.get('subscription_number_of_courses', 0),
             'subscription_duration_value': obj.get('subscription_duration_value', 0),
             'subscription_duration_unit': obj.get('subscription_duration_unit', 'days'),
             'subscription_display_order': obj.get('subscription_display_order', 1),
@@ -326,5 +326,5 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         model = Product
         fields = (
             'title', 'subscription_type', 'subscription_actual_price', 'subscription_price', 'subscription_status',
-            'number_of_courses', 'subscription_duration_value', 'subscription_duration_unit'
+            'subscription_number_of_courses', 'subscription_duration_value', 'subscription_duration_unit'
         )

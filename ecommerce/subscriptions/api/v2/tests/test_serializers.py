@@ -68,22 +68,22 @@ class SubscriptionSerializerTests(SubscriptionProductMixin, TestCase):
         subscription = self.create_subscription(subscription_type=subscription_type)
         conditional_attribute_values = {
             LIMITED_ACCESS: lambda subscription: {
-                'number_of_courses': subscription.attr.number_of_courses,
+                'subscription_number_of_courses': subscription.attr.subscription_number_of_courses,
                 'subscription_duration_unit': subscription.attr.subscription_duration_unit.option,
                 'subscription_duration_value': subscription.attr.subscription_duration_value
             },
             FULL_ACCESS_COURSES: lambda subscription: {
-                'number_of_courses': None,
+                'subscription_number_of_courses': None,
                 'subscription_duration_unit': subscription.attr.subscription_duration_unit.option,
                 'subscription_duration_value': subscription.attr.subscription_duration_value
             },
             FULL_ACCESS_TIME_PERIOD: lambda subscription: {
-                'number_of_courses': subscription.attr.number_of_courses,
+                'subscription_number_of_courses': subscription.attr.subscription_number_of_courses,
                 'subscription_duration_unit': None,
                 'subscription_duration_value': None
             },
             LIFETIME_ACCESS: lambda subscription: {
-                'number_of_courses': None,
+                'subscription_number_of_courses': None,
                 'subscription_duration_unit': None,
                 'subscription_duration_value': None
             },
