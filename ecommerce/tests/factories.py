@@ -1,6 +1,6 @@
 import factory
 from django.contrib.sites.models import Site
-from factory.fuzzy import FuzzyText  # pylint: disable=ungrouped-imports
+from factory.fuzzy import FuzzyText, FuzzyChoice  # pylint: disable=ungrouped-imports
 from faker import Faker
 from oscar.core.loading import get_model
 from oscar.test.factories import StockRecordFactory as OscarStockRecordFactory
@@ -38,6 +38,7 @@ class SiteConfigurationFactory(factory.DjangoModelFactory):
     enable_sdn_check = False
     enable_embargo_check = False
     enable_partial_program = False
+    enable_course_payments = True
     discovery_api_url = 'http://{}.fake/'.format(Faker().domain_name())
 
     @factory.lazy_attribute

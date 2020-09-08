@@ -55,7 +55,7 @@ class SubscriptionFulfillmentModule(BaseFulfillmentModule):
             lines (List of Lines): Order Lines, associated with purchased products in an Order.
 
         Returns:
-            A supported list of unmodified lines associated with "Susbcription" products.
+            A supported list of unmodified lines associated with "Subscription" products.
         """
         return [line for line in lines if self.supports_line(line)]
 
@@ -144,19 +144,13 @@ class SubscriptionFulfillmentModule(BaseFulfillmentModule):
         return order, lines
 
     def revoke_line(self, line):
-        try:
-            logger.info('Attempting to revoke fulfillment of Line [%d]...', line.id)
-            audit_log(
-                'line_revoked',
-                order_line_id=line.id,
-                order_number=line.order.number,
-                product_class=line.product.get_product_class().name,
-                user_id=line.order.user.id
-            )
+        audit_log(
+            'line_revoked',
+            order_line_id=line.id,
+            order_number=line.order.number,
+            product_class=line.product.get_product_class().name,
+            user_id=line.order.user.id
+        )
 
-            return True
-        except Exception:  # pylint: disable=broad-except
-            logger.exception('Failed to revoke fulfillment of Line [%d].', line.id)
-
-        return False
+        return True
 
