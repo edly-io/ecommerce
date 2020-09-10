@@ -81,7 +81,8 @@ FULFILLMENT_MODULES = [
     'ecommerce.extensions.fulfillment.modules.EnrollmentCodeFulfillmentModule',
     'ecommerce.extensions.fulfillment.modules.CourseEntitlementFulfillmentModule',
     'ecommerce.extensions.fulfillment.modules.DonationsFromCheckoutTestFulfillmentModule',
-    'ecommerce.journals.fulfillment.modules.JournalFulfillmentModule'  # TODO: journals dependency
+    'ecommerce.journals.fulfillment.modules.JournalFulfillmentModule',  # TODO: journals dependency
+    'ecommerce.subscriptions.modules.SubscriptionFulfillmentModule',
 ]
 
 HAYSTACK_CONNECTIONS = {
@@ -275,6 +276,9 @@ OSCAR_DASHBOARD_NAVIGATION = [
 
 # Default timeout for Enrollment API calls
 ENROLLMENT_FULFILLMENT_TIMEOUT = 7
+
+# Default timeout for Subscription API calls
+USER_SUBSCRIPTION_FULFILLMENT_TIMEOUT = 7
 
 # Coupon code length
 VOUCHER_CODE_LENGTH = 16
