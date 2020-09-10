@@ -195,6 +195,12 @@ class SiteConfiguration(models.Model):
         default=False
     )
 
+    enable_course_individual_payments = models.BooleanField(
+        verbose_name=_('Enable Course Individual Payments'),
+        help_text=_('Flag to check if site wise course individual payments are enabled'),
+        default=True
+    )
+
     edly_client_theme_branding_settings = JSONField(
         verbose_name=_('Edly client theme branding settings'),
         help_text=_('JSON string containing edly client theme branding settings.'),

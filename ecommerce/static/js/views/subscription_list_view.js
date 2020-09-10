@@ -6,6 +6,7 @@ define([
     'moment',
     'utils/subscription_utils',
     'text!templates/subscription_list.html',
+    'views/confirmation_dialog_view',
     'dataTablesBootstrap'
 ],
     function($,
@@ -14,7 +15,8 @@ define([
               _s,
               moment,
               SubscriptionUtils,
-              subscriptionListViewTemplate) {
+              subscriptionListViewTemplate,
+              confirmationDialog) {
         'use strict';
 
         return Backbone.View.extend({
@@ -23,6 +25,7 @@ define([
             template: _.template(subscriptionListViewTemplate),
 
             initialize: function() {
+                this.confirm_dialog_view = new confirmationDialog();
                 this.listenTo(this.collection, 'update', this.refreshTableData);
             },
 
@@ -35,12 +38,14 @@ define([
                     subscription_price: subscription.get('subscription_price') + ' USD',
                     subscription_status: subscription.get('subscription_status') ? 'Active': 'Inactive',
                     date_created: moment(subscription.get('date_created')).format('MMMM DD, YYYY, h:mm A'),
+                    course_individual_payments: subscription.get('course_individual_payments', true)
                 };
             },
 
             renderSubscriptionTable: function() {
                 var filterPlaceholder = gettext('Search...'),
                     $emptyLabel = '<label class="sr">' + filterPlaceholder + '</label>';
+                this.toggleIndividualCoursePaymentsButtonText();
 
                 if (!$.fn.dataTable.isDataTable('#subscriptionTable')) {
                     this.$el.find('#subscriptionTable').DataTable({
@@ -105,8 +110,18 @@ define([
                 }
             },
 
+            toggleIndividualCoursePaymentsButtonText: function() {
+                var data = this.collection.map(this.getRowData, this);
+                var individual_payments_button = this.$el.find('[name=course-individual-payments]');
+                if(data.length > 0) {
+                    if(data[0].course_individual_payments) individual_payments_button.text(gettext('Disable Course Individual Payments'));
+                    else individual_payments_button.text(gettext('Enable Course Individual Payments'));
+                }
+            },
+
             render: function() {
                 this.$el.html(this.template);
+                this.$el.find('.pull-right').prepend(this.confirm_dialog_view.render().el)
                 this.renderSubscriptionTable();
                 this.refreshTableData();
 
@@ -119,6 +134,7 @@ define([
             refreshTableData: function() {
                 var data = this.collection.map(this.getRowData, this),
                     $table = this.$el.find('#subscriptionTable').DataTable();
+                this.toggleIndividualCoursePaymentsButtonText();
 
                 $table.clear().rows.add(data).draw();
                 return this;

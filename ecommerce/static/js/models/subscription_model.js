@@ -56,7 +56,8 @@ define([
                 subscription_actual_price: 0,
                 subscription_price: 0,
                 subscription_display_order: 1,
-                subscription_status: true
+                subscription_status: true,
+                course_individual_payments: true
             },
 
             subscriptionTypes: SUBSCRIPTION_TYPES,

@@ -185,7 +185,8 @@ class ProductAttributeValueSerializer(serializers.ModelSerializer):
             vouchers = obj.value.vouchers.all()
             serializer = VoucherSerializer(vouchers, many=True, context={'request': request})
             return serializer.data
-        return obj.value
+        value = obj.value.option if obj.attribute.type == 'option' else obj.value
+        return value
 
     class Meta(object):
         model = ProductAttributeValue

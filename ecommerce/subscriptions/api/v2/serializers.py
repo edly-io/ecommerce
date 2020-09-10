@@ -40,6 +40,7 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
     subscription_status = serializers.SerializerMethodField()
     partner_sku = serializers.SerializerMethodField()
     display_order = serializers.SerializerMethodField()
+    course_individual_payments = serializers.SerializerMethodField()
 
     def get_subscription_type(self, product):
         """
@@ -77,11 +78,18 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
         """
         return product.attr.subscription_display_order
 
+    def get_course_individual_payments(self, product):
+        """
+        Get if course individual payments are enabled for the requesting site.
+        """
+        site_configuration = self.context['request'].site.siteconfiguration
+        return site_configuration.enable_course_individual_payments
+
     class Meta:
         model = Product
         fields = [
             'id', 'title', 'date_created', 'subscription_type', 'subscription_actual_price', 'subscription_price',
-            'subscription_status', 'display_order', 'partner_sku',
+            'subscription_status', 'display_order', 'partner_sku', 'course_individual_payments'
         ]
 
 
@@ -280,11 +288,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
         except IntegrityError:
             raise serializers.ValidationError(
-                _(u'Subscription with the title "{subscription_title}" of type "{subscription_type}" already exists.').format(
+                _(u'Subscription with the title "{subscription_title}" of type "{subscription_type}" already exists.'.format(
                     subscription_title=subscription.title,
                     subscription_type=subscription.attr.subscription_type
                 )
-            )
+            ))
 
     class Meta:
         model = Product

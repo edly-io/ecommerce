@@ -1,0 +1,20 @@
+<div class="modal fade" id="individualPaymentsActionModal" tabindex="-1" role="dialog"
+  aria-labelledby="individualPaymentsActionModalTitle" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+            aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="individualPaymentsActionModalTitle">
+          <%= gettext("Confirm Toggling Course Individual Payments") %></h4>
+      </div>
+      <p class="modal-body" style="font-size: 16px;">
+        <%= gettext("Are you sure you want to toggle course individual payments?") %>
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal"><%= gettext("Cancel") %></button>
+        <button type="button" class="btn btn-primary" name="confirm-toggle"><%= gettext("Confirm") %></button>
+      </div>
+    </div>
+  </div>
+</div>
