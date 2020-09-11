@@ -7,7 +7,7 @@ import logging
 from oscar.core.loading import get_model
 from rest_framework import filters, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from ecommerce.core.constants import SUBSCRIPTION_PRODUCT_CLASS_NAME
 from ecommerce.extensions.api.filters import ProductFilter
@@ -29,7 +29,7 @@ class SubscriptionViewSet(EdxOrderPlacementMixin, NonDestroyableModelViewSet):
     """
     Subscription viewset.
     """
-    permission_classes = (IsAuthenticated, IsAdminOrCourseCreator)
+    permission_classes = (AllowAny)
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = ProductFilter
 
