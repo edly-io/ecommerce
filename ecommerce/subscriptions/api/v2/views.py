@@ -29,7 +29,7 @@ class SubscriptionViewSet(EdxOrderPlacementMixin, NonDestroyableModelViewSet):
     """
     Subscription viewset.
     """
-    permission_classes = (AllowAny)
+    permission_classes = (AllowAny, )
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = ProductFilter
 
