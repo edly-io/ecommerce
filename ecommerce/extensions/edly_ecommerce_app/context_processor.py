@@ -77,6 +77,12 @@ def edly_app_context(request):  # pylint: disable=unused-argument
         }
     )
 
+    edly_context.update(
+        {
+            'gtm_id': site_configuration.get_edly_configuration_value('GTM_ID')
+        }
+    )
+
     return edly_context
 
 
