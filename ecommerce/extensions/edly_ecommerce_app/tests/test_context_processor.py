@@ -23,7 +23,8 @@ class EdlyAppContextProcessorTests(TestCase):
             {
                 'session_cookie_domain': self.site_configuration.base_cookie_domain,
                 'services_notifications_url': '',
-                'services_notifications_cookie_expiry': 180
+                'services_notifications_cookie_expiry': 180,
+                'gtm_id': None
             }
         )
 
@@ -31,6 +32,7 @@ class EdlyAppContextProcessorTests(TestCase):
         test_config_values = {
             'PANEL_NOTIFICATIONS_BASE_URL': 'http://panel.backend.dev.edly.com:9998',
             'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': 360,
+            'GTM_ID': 'GTM-XXXXXX',
         }
 
         site_configuration = self.request.site.siteconfiguration
@@ -47,5 +49,6 @@ class EdlyAppContextProcessorTests(TestCase):
                 'session_cookie_domain': site_configuration.base_cookie_domain,
                 'services_notifications_url': test_panel_services_notifications_url,
                 'services_notifications_cookie_expiry': test_config_values['SERVICES_NOTIFICATIONS_COOKIE_EXPIRY'],
+                'gtm_id': test_config_values['GTM_ID'],
             }
         )
