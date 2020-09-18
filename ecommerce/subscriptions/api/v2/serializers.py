@@ -19,7 +19,6 @@ from ecommerce.extensions.catalogue.utils import generate_sku
 from ecommerce.subscriptions.benefits import SubscriptionBenefit
 from ecommerce.subscriptions.conditions import SubscriptionCondition
 from ecommerce.subscriptions.custom import class_path, create_condition
-from ecommerce.subscriptions.utils import get_lms_user_subscription_api_url, get_subscription_expiration_date
 
 logger = logging.getLogger(__name__)
 

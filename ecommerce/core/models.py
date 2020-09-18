@@ -495,10 +495,6 @@ class SiteConfiguration(models.Model):
     def entitlement_api_client(self):
         return EdxRestApiClient(self.build_lms_url('/api/entitlements/v1/'), jwt=self.access_token)
 
-    @cached_property
-    def subscriptions_api_client(self):
-        return EdxRestApiClient(self.build_lms_url('/api/subscriptions/v1/'), jwt=self.access_token)
-
 
 class User(AbstractUser):
     """Custom user model for use with OIDC."""

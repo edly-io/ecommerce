@@ -33,7 +33,7 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
     @check_condition_applicability([ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH])
     def is_satisfied(self, offer, basket):  # pylint: disable=unused-argument
         """
-
+        Checks if a user has a valid purchased subscription.
         Args:
             basket : contains information on line items for order, associated siteconfiguration
                         for retrieving program details, and associated user for retrieving enrollments
@@ -50,19 +50,8 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
         """
         Determines whether the condition can be applied to a given basket line.
         """
-        if not line.stockrecord_id:
-            return False
-
         product = line.product
         if not product.is_seat_product or not product.get_is_discountable():
-            return False
-
-        try:
-            BasketAttribute.objects.get(
-                basket=basket,
-                attribute_type=BasketAttributeType.objects.get(name=SUBSCRIPTION_ATTRIBUTE_TYPE),
-            )
-        except BasketAttribute.DoesNotExist:
             return False
 
         return True
@@ -72,6 +61,13 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
         Return line data for the lines that can be consumed by this condition.
         """
         line_tuples = []
+        try:
+            BasketAttribute.objects.get(
+                basket=basket,
+                attribute_type=BasketAttributeType.objects.get(name=SUBSCRIPTION_ATTRIBUTE_TYPE),
+            )
+        except BasketAttribute.DoesNotExist:
+            return line_tuples
         for line in basket.all_lines():
             if not self.can_apply_condition(line, basket):
                 continue

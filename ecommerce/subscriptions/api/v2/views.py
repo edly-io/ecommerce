@@ -56,16 +56,3 @@ class SubscriptionViewSet(EdxOrderPlacementMixin, NonDestroyableModelViewSet):
         context = super(SubscriptionViewSet, self).get_serializer_context()
         context['partner'] = get_partner_for_site(self.request)
         return context
-<<<<<<< HEAD
-=======
-
-    @list_route(methods=['post'])
-    def toggle_course_individual_payments(self, request, **kwargs):
-        """
-        View to toggle course individual payments.
-        """
-        site_configuration = request.site.siteconfiguration
-        site_configuration.enable_course_individual_payments = not site_configuration.enable_course_individual_payments
-        site_configuration.save()
-        return Response(status=status.HTTP_200_OK, data={'course_individual_payments': site_configuration.enable_course_individual_payments})
->>>>>>> 02a41802... added conditional offer, check for existing valid subscriptions and enrollment publishment via subscription
