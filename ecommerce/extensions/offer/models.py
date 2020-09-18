@@ -36,6 +36,7 @@ OFFER_PRIORITY_VOUCHER = 20
 logger = logging.getLogger(__name__)
 
 Voucher = get_model('voucher', 'Voucher')
+Product = get_model('catalogue', 'Product')
 
 
 class Benefit(AbstractBenefit):
@@ -454,6 +455,14 @@ class Condition(AbstractCondition):
         null=True,
         blank=True,
         verbose_name=_('JournalBundle UUID')
+    )
+    subscription = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='subscription_condition',
+        null=True,
+        blank=True,
+        verbose_name=_('Subscription')
     )
 
 

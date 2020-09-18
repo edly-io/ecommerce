@@ -42,6 +42,7 @@ from ecommerce.extensions.order.exceptions import AlreadyPlacedOrderException
 from ecommerce.extensions.partner.shortcuts import get_partner_for_site
 from ecommerce.extensions.payment.constants import CLIENT_SIDE_CHECKOUT_FLAG_NAME
 from ecommerce.extensions.payment.forms import PaymentForm
+from ecommerce.subscriptions.exceptions import SubscriptionNotBuyableException
 
 BasketAttribute = get_model('basket', 'BasketAttribute')
 BasketAttributeType = get_model('basket', 'BasketAttributeType')
@@ -113,6 +114,8 @@ class BasketAddItemsView(View):
             prepare_basket(request, available_products, voucher)
         except AlreadyPlacedOrderException:
             return render(request, 'edx/error.html', {'error': _('You have already purchased these products')})
+        except SubscriptionNotBuyableException:
+            return render(request, 'edx/error.html', {'error': _('This subscription is inactive or you already have an active subscription')})
         url = add_utm_params_to_url(reverse('basket:summary'), self.request.GET.items())
         return HttpResponseRedirect(url, status=303)
 
