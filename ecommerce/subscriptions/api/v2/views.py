@@ -57,7 +57,7 @@ class SubscriptionViewSet(NonDestroyableModelViewSet):
         context['partner'] = get_partner_for_site(self.request)
         return context
 
-    @list_route(methods=['get'])
+    @list_route(methods=['post'])
     def toggle_course_individual_payments(self, request, **kwargs):
         """
         View to toggle course individual payments.

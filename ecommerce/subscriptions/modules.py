@@ -9,7 +9,11 @@ from django.conf import settings
 from ecommerce.extensions.analytics.utils import audit_log, parse_tracking_context
 from ecommerce.extensions.fulfillment.modules import BaseFulfillmentModule
 from ecommerce.extensions.fulfillment.status import LINE
-from ecommerce.subscriptions.utils import get_lms_user_subscription_api_url, get_subscription_expiration_date
+from ecommerce.subscriptions.utils import (
+    get_lms_user_subscription_api_url,
+    get_subscription_expiration_date,
+    subscription_is_buyable,
+)
 
 logger = logging.getLogger(__name__)
 

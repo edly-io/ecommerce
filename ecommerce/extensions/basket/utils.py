@@ -19,6 +19,8 @@ from ecommerce.extensions.order.exceptions import AlreadyPlacedOrderException
 from ecommerce.extensions.order.utils import UserAlreadyPlacedOrder
 from ecommerce.extensions.payment.utils import embargo_check
 from ecommerce.referrals.models import Referral
+from ecommerce.subscriptions.exceptions import SubscriptionNotBuyableException
+from ecommerce.subscriptions.utils import basket_add_subscription_attribute, subscription_is_buyable
 
 Applicator = get_class('offer.applicator', 'Applicator')
 CustomApplicator = get_class('offer.applicator', 'CustomApplicator')
@@ -69,10 +71,12 @@ def prepare_basket(request, products, voucher=None):
     """
     basket = Basket.get_basket(request.user, request.site)
     basket_add_enterprise_catalog_attribute(basket, request.GET)
+    basket_add_subscription_attribute(basket, request.GET)
     basket.flush()
     basket.save()
     basket_addition = get_class('basket.signals', 'basket_addition')
     already_purchased_products = []
+    unbuyable_subscriptions = []
     bundle = request.GET.get('bundle')
 
     _set_basket_bundle_status(bundle, basket)
@@ -91,6 +95,14 @@ def prepare_basket(request, products, voucher=None):
 
     is_multi_product_basket = True if len(products) > 1 else False
     for product in products:
+        if product.is_subscription_product and not subscription_is_buyable(product, request.user, request.site):
+            unbuyable_subscriptions.append(product)
+            logger.warning(
+                'User [%s] attempted to purchase an inactive subscription or already has a purchased valid subscription',
+                request.user.username,
+            )
+            continue
+
         if product.is_enrollment_code_product or \
                 not UserAlreadyPlacedOrder.user_already_placed_order(user=request.user,
                                                                      product=product, site=request.site):
@@ -106,8 +118,12 @@ def prepare_basket(request, products, voucher=None):
                 mode_for_product(product),
                 product.course_id
             )
+
     if already_purchased_products and basket.is_empty:
         raise AlreadyPlacedOrderException
+
+    if unbuyable_subscriptions and basket.is_empty:
+        raise SubscriptionNotBuyableException
 
     if len(products) == 1 and products[0].is_enrollment_code_product:
         basket.clear_vouchers()
