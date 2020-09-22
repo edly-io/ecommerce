@@ -14,7 +14,7 @@ def class_path(klass):
 
 def create_condition(condition_class, **kwargs):
     """
-    Create a custom condition instance
+    Create a custom condition instance for subscription.
     """
     return Condition.objects.get_or_create(
         proxy_class=class_path(condition_class), **kwargs

@@ -4,7 +4,7 @@ from oscar.core.loading import get_model
 
 from ecommerce.extensions.offer.mixins import (
     BenefitWithoutRangeMixin,
-    PercentageBenefitMixin
+    PercentageBenefitMixin,
 )
 
 Benefit = get_model('offer', 'Benefit')
@@ -12,7 +12,8 @@ Benefit = get_model('offer', 'Benefit')
 
 class SubscriptionBenefit(BenefitWithoutRangeMixin, PercentageBenefitMixin,
                           PercentageDiscountBenefit):
-    """ PercentageDiscountBenefit without an attached range.
+    """
+    "PercentageDiscountBenefit" without an attached range.
 
     The range is only used for the name and description. We would prefer not
     to deal with ranges since we rely on the condition to fully determine if

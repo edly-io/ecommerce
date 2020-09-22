@@ -98,7 +98,7 @@ def prepare_basket(request, products, voucher=None):
         if product.is_subscription_product and not subscription_is_buyable(product, request.user, request.site):
             unbuyable_subscriptions.append(product)
             logger.warning(
-                'User [%s] attempted to purchase an inactive subscription or already has a purchased valid subscription',
+                'User [%s] attempted to purchase an inactive subscription or the user already has a valid subscription.',
                 request.user.username,
             )
             continue

@@ -34,11 +34,11 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
     def is_satisfied(self, offer, basket):  # pylint: disable=unused-argument
         """
         Checks if a user has a valid purchased subscription.
-        Args:
-            basket : contains information on line items for order, associated siteconfiguration
-                        for retrieving program details, and associated user for retrieving enrollments
+
+        Arguments:
+            basket (Basket): Basket object with all the relevant information of owner and cart lines.
         Returns:
-            bool
+            bool: Boolean value of whether a subscription can be applied.
         """
         if not basket.owner:
             return False
@@ -68,6 +68,7 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
             )
         except BasketAttribute.DoesNotExist:
             return line_tuples
+
         for line in basket.all_lines():
             if not self.can_apply_condition(line, basket):
                 continue

@@ -297,12 +297,12 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     def _create_conditional_offer(self, subscription):
         """
-        Create a conditional offer agains a subscription.
+        Create a conditional offer against the provided subscription.
         """
         subscription_type = subscription.attr.subscription_type
-        offer_name = _(u'Subscription offer for the "{subscription_title}" subscription of type "{subscription_type}"'.format(
+       offer_name = _(u'Subscription offer of type "{subscription_type}" for "{subscription_title}"'.format(
+            subscription_type=subscription_type,
             subscription_title=subscription.title,
-            subscription_type=subscription_type
         ))
         subscription_offer = ConditionalOffer(
             name=offer_name,
