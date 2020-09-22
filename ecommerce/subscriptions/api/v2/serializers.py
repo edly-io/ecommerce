@@ -324,7 +324,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     def _update_conditional_offer(self, subscription):
         """
-        Expire the conditional offer if subscription is changed to Inactive.
+        Set the conditional offer expired if status of its related subscription is changed to inactive.
         """
         subscription_condition = subscription.subscription_condition.first()
         if subscription_condition:
