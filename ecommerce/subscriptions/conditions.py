@@ -3,15 +3,14 @@ from __future__ import unicode_literals
 import logging
 import operator
 
+from django.db import models
 from oscar.apps.offer import utils as oscar_utils
 from oscar.core.loading import get_model
-
-from django.db import models
 
 from ecommerce.core.constants import ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH
 from ecommerce.extensions.offer.decorators import check_condition_applicability
 from ecommerce.extensions.offer.mixins import ConditionWithoutRangeMixin, SingleItemConsumptionConditionMixin
-from ecommerce.subscriptions.utils import get_active_user_subscription, SUBSCRIPTION_ATTRIBUTE_TYPE
+from ecommerce.subscriptions.utils import SUBSCRIPTION_ATTRIBUTE_TYPE, get_active_user_subscription
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,15 @@
-from edx_django_utils.cache import TieredCache
 import logging
+from datetime import date
+
 import newrelic.agent
+from dateutil.relativedelta import relativedelta
+from django.conf import settings
+from edx_django_utils.cache import TieredCache
 from oscar.core.loading import get_model
 from requests.exceptions import ConnectionError, Timeout
 from slumber.exceptions import SlumberBaseException
 
-from django.conf import settings
-
+from ecommerce.core.url_utils import get_lms_url
 from ecommerce.core.utils import get_cache_key
 
 logger = logging.getLogger(__name__)
@@ -38,10 +41,12 @@ def get_lms_resource_for_user(user, site, endpoint, resource_name=None, query_di
     except (ConnectionError, SlumberBaseException, Timeout) as exc:
         logger.error('Failed to retrieve %s : %s', resource_name, str(exc))
         data_list = []
+
     return data_list
 
 def get_active_user_subscription(user, site):
     """
+    Get valid user subscription for a user from LMS.
     """
     site_configuration = site.siteconfiguration
     user_subscriptions_endpoint = site_configuration.subscriptions_api_client.user_subscriptions
@@ -57,6 +62,7 @@ def get_active_user_subscription(user, site):
 
 def subscription_is_buyable(subscription, user, site):
     """
+    Check if a user already owns a valid subscription.
     """
     if not subscription.attr.subscription_status:
         return False

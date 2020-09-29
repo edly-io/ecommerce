@@ -1,19 +1,19 @@
 from __future__ import unicode_literals
-from datetime import date, timedelta
 
 import logging
-from rest_framework import serializers
-from oscar.core.loading import get_model
-import waffle
+from datetime import date, timedelta
 
+import waffle
 from django.conf import settings
-from django.db import transaction, IntegrityError
+from django.db import IntegrityError, transaction
 from django.utils.translation import ugettext_lazy as _
+from oscar.core.loading import get_model
+from rest_framework import serializers
 
 from ecommerce.core.constants import (
     ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH,
     SUBSCRIPTION_CATEGORY_NAME,
-    SUBSCRIPTION_PRODUCT_CLASS_NAME,
+    SUBSCRIPTION_PRODUCT_CLASS_NAME
 )
 from ecommerce.extensions.catalogue.utils import generate_sku
 from ecommerce.subscriptions.benefits import SubscriptionBenefit
