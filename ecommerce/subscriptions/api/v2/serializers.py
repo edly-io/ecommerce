@@ -18,7 +18,7 @@ from ecommerce.core.constants import (
 from ecommerce.extensions.catalogue.utils import generate_sku
 from ecommerce.subscriptions.benefits import SubscriptionBenefit
 from ecommerce.subscriptions.conditions import SubscriptionCondition
-from ecommerce.subscriptions.custom import class_path, create_condition
+from ecommerce.subscriptions.custom import class_path, create_benefit ,create_condition
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +218,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
                 ProductCategory.objects.create(category=category, product=subscription)
                 self._save_subscription_attributes(subscription, subscription_attributes)
                 self._create_update_stockrecord(subscription, partner)
-                self._create_conditional_offer(subscription)
+                self._create_conditional_offer(subscription, partner)
                 return subscription
 
         except Exception as exception:
@@ -295,7 +295,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
                 )
             )
 
-    def _create_conditional_offer(self, subscription):
+    def _create_conditional_offer(self, subscription, partner):
         """
         Create a conditional offer against the provided subscription.
         """
@@ -308,15 +308,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             name=offer_name,
             status=ConditionalOffer.OPEN,
             offer_type=ConditionalOffer.SITE,
-            partner=subscription.stockrecords.first().partner
+            partner=partner,
+            start_date=date.today()
         )
-        subscription_benefit, ___ = Benefit.objects.get_or_create(
-            proxy_class=class_path(SubscriptionBenefit),
-            value=100
-        )
-        subscription_offer.benefit = subscription_benefit
+        subscription_offer.benefit, ___ = create_benefit(SubscriptionBenefit, value=100)
         subscription_offer.condition, ___ = create_condition(SubscriptionCondition, subscription=subscription)
-        subscription_offer.start_date = date.today()
         if subscription_type == 'full-access-time-period' or subscription_type == 'limited-access':
             subscription_offer.max_user_applications = subscription.attr.number_of_courses
 

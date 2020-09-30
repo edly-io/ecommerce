@@ -6,6 +6,7 @@
 from oscar.core.loading import get_model
 
 Condition = get_model('offer', 'Condition')
+Benefit = get_model('offer', 'Benefit')
 
 
 def class_path(klass):
@@ -18,4 +19,13 @@ def create_condition(condition_class, **kwargs):
     """
     return Condition.objects.get_or_create(
         proxy_class=class_path(condition_class), **kwargs
+    )
+
+
+def create_benefit(benefit_class, **kwargs):
+    """
+    Create a custom benefit instance for subscription.
+    """
+    return Benefit.objects.get_or_create(
+        proxy_class=class_path(benefit_class), **kwargs
     )

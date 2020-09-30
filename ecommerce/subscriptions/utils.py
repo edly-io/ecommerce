@@ -1,7 +1,6 @@
 import logging
 from datetime import date
 
-import newrelic.agent
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from edx_django_utils.cache import TieredCache
@@ -71,7 +70,6 @@ def subscription_is_buyable(subscription, user, site):
     return len(active_user_subscription) < 1
 
 
-@newrelic.agent.function_trace()
 def basket_add_subscription_attribute(basket, request_data):
     """
     Add subscription attribute on basket, if subscription value is provided
