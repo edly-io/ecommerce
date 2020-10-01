@@ -46,16 +46,16 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
             return False
 
         active_user_subscription = get_active_user_subscription(basket.owner, basket.site)
-        if len(active_user_subscription) > 0:
-            subscription_id_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ID_ATTRIBUTE_TYPE)
-            BasketAttribute.objects.get_or_create(
-                basket=basket,
-                attribute_type=subscription_id_attribute,
-                value_text=active_user_subscription.get(SUBSCRIPTION_ID_ATTRIBUTE_TYPE)
-            )
-            return True
+        if len(active_user_subscription) < 1:
+            return False
 
-        return False
+        subscription_id_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ID_ATTRIBUTE_TYPE)
+        BasketAttribute.objects.get_or_create(
+            basket=basket,
+            attribute_type=subscription_id_attribute,
+            value_text=active_user_subscription.get(SUBSCRIPTION_ID_ATTRIBUTE_TYPE)
+        )
+        return True
 
     def can_apply_condition(self, line, basket):
         """
