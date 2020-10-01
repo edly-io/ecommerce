@@ -231,7 +231,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         self._save_subscription_attributes(subscription, attribute_values)
         subscription.save()
         self._create_update_stockrecord(subscription, self.context['partner'])
-        self._create_conditional_offer(subscription, self.context['partner'])
         return subscription
 
     def _get_subscription_attributes(self, subscription_data):
