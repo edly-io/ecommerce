@@ -40,7 +40,7 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
     subscription_status = serializers.SerializerMethodField()
     partner_sku = serializers.SerializerMethodField()
     display_order = serializers.SerializerMethodField()
-    course_payments = serializers.SerializerMethodField()
+    is_course_payments_enabled = serializers.SerializerMethodField()
 
     def get_subscription_type(self, product):
         """
@@ -78,7 +78,7 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
         """
         return product.attr.subscription_display_order
 
-    def get_course_payments(self, product):
+    def get_is_course_payments_enabled(self, product):
         """
         Get if course payments are enabled for the requesting site.
         """

@@ -51,7 +51,7 @@ class SubscriptionFulfillmentModule(BaseFulfillmentModule):
         user subscription record in the LMS, which is the sole functionality of this module. Any Subscription product
         will be returned as a supported line.
 
-        Args:
+        Arguments:
             lines (List of Lines): Order Lines, associated with purchased products in an Order.
 
         Returns:
@@ -69,7 +69,7 @@ class SubscriptionFulfillmentModule(BaseFulfillmentModule):
 
         Args:
             order (Order): The Order associated with the lines to be fulfilled. The user associated with the order
-                is presumed to be the student to buying the subscription.
+            is presumed to be the student buying the subscription.
             lines (List of Lines): Order Lines, associated with purchased products in an Order. These should only
                 be "Subscription" products.
             email_opt_in (bool): Whether the user should be opted in to emails

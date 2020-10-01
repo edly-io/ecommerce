@@ -189,6 +189,7 @@ class ProductAttributeValueSerializer(serializers.ModelSerializer):
             value = obj.value.option
         else:
             value = obj.value
+
         return value
 
     class Meta(object):
