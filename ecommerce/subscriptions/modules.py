@@ -67,7 +67,7 @@ class SubscriptionFulfillmentModule(BaseFulfillmentModule):
         May result in an error if the User Subscription API cannot be reached, or if there is
         additional business logic errors when trying to create the user subscription record.
 
-        Args:
+        Arguments:
             order (Order): The Order associated with the lines to be fulfilled. The user associated with the order
             is presumed to be the student buying the subscription.
             lines (List of Lines): Order Lines, associated with purchased products in an Order. These should only
