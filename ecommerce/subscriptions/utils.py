@@ -99,9 +99,11 @@ def get_subscription_from_basket_attribute():
     """
     subscription_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ID_ATTRIBUTE_TYPE)
     try:
-        subscription_id = BasketAttribute.objects.get(
+        subscription_id_attribute = BasketAttribute.objects.get(
             attribute_type=subscription_attribute,
-        ).value_text
+        )
+        subscription_id = subscription_id_attribute.value_text
+        subscription_id_attribute.delete()
         return int(subscription_id)
     except BasketAttribute.DoesNotExist:
         return None
