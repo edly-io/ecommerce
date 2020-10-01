@@ -46,7 +46,7 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
             return False
 
         active_user_subscription = get_active_user_subscription(basket.owner, basket.site)
-        if len(active_user_subscription) < 1:
+        if not active_user_subscription:
             return False
 
         subscription_id_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ID_ATTRIBUTE_TYPE)
