@@ -81,7 +81,7 @@ def basket_add_subscription_attribute(basket, request_data):
         request_data (dict): HttpRequest data
 
     """
-    apply_subscription = True if request_data.get(SUBSCRIPTION_ATTRIBUTE_TYPE) == 'true' else False
+    apply_subscription = request_data.get(SUBSCRIPTION_ATTRIBUTE_TYPE) == 'true'
 
     if apply_subscription:
         subscription_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ATTRIBUTE_TYPE)

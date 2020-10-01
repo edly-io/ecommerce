@@ -32,7 +32,6 @@ def create_conditional_offer(**kwargs):
         **kwargs
     )
 
-
 def create_benefit(benefit_class, **kwargs):
     """
     Create a custom benefit instance for subscription.
