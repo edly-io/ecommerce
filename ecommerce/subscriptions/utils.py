@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 SUBSCRIPTION_RESOURCE_NAME = 'subscriptions'
 SUBSCRIPTION_ATTRIBUTE_TYPE = 'subscription'
+SUBSCRIPTION_ID_ATTRIBUTE_TYPE = 'subscription_id'
 
 BasketAttribute = get_model('basket', 'BasketAttribute')
 BasketAttributeType = get_model('basket', 'BasketAttributeType')
@@ -35,7 +36,7 @@ def get_lms_resource_for_user(user, site, endpoint, resource_name=None, query_di
 
     try:
         data_list = endpoint.get(**query_dict) or []
-        data_list = data_list.get('results')
+        data_list = data_list[0] if len(data_list) > 0 else []
         TieredCache.set_all_tiers(cache_key, data_list, settings.LMS_API_CACHE_TIMEOUT)
     except (ConnectionError, SlumberBaseException, Timeout) as exc:
         logger.error('Failed to retrieve %s : %s', resource_name, str(exc))
@@ -82,8 +83,8 @@ def basket_add_subscription_attribute(basket, request_data):
     """
     apply_subscription = True if request_data.get(SUBSCRIPTION_ATTRIBUTE_TYPE) == 'true' else False
 
-    subscription_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ATTRIBUTE_TYPE)
     if apply_subscription:
+        subscription_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ATTRIBUTE_TYPE)
         BasketAttribute.objects.get_or_create(
             basket=basket,
             attribute_type=subscription_attribute,
@@ -92,13 +93,15 @@ def basket_add_subscription_attribute(basket, request_data):
     else:
         BasketAttribute.objects.filter(basket=basket, attribute_type=subscription_attribute).delete()
 
-def get_subscription_from_order(order):
+def get_subscription_from_basket_attribute():
     """
-    Get subscription from a given order if exists.
+    Get subscription from the subscription_id basket attribute if exists.
     """
-    for discount in order.discounts.all():
-        subscription = discount.offer.condition.subscription
-        if subscription:
-            return subscription.id
-
-    return None
+    subscription_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ID_ATTRIBUTE_TYPE)
+    try:
+        subscription_id = BasketAttribute.objects.get(
+            attribute_type=subscription_attribute,
+        ).value_text
+        return int(subscription_id)
+    except BasketAttribute.DoesNotExist:
+        return None

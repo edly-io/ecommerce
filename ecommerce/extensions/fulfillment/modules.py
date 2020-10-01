@@ -31,7 +31,7 @@ from ecommerce.extensions.fulfillment.status import LINE
 from ecommerce.extensions.voucher.models import OrderLineVouchers
 from ecommerce.extensions.voucher.utils import create_vouchers
 from ecommerce.notifications.notifications import send_notification
-from ecommerce.subscriptions.utils import get_subscription_from_order
+from ecommerce.subscriptions.utils import get_subscription_from_basket_attribute
 
 Benefit = get_model('offer', 'Benefit')
 Option = get_model('catalogue', 'Option')
@@ -287,7 +287,7 @@ class EnrollmentFulfillmentModule(BaseFulfillmentModule):
                 logger.debug("Seat [%d] has no credit_provider attribute. Defaulted to None.", line.product.id)
                 provider = None
 
-            subscription = get_subscription_from_order(order)
+            subscription = get_subscription_from_basket_attribute()
             data = {
                 'user': order.user.username,
                 'is_active': True,

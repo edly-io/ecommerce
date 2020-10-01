@@ -18,7 +18,7 @@ from ecommerce.core.constants import (
 from ecommerce.extensions.catalogue.utils import generate_sku
 from ecommerce.subscriptions.benefits import SubscriptionBenefit
 from ecommerce.subscriptions.conditions import SubscriptionCondition
-from ecommerce.subscriptions.custom import class_path, create_benefit ,create_condition
+from ecommerce.subscriptions.custom import class_path, create_benefit, create_condition, create_conditional_offer
 
 logger = logging.getLogger(__name__)
 
@@ -234,7 +234,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         self._save_subscription_attributes(subscription, attribute_values)
         subscription.save()
         self._create_update_stockrecord(subscription, self.context['partner'])
-        self._update_conditional_offer(subscription)
+        self._create_conditional_offer(subscription, self.context['partner'])
         return subscription
 
     def _get_subscription_attributes(self, subscription_data):
@@ -299,37 +299,22 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         """
         Create a conditional offer against the provided subscription.
         """
-        subscription_type = subscription.attr.subscription_type
-        offer_name = _(u'Subscription offer of type "{subscription_type}" for "{subscription_title}"'.format(
-            subscription_type=subscription_type,
-            subscription_title=subscription.title,
-        ))
-        subscription_offer = ConditionalOffer(
-            name=offer_name,
-            status=ConditionalOffer.OPEN,
-            offer_type=ConditionalOffer.SITE,
+        offer_name = _(u'Subscription conditional offer for partner "{partner}"'.format(
             partner=partner,
-            start_date=date.today()
+        ))
+        subscription_condition, ___ = create_condition(SubscriptionCondition)
+        subscription_benefit, ___ = create_benefit(SubscriptionBenefit, value=100)
+        subscription_offer, ___ = create_conditional_offer(
+            name=offer_name,
+            partner=partner,
+            condition=subscription_condition,
+            benefit=subscription_benefit,
         )
-        subscription_offer.benefit, ___ = create_benefit(SubscriptionBenefit, value=100)
-        subscription_offer.condition, ___ = create_condition(SubscriptionCondition, subscription=subscription)
+        subscription_type = subscription.attr.subscription_type
         if subscription_type == 'full-access-time-period' or subscription_type == 'limited-access':
             subscription_offer.max_user_applications = subscription.attr.number_of_courses
 
         subscription_offer.save()
-
-    def _update_conditional_offer(self, subscription):
-        """
-        Set the conditional offer expired if status of its related subscription is changed to inactive.
-        """
-        subscription_condition = subscription.subscription_condition.first()
-        if subscription_condition:
-            if not subscription.attr.subscription_status:
-                subscription_condition.end_date = date.today() - timedelta(day=1)
-            else:
-                subscription_condition.end_date = None
-
-            subscription_condition.save()
 
     class Meta:
         model = Product

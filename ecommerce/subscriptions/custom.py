@@ -6,6 +6,7 @@
 from oscar.core.loading import get_model
 
 Condition = get_model('offer', 'Condition')
+ConditionalOffer = get_model('offer', 'ConditionalOffer')
 Benefit = get_model('offer', 'Benefit')
 
 
@@ -19,6 +20,16 @@ def create_condition(condition_class, **kwargs):
     """
     return Condition.objects.get_or_create(
         proxy_class=class_path(condition_class), **kwargs
+    )
+
+def create_conditional_offer(**kwargs):
+    """
+    Create a custom condition instance for subscription.
+    """
+    return ConditionalOffer.objects.get_or_create(
+        status=ConditionalOffer.OPEN,
+        offer_type=ConditionalOffer.SITE,
+        **kwargs
     )
 
 
