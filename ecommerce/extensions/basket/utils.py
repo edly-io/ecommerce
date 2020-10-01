@@ -20,7 +20,7 @@ from ecommerce.extensions.order.utils import UserAlreadyPlacedOrder
 from ecommerce.extensions.payment.utils import embargo_check
 from ecommerce.referrals.models import Referral
 from ecommerce.subscriptions.exceptions import SubscriptionNotBuyableException
-from ecommerce.subscriptions.utils import basket_add_subscription_attribute, subscription_is_buyable
+from ecommerce.subscriptions.utils import basket_add_subscription_attribute, is_subscription_buyable
 
 Applicator = get_class('offer.applicator', 'Applicator')
 CustomApplicator = get_class('offer.applicator', 'CustomApplicator')
@@ -95,7 +95,7 @@ def prepare_basket(request, products, voucher=None):
 
     is_multi_product_basket = True if len(products) > 1 else False
     for product in products:
-        if product.is_subscription_product and not subscription_is_buyable(product, request.user, request.site):
+        if product.is_subscription_product and not is_subscription_buyable(product, request.user, request.site):
             unbuyable_subscriptions.append(product)
             logger.warning(
                 'User [%s] attempted to purchase an inactive subscription or the user already has a valid subscription.',

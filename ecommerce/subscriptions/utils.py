@@ -60,7 +60,7 @@ def get_active_user_subscription(user, site):
 
     return user_subscriptions_data
 
-def subscription_is_buyable(subscription, user, site):
+def is_subscription_buyable(subscription, user, site):
     """
     Check if a user already owns a valid subscription.
     """

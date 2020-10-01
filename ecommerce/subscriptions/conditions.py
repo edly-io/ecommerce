@@ -36,6 +36,7 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
 
         Arguments:
             basket (Basket): Basket object with all the relevant information of owner and cart lines.
+
         Returns:
             bool: Boolean value of whether a subscription can be applied.
         """
@@ -87,6 +88,7 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
             price = oscar_utils.unit_price(offer, line)
             if not price:
                 continue
+
             line_tuples.append((price, line))
 
         return sorted(line_tuples, reverse=most_expensive_first, key=operator.itemgetter(0))
