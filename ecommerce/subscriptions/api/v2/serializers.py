@@ -22,10 +22,7 @@ from ecommerce.subscriptions.custom import class_path, create_benefit, create_co
 
 logger = logging.getLogger(__name__)
 
-Benefit = get_model('offer', 'Benefit')
 Category = get_model('catalogue', 'Category')
-Condition = get_model('offer', 'Condition')
-ConditionalOffer = get_model('offer', 'ConditionalOffer')
 Product = get_model('catalogue', 'Product')
 ProductClass = get_model('catalogue', 'ProductClass')
 ProductCategory = get_model('catalogue', 'ProductCategory')
