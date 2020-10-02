@@ -72,14 +72,14 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
         """
         Return line data for the lines that can be consumed by this condition.
         """
-        line_tuples = []
+        applicable_lines = []
         try:
             BasketAttribute.objects.get(
                 basket=basket,
                 attribute_type=BasketAttributeType.objects.get(name=SUBSCRIPTION_ATTRIBUTE_TYPE),
             )
         except BasketAttribute.DoesNotExist:
-            return line_tuples
+            return applicable_lines
 
         for line in basket.all_lines():
             if not self.can_apply_condition(line, basket):
@@ -89,6 +89,6 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
             if not price:
                 continue
 
-            line_tuples.append((price, line))
+            applicable_lines.append((price, line))
 
-        return sorted(line_tuples, reverse=most_expensive_first, key=operator.itemgetter(0))
+        return sorted(applicable_lines, reverse=most_expensive_first, key=operator.itemgetter(0))
