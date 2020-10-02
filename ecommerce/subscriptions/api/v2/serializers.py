@@ -93,7 +93,7 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'title', 'date_created', 'subscription_type', 'subscription_actual_price', 'subscription_price',
-            'subscription_status', 'display_order', 'partner_sku', 'course_payments'
+            'subscription_status', 'display_order', 'partner_sku', 'is_course_payments_enabled'
         ]
 
 
