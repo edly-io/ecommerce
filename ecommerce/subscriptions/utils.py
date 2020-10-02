@@ -17,6 +17,8 @@ SUBSCRIPTION_RESOURCE_NAME = 'subscriptions'
 SUBSCRIPTION_ATTRIBUTE_TYPE = 'subscription'
 SUBSCRIPTION_ID_ATTRIBUTE_TYPE = 'subscription_id'
 
+NO_EXPIRY_TYPES = ['lifetime-access', 'full-access-time-period']
+
 BasketAttribute = get_model('basket', 'BasketAttribute')
 BasketAttributeType = get_model('basket', 'BasketAttributeType')
 
@@ -70,7 +72,6 @@ def is_subscription_buyable(subscription, user, site):
     active_user_subscription = get_active_user_subscription(user, site)
     return len(active_user_subscription) < 1
 
-
 def basket_add_subscription_attribute(basket, request_data):
     """
     Add subscription attribute on basket, if subscription value is provided
@@ -107,3 +108,23 @@ def get_subscription_from_basket_attribute():
         return int(subscription_id)
     except BasketAttribute.DoesNotExist:
         return None
+
+def get_lms_user_subscription_api_url(subscription_id=None):
+    """
+    Get LMS url to post user subscription data.
+    """
+    return get_lms_url('/api/subscriptions/v1/{}/'.format(subscription_id))
+
+def get_subscription_expiration_date(subscription):
+    """
+    Calculate subscription expiry date for a given subscription.
+    """
+    if subscription.attr.subscription_type.option in NO_EXPIRY_TYPES:
+        return None
+
+    current_date = date.today()
+    subscription_duration_unit = subscription.attr.subscription_duration_unit.option
+    subscription_duration_value = subscription.attr.subscription_duration_value
+    duration_to_add = {subscription_duration_unit: subscription_duration_value}
+    expiry_date = current_date + relativedelta(**duration_to_add)
+    return expiry_date

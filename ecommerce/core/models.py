@@ -195,6 +195,12 @@ class SiteConfiguration(models.Model):
         default=False
     )
 
+    enable_course_payments = models.BooleanField(
+        verbose_name=_('Enable Course Payments'),
+        help_text=_('Enable the courses payments along with courses enrollment via subscription.'),
+        default=True
+    )
+
     edly_client_theme_branding_settings = JSONField(
         verbose_name=_('Edly client theme branding settings'),
         help_text=_('JSON string containing edly client theme branding settings.'),
