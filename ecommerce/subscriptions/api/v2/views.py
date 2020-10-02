@@ -6,13 +6,13 @@ import logging
 
 from oscar.core.loading import get_model
 from rest_framework import filters, status
+from rest_framework.decorators import list_route
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from ecommerce.core.constants import SUBSCRIPTION_PRODUCT_CLASS_NAME
 from ecommerce.extensions.api.filters import ProductFilter
 from ecommerce.extensions.api.v2.views import NonDestroyableModelViewSet
-from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
 from ecommerce.extensions.edly_ecommerce_app.permissions import IsAdminOrCourseCreator
 from ecommerce.extensions.partner.shortcuts import get_partner_for_site
 from ecommerce.subscriptions.api.v2.serializers import (
@@ -25,7 +25,7 @@ Product = get_model('catalogue', 'Product')
 logger = logging.getLogger(__name__)
 
 
-class SubscriptionViewSet(EdxOrderPlacementMixin, NonDestroyableModelViewSet):
+class SubscriptionViewSet(NonDestroyableModelViewSet):
     """
     Subscription viewset.
     """
@@ -56,3 +56,13 @@ class SubscriptionViewSet(EdxOrderPlacementMixin, NonDestroyableModelViewSet):
         context = super(SubscriptionViewSet, self).get_serializer_context()
         context['partner'] = get_partner_for_site(self.request)
         return context
+
+    @list_route(methods=['post'])
+    def toggle_course_payments(self, request, **kwargs):
+        """
+        View to toggle course payments.
+        """
+        site_configuration = request.site.siteconfiguration
+        site_configuration.enable_course_payments = not site_configuration.enable_course_payments
+        site_configuration.save()
+        return Response(status=status.HTTP_200_OK, data={'course_payments': site_configuration.enable_course_payments})
