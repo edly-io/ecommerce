@@ -1,20 +1,24 @@
 from __future__ import unicode_literals
 
 import logging
-from rest_framework import serializers
-from oscar.core.loading import get_model
-import waffle
+from datetime import date, timedelta
 
+import waffle
 from django.conf import settings
-from django.db import transaction, IntegrityError
+from django.db import IntegrityError, transaction
 from django.utils.translation import ugettext_lazy as _
+from oscar.core.loading import get_model
+from rest_framework import serializers
 
 from ecommerce.core.constants import (
     ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH,
     SUBSCRIPTION_CATEGORY_NAME,
-    SUBSCRIPTION_PRODUCT_CLASS_NAME,
+    SUBSCRIPTION_PRODUCT_CLASS_NAME
 )
 from ecommerce.extensions.catalogue.utils import generate_sku
+from ecommerce.subscriptions.benefits import SubscriptionBenefit
+from ecommerce.subscriptions.conditions import SubscriptionCondition
+from ecommerce.subscriptions.custom import class_path, create_benefit, create_condition, create_conditional_offer
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +223,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
                 ProductCategory.objects.create(category=category, product=subscription)
                 self._save_subscription_attributes(subscription, subscription_attributes)
                 self._create_update_stockrecord(subscription, partner)
+                self._create_conditional_offer(subscription, partner)
                 return subscription
 
         except Exception as exception:
@@ -293,6 +298,27 @@ class SubscriptionSerializer(serializers.ModelSerializer):
                     subscription_type=subscription.attr.subscription_type
                 )
             ))
+
+    def _create_conditional_offer(self, subscription, partner):
+        """
+        Create a conditional offer against the provided subscription.
+        """
+        offer_name = _(u'Subscription conditional offer for partner "{partner}"'.format(
+            partner=partner,
+        ))
+        subscription_condition, ___ = create_condition(SubscriptionCondition)
+        subscription_benefit, ___ = create_benefit(SubscriptionBenefit, value=100)
+        subscription_offer, ___ = create_conditional_offer(
+            name=offer_name,
+            partner=partner,
+            condition=subscription_condition,
+            benefit=subscription_benefit,
+        )
+        subscription_type = subscription.attr.subscription_type
+        if subscription_type == 'full-access-time-period' or subscription_type == 'limited-access':
+            subscription_offer.max_user_applications = subscription.attr.number_of_courses
+
+        subscription_offer.save()
 
     class Meta:
         model = Product

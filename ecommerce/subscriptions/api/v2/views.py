@@ -15,10 +15,7 @@ from ecommerce.extensions.api.filters import ProductFilter
 from ecommerce.extensions.api.v2.views import NonDestroyableModelViewSet
 from ecommerce.extensions.edly_ecommerce_app.permissions import IsAdminOrCourseCreator
 from ecommerce.extensions.partner.shortcuts import get_partner_for_site
-from ecommerce.subscriptions.api.v2.serializers import (
-    SubscriptionListSerializer,
-    SubscriptionSerializer,
-)
+from ecommerce.subscriptions.api.v2.serializers import SubscriptionListSerializer, SubscriptionSerializer
 
 Product = get_model('catalogue', 'Product')
 
