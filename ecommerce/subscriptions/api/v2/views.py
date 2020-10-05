@@ -63,3 +63,11 @@ class SubscriptionViewSet(NonDestroyableModelViewSet):
         site_configuration.enable_course_payments = not site_configuration.enable_course_payments
         site_configuration.save()
         return Response(status=status.HTTP_200_OK, data={'course_payments': site_configuration.enable_course_payments})
+
+    @list_route(methods=['get'])
+    def course_payments_status(self, request, **kwargs):
+        """
+        View to get course payments status.
+        """
+        site_configuration = request.site.siteconfiguration
+        return Response(status=status.HTTP_200_OK, data={'course_payments': site_configuration.enable_course_payments})
