@@ -1,6 +1,10 @@
 define([
+	'backbone',
+	'js-cookie',
     'underscore'
 ], function(
+    Backbone,
+    Cookies,
     _
 ) {
     'use strict';
@@ -23,5 +27,23 @@ define([
                 return gettext('Lifetime Access');
             return '';
         },
+
+        setCoursePaymentsButtonText: function() {
+			Backbone.ajax({
+				type: 'GET',
+				headers: {
+					'X-CSRFToken': Cookies.get('ecommerce_csrftoken'),
+				},
+				url:
+					window.location.origin +
+					'/api/v2/subscriptions/course_payments_status/',
+				success: function(data) {
+                    var coursePaymentsButton = $('[name=course-payments]');
+                    if (data.course_payments)
+                        coursePaymentsButton.text(gettext('Disable Course Payments'));
+                    else coursePaymentsButton.text(gettext('Enable Course Payments'));
+                },
+			});
+        }
     }
 })

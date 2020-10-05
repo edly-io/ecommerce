@@ -1,13 +1,9 @@
-import logging
-
 from django.views.generic import TemplateView
 
 from ecommerce.extensions.edly_ecommerce_app.api.v1.views import (
     StaffOrCourseCreatorOnlyMixin,
     SubscriptionEnabledMixin
 )
-
-logger = logging.getLogger(__name__)
 
 
 class SubscriptionAppView(StaffOrCourseCreatorOnlyMixin, SubscriptionEnabledMixin, TemplateView):
