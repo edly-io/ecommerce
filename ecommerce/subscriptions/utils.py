@@ -84,8 +84,8 @@ def basket_add_subscription_attribute(basket, request_data):
     """
     apply_subscription = request_data.get(SUBSCRIPTION_ATTRIBUTE_TYPE) == 'true'
 
+    subscription_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ATTRIBUTE_TYPE)
     if apply_subscription:
-        subscription_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ATTRIBUTE_TYPE)
         BasketAttribute.objects.get_or_create(
             basket=basket,
             attribute_type=subscription_attribute,
