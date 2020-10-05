@@ -140,7 +140,7 @@ class SubscriptionFulfillmentModule(BaseFulfillmentModule):
                 order.notes.create(message='Fulfillment of order failed due to a request time out.', note_type='Error')
                 line.set_status(LINE.FULFILLMENT_TIMEOUT_ERROR)
 
-        logger.info('Finished fulfilling 'Subscription' product types for order [%s]', order.number)
+        logger.info('Finished fulfilling "Subscription" product types for order [%s]', order.number)
         return order, lines
 
     def revoke_line(self, line):
