@@ -46,7 +46,7 @@ def get_lms_resource_for_user(user, site, endpoint, resource_name=None, query_di
 
     return data_list
 
-def get_active_user_subscription(user, site):
+def get_valid_user_subscription(user, site):
     """
     Get valid user subscription for a user from LMS.
     """
@@ -54,8 +54,9 @@ def get_active_user_subscription(user, site):
     user_subscriptions_endpoint = site_configuration.subscriptions_api_client.user_subscriptions
     query_dict = {
         'valid': 'true',
-        'user': user.id,
+        'user': user.username,
     }
+
     user_subscriptions_data = get_lms_resource_for_user(
         user, site, user_subscriptions_endpoint, resource_name=SUBSCRIPTION_RESOURCE_NAME, query_dict=query_dict
     )
@@ -69,8 +70,8 @@ def is_subscription_buyable(subscription, user, site):
     if not subscription.attr.subscription_status:
         return False
 
-    active_user_subscription = get_active_user_subscription(user, site)
-    return len(active_user_subscription) < 1
+    valid_user_subscription = get_valid_user_subscription(user, site)
+    return len(valid_user_subscription) < 1
 
 def basket_add_subscription_attribute(basket, request_data):
     """
@@ -94,7 +95,7 @@ def basket_add_subscription_attribute(basket, request_data):
     else:
         BasketAttribute.objects.filter(basket=basket, attribute_type=subscription_attribute).delete()
 
-def get_subscription_from_basket_attribute():
+def get_subscription_from_basket_attribute(basket):
     """
     Get subscription from the subscription_id basket attribute if exists.
     """
@@ -102,6 +103,7 @@ def get_subscription_from_basket_attribute():
     try:
         subscription_id_attribute = BasketAttribute.objects.get(
             attribute_type=subscription_attribute,
+            basket=basket
         )
         subscription_id = subscription_id_attribute.value_text
         subscription_id_attribute.delete()

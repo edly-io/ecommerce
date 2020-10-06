@@ -10,7 +10,7 @@ from oscar.core.loading import get_model
 from ecommerce.core.constants import ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH
 from ecommerce.extensions.offer.decorators import check_condition_applicability
 from ecommerce.extensions.offer.mixins import ConditionWithoutRangeMixin, SingleItemConsumptionConditionMixin
-from ecommerce.subscriptions.utils import SUBSCRIPTION_ATTRIBUTE_TYPE, get_active_user_subscription, SUBSCRIPTION_ID_ATTRIBUTE_TYPE
+from ecommerce.subscriptions.utils import SUBSCRIPTION_ATTRIBUTE_TYPE, get_valid_user_subscription, SUBSCRIPTION_ID_ATTRIBUTE_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -46,15 +46,15 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
         if basket.site.partner != offer.partner:
             return False
 
-        active_user_subscription = get_active_user_subscription(basket.owner, basket.site)
-        if not active_user_subscription:
+        valid_user_subscription = get_valid_user_subscription(basket.owner, basket.site)
+        if not valid_user_subscription:
             return False
 
         subscription_id_attribute, __ = BasketAttributeType.objects.get_or_create(name=SUBSCRIPTION_ID_ATTRIBUTE_TYPE)
         BasketAttribute.objects.get_or_create(
             basket=basket,
             attribute_type=subscription_id_attribute,
-            value_text=active_user_subscription.get(SUBSCRIPTION_ID_ATTRIBUTE_TYPE)
+            value_text=valid_user_subscription.get(SUBSCRIPTION_ID_ATTRIBUTE_TYPE)
         )
         return True
 

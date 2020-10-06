@@ -184,14 +184,19 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         Validate subscription attributes corresponding to selected subscription_type.
         """
         subscription_type = subscription.get('subscription_type')
+        subscription_price = subscription.get('subscription_price')
+        subscription_actual_price = subscription.get('subscription_actual_price')
         if not subscription_type:
             raise serializers.ValidationError(_(u'Subscription must have a subscription type.'))
 
         if not all(attribute in subscription for attribute in SUBSCRIPTION_TYPE_ATTRIBUTES[subscription_type]):
             raise serializers.ValidationError(_(u'Invalid attributes provided for the selected subscription type.'))
 
-        if subscription.get('subscription_price') is None:
+        if subscription_price is None:
             raise serializers.ValidationError(_(u'Products must have a price.'))
+
+        if subscription_price and subscription_actual_price and subscription_actual_price >= subscription_price:
+            raise serializers.ValidationError(_(u'Subscription actual price must be less than subscription price.'))
 
         return subscription
 
@@ -314,9 +319,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             condition=subscription_condition,
             benefit=subscription_benefit,
         )
-        subscription_type = subscription.attr.subscription_type
-        if subscription_type == 'full-access-time-period' or subscription_type == 'limited-access':
-            subscription_offer.max_user_applications = subscription.attr.number_of_courses
 
         subscription_offer.save()
 
