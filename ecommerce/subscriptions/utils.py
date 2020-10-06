@@ -113,7 +113,7 @@ def get_lms_user_subscription_api_url(subscription_id=None):
     """
     Get LMS url to post user subscription data.
     """
-    return get_lms_url('/api/subscriptions/v1/{}/'.format(subscription_id))
+    return get_lms_url('/api/subscriptions/v1/user_subscriptions/{}/'.format(subscription_id))
 
 def get_subscription_expiration_date(subscription):
     """
