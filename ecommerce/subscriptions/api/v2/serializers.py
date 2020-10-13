@@ -195,8 +195,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         if subscription_price is None:
             raise serializers.ValidationError(_(u'Products must have a price.'))
 
-        if subscription_price and subscription_actual_price and subscription_actual_price >= subscription_price:
-            raise serializers.ValidationError(_(u'Subscription actual price must be less than subscription price.'))
+        if subscription_price and subscription_actual_price and subscription_actual_price < subscription_price:
+            raise serializers.ValidationError(_(u'Subscription actual price must be greater than or equal to subscription price.'))
 
         return subscription
 
