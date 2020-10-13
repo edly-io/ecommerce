@@ -287,7 +287,7 @@ class EnrollmentFulfillmentModule(BaseFulfillmentModule):
                 logger.debug("Seat [%d] has no credit_provider attribute. Defaulted to None.", line.product.id)
                 provider = None
 
-            subscription = get_subscription_from_basket_attribute()
+            subscription = get_subscription_from_basket_attribute(order.basket)
             data = {
                 'user': order.user.username,
                 'is_active': True,
