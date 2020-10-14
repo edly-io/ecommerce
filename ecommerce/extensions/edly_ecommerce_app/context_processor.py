@@ -83,6 +83,11 @@ def edly_app_context(request):  # pylint: disable=unused-argument
         }
     )
 
+    edly_context.update(
+        {
+            'payment_support_email': site_configuration.payment_support_email,
+        }
+    )
     return edly_context
 
 
