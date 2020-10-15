@@ -184,8 +184,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         Validate subscription attributes corresponding to selected subscription_type.
         """
         subscription_type = subscription.get('subscription_type')
-        subscription_price = int(subscription.get('subscription_price'))
-        subscription_actual_price = int(subscription.get('subscription_actual_price'))
+        subscription_price = float(subscription.get('subscription_price'))
+        subscription_actual_price = float(subscription.get('subscription_actual_price'))
         if not subscription_type:
             raise serializers.ValidationError(_(u'Subscription must have a subscription type.'))
 
