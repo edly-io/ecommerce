@@ -6,15 +6,6 @@ from path import Path
 
 from ecommerce.settings.base import *
 
-from ecommerce.settings._debug_toolbar import *  # isort:skip
-
-DEBUG_TOOLBAR_CONFIG = {
-    'SHOW_TOOLBAR_CALLBACK': (lambda __: False),
-    'DISABLE_PANELS': (
-        'debug_toolbar.panels.template.TemplateDebugPanel',
-    ),
-}
-
 SITE_ID = 1
 PROTOCOL = 'http'
 ALLOWED_HOSTS = ['*']
