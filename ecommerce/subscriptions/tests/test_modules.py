@@ -32,7 +32,7 @@ JSON = 'application/json'
 @override_settings(EDX_API_KEY='foo')
 class SubscriptionFulfillmentModuleTests(FulfillmentTestMixin, SubscriptionProductMixin, TestCase):
     """
-    Unit tests for "SubscriptionModule".
+    Unit tests for "SubscriptionFulfillmentModule".
     """
 
     def setUp(self):
@@ -79,7 +79,7 @@ class SubscriptionFulfillmentModuleTests(FulfillmentTestMixin, SubscriptionProdu
     @httpretty.activate
     def test_subscription_fulfillment_module_fulfills_successfully(self):
         """
-        Verify that "SubscriptionFullfillmentModule" fulfills the subscription product line successfully
+        Verify that the subscription product line gets fulfilled successfully.
         """
         httpretty.register_uri(httpretty.PUT, get_lms_user_subscription_api_url(self.subscription.id), status=201, body='{}', content_type=JSON)
         with LogCapture(LOGGER_NAME) as logs:
@@ -178,11 +178,10 @@ class SubscriptionFulfillmentModuleTests(FulfillmentTestMixin, SubscriptionProdu
         # header 'x-edx-ga-client-id'.
         # This will raise the exception 'ConnectionError' because the LMS is
         # not available for ecommerce tests.
-        try:
+        with self.assertRaises(ConnectionError) as connection_error:
             # pylint: disable=protected-access
             SubscriptionFulfillmentModule()._post_to_user_subscription_api(data=self.user_subscription_api_payload, user=self.user)
-        except ConnectionError as exp:
-            # Check that the enrollment request object has the analytics header
-            # 'x-edx-ga-client-id' and 'x-forwarded-for'.
-            self.assertEqual(exp.request.headers.get('x-edx-ga-client-id'), self.user.tracking_context['ga_client_id'])
-            self.assertEqual(exp.request.headers.get('x-forwarded-for'), self.user.tracking_context['lms_ip'])
+        # Check that the enrollment request object has the analytics header
+        # 'x-edx-ga-client-id' and 'x-forwarded-for'.
+        self.assertEqual(connection_error.exception.request.headers.get('x-edx-ga-client-id'), self.user.tracking_context['ga_client_id'])
+        self.assertEqual(connection_error.exception.request.headers.get('x-forwarded-for'), self.user.tracking_context['lms_ip'])

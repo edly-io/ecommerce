@@ -160,6 +160,7 @@ class BasketAttributeFactory(DjangoModelFactory):
     attribute_type = SubFactory(BasketAttributeType)
     value_text = FuzzyText()
 
+
 def MockUserSubscriptionFactory():
     """
     Mock LMS response for user subscription.
