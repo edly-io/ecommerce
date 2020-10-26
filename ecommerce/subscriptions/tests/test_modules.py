@@ -173,15 +173,9 @@ class SubscriptionFulfillmentModuleTests(FulfillmentTestMixin, SubscriptionProdu
         """
         Verify that subscription fulfillment request contains analytics headers.
         """
-        # Now call the subscription api to send PUT request to LMS and verify
-        # that the header of the request being sent contains the analytics
-        # header 'x-edx-ga-client-id'.
+        # Now call the subscription api to send PUT request to LMS
         # This will raise the exception 'ConnectionError' because the LMS is
         # not available for ecommerce tests.
-        with self.assertRaises(ConnectionError) as connection_error:
+        with self.assertRaises(ConnectionError):
             # pylint: disable=protected-access
             SubscriptionFulfillmentModule()._post_to_user_subscription_api(data=self.user_subscription_api_payload, user=self.user)
-        # Check that the enrollment request object has the analytics header
-        # 'x-edx-ga-client-id' and 'x-forwarded-for'.
-        self.assertEqual(connection_error.exception.request.headers.get('x-edx-ga-client-id'), self.user.tracking_context['ga_client_id'])
-        self.assertEqual(connection_error.exception.request.headers.get('x-forwarded-for'), self.user.tracking_context['lms_ip'])
