@@ -159,17 +159,3 @@ class BasketAttributeFactory(DjangoModelFactory):
     basket = SubFactory(Basket)
     attribute_type = SubFactory(BasketAttributeType)
     value_text = FuzzyText()
-
-
-def MockUserSubscriptionFactory():
-    """
-    Mock LMS response for user subscription.
-    """
-    return {
-        'subscription_id': FuzzyInteger(1, 100).fuzz(),
-        'subscription_type': FuzzyChoice(('limited-access', 'full-access-courses', 'full-access-time-period', 'lifetime-access')).fuzz(),
-        'expiration_date': FuzzyDate(start_date=date.today()).fuzz().strftime('%Y-%m-%d'),
-        'course_enrollments': [],
-        'max_allowed_courses': FuzzyInteger(1, 10).fuzz(),
-        'user': FuzzyInteger(1, 10).fuzz()
-    }

@@ -14,6 +14,7 @@ from oscar.test.factories import (
 from oscar.core.loading import get_model
 
 from ecommerce.core.constants import SUBSCRIPTION_CATEGORY_NAME, SUBSCRIPTION_PRODUCT_CLASS_NAME
+from ecommerce.subscriptions.api.v2.tests.constants import SUBSCRIPTION_DURATION_UNIT_OPTIONS, SUBSCRIPTION_TYPES
 from ecommerce.subscriptions.api.v2.tests.factories import SubscriptionFactory
 
 Category = get_model('catalogue', 'Category')
@@ -70,16 +71,14 @@ class SubscriptionProductMixin(object):
         },
     ]
     SUBSCRIPTION_DURATION_UNIT_GROUP_NAME = 'Subscription Duration Units'
-    SUBSCRIPTION_DURATION_UNIT_OPTIONS = ['days', 'months', 'years']
     SUBSCRIPTION_TYPE_GROUP_NAME = 'Subscription Access Types'
-    SUBSCRIPTION_TYPE_OPTIONS = ['limited-access', 'full-access-courses', 'full-access-time-period', 'lifetime-access', ]
 
     def _create_subscription_type_attribute_option_group(self):
         """
         Private method to create subscription type attribute group.
         """
         subscription_type_option_group = AttributeOptionGroupFactory(name=self.SUBSCRIPTION_TYPE_GROUP_NAME)
-        for option in self.SUBSCRIPTION_TYPE_OPTIONS:
+        for option in SUBSCRIPTION_TYPES:
             AttributeOptionFactory(option=option, group=subscription_type_option_group)
 
         return subscription_type_option_group
@@ -89,7 +88,7 @@ class SubscriptionProductMixin(object):
         Private method to create subscription duration unit attribute group.
         """
         duration_unit_option_group = AttributeOptionGroupFactory(name=self.SUBSCRIPTION_DURATION_UNIT_GROUP_NAME)
-        for option in self.SUBSCRIPTION_DURATION_UNIT_OPTIONS:
+        for option in SUBSCRIPTION_DURATION_UNIT_OPTIONS:
             AttributeOptionFactory(option=option, group=duration_unit_option_group)
 
         return duration_unit_option_group
@@ -140,7 +139,7 @@ class SubscriptionProductMixin(object):
             Product: A dummy subscription product with all relevant product attributes set
         """
         Category.objects.all().delete()
-        if subscription_type not in self.SUBSCRIPTION_TYPE_OPTIONS:
+        if subscription_type not in SUBSCRIPTION_TYPES:
             subscription_type = None
 
         subscription_product_class = self._create_subscription_product_class()

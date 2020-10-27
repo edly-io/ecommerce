@@ -6,6 +6,7 @@ import pytest
 
 from django.urls import reverse
 
+from ecommerce.subscriptions.api.v2.tests.constants import LIMITED_ACCESS
 from ecommerce.subscriptions.api.v2.tests.mixins import SubscriptionProductMixin
 from ecommerce.tests.testcases import TestCase
 
@@ -60,7 +61,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         """
         subscription_data = {
             'title': 'Test subscription',
-            'subscription_type': 'limited-access',
+            'subscription_type': LIMITED_ACCESS,
             'subscription_actual_price': 100.00,
             'subscription_price': 50.00,
             'subscription_active_status': 'true',
@@ -84,7 +85,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         subscription = self.create_subscription(stockrecords__partner=self.site.partner)
         subscription_data = {
             'title': 'Test subscription',
-            'subscription_type': 'limited-access',
+            'subscription_type': LIMITED_ACCESS,
             'subscription_actual_price': 100.00,
             'subscription_price': 50.00,
             'subscription_active_status': 'inactive',

@@ -7,11 +7,11 @@ from oscar.test.factories import BasketFactory
 
 from ecommerce.extensions.catalogue.tests.mixins import DiscoveryTestMixin
 from ecommerce.subscriptions.api.v2.tests.factories import (
-    MockUserSubscriptionFactory,
     SubscriptionConditionFactory,
     SubscriptionOfferFactory
 )
 from ecommerce.subscriptions.api.v2.tests.mixins import SubscriptionProductMixin
+from ecommerce.subscriptions.api.v2.tests.utils import mock_user_subscription
 from ecommerce.tests.factories import ProductFactory
 from ecommerce.tests.testcases import TestCase
 
@@ -86,7 +86,7 @@ class SubscriptionConditionTests(DiscoveryTestMixin, SubscriptionProductMixin, T
         """
         Verify that subscription offer is applied if all the conditions are met.
         """
-        mocked_user_subscriptions_api_response.return_value = MockUserSubscriptionFactory()
+        mocked_user_subscriptions_api_response.return_value = mock_user_subscription()
         self.assertTrue(self.condition.is_satisfied(self.offer, self.basket))
 
     def test_get_applicable_lines_with_empty_basket(self, mocked_user_subscriptions_api_response):

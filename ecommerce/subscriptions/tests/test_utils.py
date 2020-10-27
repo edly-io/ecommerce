@@ -8,8 +8,15 @@ from oscar.test.factories import BasketFactory
 from testfixtures import LogCapture
 
 from ecommerce.core.models import SiteConfiguration
-from ecommerce.subscriptions.api.v2.tests.factories import BasketAttributeFactory, MockUserSubscriptionFactory
+from ecommerce.subscriptions.api.v2.tests.constants import (
+    FULL_ACCESS_COURSES,
+    FULL_ACCESS_TIME_PERIOD,
+    LIFETIME_ACCESS,
+    LIMITED_ACCESS,
+)
+from ecommerce.subscriptions.api.v2.tests.factories import BasketAttributeFactory
 from ecommerce.subscriptions.api.v2.tests.mixins import SubscriptionProductMixin
+from ecommerce.subscriptions.api.v2.tests.utils import mock_user_subscription
 from ecommerce.subscriptions.utils import *
 from ecommerce.tests.testcases import TestCase
 
@@ -65,7 +72,7 @@ class SubscriptionUtilsTests(SubscriptionProductMixin, TestCase):
         If there is a non-empty response for valid user subscriptions from LMS for a user, it means that
         the given user already owns a valid subscription and hence can not buy a new subscription.
         """
-        valid_user_subscription.return_value = [MockUserSubscriptionFactory()]
+        valid_user_subscription.return_value = [mock_user_subscription()]
         self.assertFalse(is_subscription_buyable(self.subscription, self.user, self.site))
 
     def test_basket_add_subscription_attribute(self):
@@ -100,16 +107,16 @@ class SubscriptionUtilsTests(SubscriptionProductMixin, TestCase):
         """
         Verify that get_subscription_expiry_date method calculates the expiration date correctly.
         """
-        limited_subscription = self.create_subscription(product_attributes__subscription_type='limited-access')
+        limited_subscription = self.create_subscription(product_attributes__subscription_type=LIMITED_ACCESS)
         limited_subscription_duration_to_add = self.get_duration_to_add(limited_subscription)
         limited_subscription_expiration_date = date.today() + relativedelta(**limited_subscription_duration_to_add)
 
-        full_access_courses_subscription = self.create_subscription(product_attributes__subscription_type='full-access-courses')
+        full_access_courses_subscription = self.create_subscription(product_attributes__subscription_type=FULL_ACCESS_COURSES)
         full_access_courses_subscription_duration_to_add = self.get_duration_to_add(full_access_courses_subscription)
         full_access_courses_subscription_expiration_date = date.today() + relativedelta(**full_access_courses_subscription_duration_to_add)
 
-        full_access_time_period_subscription = self.create_subscription(product_attributes__subscription_type='full-access-time-period')
-        lifetime_subscription = self.create_subscription(product_attributes__subscription_type='lifetime-access')
+        full_access_time_period_subscription = self.create_subscription(product_attributes__subscription_type=FULL_ACCESS_TIME_PERIOD)
+        lifetime_subscription = self.create_subscription(product_attributes__subscription_type=LIFETIME_ACCESS)
 
         self.assertEqual(get_subscription_expiration_date(limited_subscription), limited_subscription_expiration_date)
         self.assertEqual(get_subscription_expiration_date(full_access_courses_subscription), full_access_courses_subscription_expiration_date)
@@ -126,7 +133,7 @@ class SubscriptionUtilsTests(SubscriptionProductMixin, TestCase):
         valid_user_subscription = get_valid_user_subscription(self.user, self.site)
         self.assertEqual(valid_user_subscription, [])
 
-        lms_response = MockUserSubscriptionFactory()
+        lms_response = mock_user_subscription()
         lms_resource_for_user.return_value = lms_response
         valid_user_subscription = get_valid_user_subscription(self.user, self.site)
         self.assertEqual(valid_user_subscription, lms_response)
@@ -221,7 +228,7 @@ class SubscriptionUtilsTests(SubscriptionProductMixin, TestCase):
         """
         Verify that get_lms_resource_for_user returns results correctly if no exceptions are raised.
         """
-        lms_user_subscription_response = MockUserSubscriptionFactory()
+        lms_user_subscription_response = mock_user_subscription()
         endpoint = self.site_configuration.subscriptions_api_client.user_subscriptions
         httpretty.register_uri(httpretty.GET, endpoint.url(), body='[{}]'.format(json.dumps(lms_user_subscription_response)), content_type="application/json")
         query_dict = dict(valid=True, user=self.user.username)

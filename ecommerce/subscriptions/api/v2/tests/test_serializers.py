@@ -7,6 +7,13 @@ from ecommerce.subscriptions.api.v2.serializers import (
     SubscriptionListSerializer,
     SubscriptionSerializer,
 )
+from ecommerce.subscriptions.api.v2.tests.constants import (
+    FULL_ACCESS_COURSES,
+    FULL_ACCESS_TIME_PERIOD,
+    LIFETIME_ACCESS,
+    LIMITED_ACCESS,
+    SUBSCRIPTION_TYPES,
+)
 from ecommerce.subscriptions.api.v2.tests.mixins import SubscriptionProductMixin
 from ecommerce.tests.testcases import TestCase
 
@@ -45,10 +52,10 @@ class SubscriptionSerializerTests(SubscriptionProductMixin, TestCase):
     Unit tests for "SubscriptionSerializer".
     """
     @ddt.data(
-        'limited-access',
-        'full-access-courses',
-        'full-access-time-period',
-        'lifetime-access'
+        LIMITED_ACCESS,
+        FULL_ACCESS_COURSES,
+        FULL_ACCESS_TIME_PERIOD,
+        LIFETIME_ACCESS
     )
     def test_subscription_serializer(self, subscription_type):
         """
@@ -60,22 +67,22 @@ class SubscriptionSerializerTests(SubscriptionProductMixin, TestCase):
         }
         subscription = self.create_subscription(subscription_type=subscription_type)
         conditional_attribute_values = {
-            'limited-access': lambda subscription: {
+            LIMITED_ACCESS: lambda subscription: {
                 'number_of_courses': subscription.attr.number_of_courses,
                 'subscription_duration_unit': subscription.attr.subscription_duration_unit.option,
                 'subscription_duration_value': subscription.attr.subscription_duration_value
             },
-            'full-access-courses': lambda subscription: {
+            FULL_ACCESS_COURSES: lambda subscription: {
                 'number_of_courses': None,
                 'subscription_duration_unit': subscription.attr.subscription_duration_unit.option,
                 'subscription_duration_value': subscription.attr.subscription_duration_value
             },
-            'full-access-time-period': lambda subscription: {
+            FULL_ACCESS_TIME_PERIOD: lambda subscription: {
                 'number_of_courses': subscription.attr.number_of_courses,
                 'subscription_duration_unit': None,
                 'subscription_duration_value': None
             },
-            'lifetime-access': lambda subscription: {
+            LIFETIME_ACCESS: lambda subscription: {
                 'number_of_courses': None,
                 'subscription_duration_unit': None,
                 'subscription_duration_value': None
