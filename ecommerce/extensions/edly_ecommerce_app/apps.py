@@ -3,4 +3,4 @@ from django.apps import AppConfig
 
 
 class EdlyEcommerceAppConfig(AppConfig):
-    name = 'edly_ecommerce_app'
+    name = 'ecommerce.extensions.edly_ecommerce_app'
