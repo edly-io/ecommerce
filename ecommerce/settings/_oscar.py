@@ -18,6 +18,7 @@ OSCAR_APPS = [
     'ecommerce.extensions.api',
     'ecommerce.extensions.fulfillment',
     'ecommerce.extensions.refund',
+    'ecommerce.extensions.edly_ecommerce_app',
 ] + get_core_apps([
     'ecommerce.extensions.analytics',
     'ecommerce.extensions.basket',
@@ -33,7 +34,6 @@ OSCAR_APPS = [
     'ecommerce.extensions.partner',
     'ecommerce.extensions.payment',
     'ecommerce.extensions.voucher',
-    'ecommerce.extensions.edly_ecommerce_app',
 ])
 # END APP CONFIGURATION
 

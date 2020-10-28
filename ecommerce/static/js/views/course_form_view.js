@@ -158,22 +158,28 @@ define([
                 var activeCourseTypes,
                     courseType = this.editing ? this.lockedCourseType : this.model.get('type');
 
-                switch (courseType) {
-                case 'audit':
-                    activeCourseTypes = ['audit', 'verified', 'credit'];
-                    break;
-                case 'verified':
-                    activeCourseTypes = ['verified', 'credit'];
-                    break;
-                case 'professional':
-                    activeCourseTypes = ['professional'];
-                    break;
-                case 'credit':
-                    activeCourseTypes = ['credit'];
-                    break;
-                default:
-                    activeCourseTypes = ['audit', 'verified', 'professional', 'credit'];
-                    break;
+                var disablePaidCourseModes = $('#disable_paid_course_modes').attr('value');
+                if (disablePaidCourseModes === 'True') {
+                    activeCourseTypes = ['audit'];
+                }
+                else {
+                    switch (courseType) {
+                        case 'audit':
+                            activeCourseTypes = ['audit', 'verified', 'credit'];
+                            break;
+                        case 'verified':
+                            activeCourseTypes = ['verified', 'credit'];
+                            break;
+                        case 'professional':
+                            activeCourseTypes = ['professional'];
+                            break;
+                        case 'credit':
+                            activeCourseTypes = ['credit'];
+                            break;
+                        default:
+                            activeCourseTypes = ['audit', 'verified', 'professional', 'credit'];
+                            break;
+                    }
                 }
 
                 return activeCourseTypes;
@@ -249,6 +255,12 @@ define([
                 var $honorModeContainer = this.$el.find('.honor-mode');
 
                 $honorModeContainer.toggleClass('hidden', !this.model.includeHonorMode());
+
+                var disablePaidCourseModes = $('#disable_paid_course_modes').attr('value');
+                if (disablePaidCourseModes === 'True') {
+                    $("input[name=honor_mode][value='true']").trigger('click');
+                    $("input[name=honor_mode][value='false']").prop("disabled", true);
+                }
 
                 return this;
             },
