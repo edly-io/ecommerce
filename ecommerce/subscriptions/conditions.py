@@ -43,9 +43,6 @@ class SubscriptionCondition(ConditionWithoutRangeMixin, SingleItemConsumptionCon
         if not basket.owner:
             return False
 
-        if basket.site.partner != offer.partner:
-            return False
-
         valid_user_subscription = get_valid_user_subscription(basket.owner, basket.site)
         if not valid_user_subscription:
             return False

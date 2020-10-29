@@ -38,6 +38,7 @@ class SiteConfigurationFactory(factory.DjangoModelFactory):
     enable_sdn_check = False
     enable_embargo_check = False
     enable_partial_program = False
+    enable_course_payments = True
     discovery_api_url = 'http://{}.fake/'.format(Faker().domain_name())
 
     @factory.lazy_attribute
