@@ -33,7 +33,7 @@ Product = get_model('catalogue', 'Product')
 
 SUBSCRIPTION_ATTRIBUTES_VALUES = lambda subscription: {
     'limited-access': {
-        'number_of_courses': FuzzyInteger(1, 10).fuzz(),
+        'subscription_number_of_courses': FuzzyInteger(1, 10).fuzz(),
         'subscription_duration_value': FuzzyInteger(1, 10).fuzz(),
         'subscription_duration_unit': choice(subscription.attr.get_attribute_by_code('subscription_duration_unit').option_group.options.all()),
         'subscription_actual_price': FuzzyFloat(100.0, 500.0).fuzz(),
@@ -50,7 +50,7 @@ SUBSCRIPTION_ATTRIBUTES_VALUES = lambda subscription: {
         'subscription_status': FuzzyChoice((True, False)).fuzz()
     },
     'full-access-time-period': {
-        'number_of_courses': FuzzyInteger(1, 10).fuzz(),
+        'subscription_number_of_courses': FuzzyInteger(1, 10).fuzz(),
         'subscription_actual_price': FuzzyFloat(100.0, 500.0).fuzz(),
         'subscription_price': FuzzyFloat(10.0, 99.0).fuzz(),
         'subscription_display_order': FuzzyInteger(1, 5).fuzz(),

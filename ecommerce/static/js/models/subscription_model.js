@@ -52,7 +52,7 @@ define([
                 subscription_type: SUBSCRIPTION_TYPES.limited_access,
                 subscription_duration_value: 0,
                 subscription_duration_unit: SUBSCRIPTION_DURATION_UNITS.days,
-                number_of_courses: 0,
+                subscription_number_of_courses: 0,
                 subscription_actual_price: 0,
                 subscription_price: 0,
                 subscription_display_order: 1,
@@ -79,7 +79,7 @@ define([
                         return subscription_type === SUBSCRIPTION_TYPES.limited_access || subscription_type === SUBSCRIPTION_TYPES.full_access_courses;
                     }
                 },
-                number_of_courses: {
+                subscription_number_of_courses: {
                     pattern: 'number',
                     required: function() {
                         var subscription_type = this.get('subscription_type');

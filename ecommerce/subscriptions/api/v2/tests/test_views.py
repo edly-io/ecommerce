@@ -65,7 +65,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
             'subscription_actual_price': 100.00,
             'subscription_price': 50.00,
             'subscription_active_status': 'true',
-            'number_of_courses': 4,
+            'subscription_number_of_courses': 4,
             'subscription_duration_value': 4,
             'subscription_duration_unit': 'months',
             'subscription_display_order': 1
@@ -89,7 +89,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
             'subscription_actual_price': 100.00,
             'subscription_price': 50.00,
             'subscription_active_status': 'inactive',
-            'number_of_courses': 4,
+            'subscription_number_of_courses': 4,
             'subscription_duration_value': 4,
             'subscription_duration_unit': 'months',
             'subscription_display_order': 1

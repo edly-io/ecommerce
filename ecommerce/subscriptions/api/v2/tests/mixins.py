@@ -31,7 +31,7 @@ class SubscriptionProductMixin(object):
     SUBSRIPTION_ATTRIBUTES = [
         {
             'name': 'Number of Courses',
-            'code': 'number_of_courses',
+            'code': 'subscription_number_of_courses',
             'type': ProductAttribute.INTEGER,
         },
         {

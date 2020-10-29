@@ -77,8 +77,8 @@ define([
                 'input[name=actual_price]': {
                     observe: 'subscription_actual_price'
                 },
-                'input[name=number_of_courses]': {
-                    observe: 'number_of_courses'
+                'input[name=subscription_number_of_courses]': {
+                    observe: 'subscription_number_of_courses'
                 },
                 'input[name=price]': {
                     observe: 'subscription_price'
@@ -140,7 +140,7 @@ define([
             toggleSubscriptionTypeFields: function() {
                 var subscriptionType = this.$('[name=subscription_type]:checked').val(),
                     limitedAccessFields = [
-                        '[name=number_of_courses]',
+                        '[name=subscription_number_of_courses]',
                     ],
                     fullAccessFields = [
                         '[name=duration_value]',

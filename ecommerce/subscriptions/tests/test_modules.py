@@ -53,13 +53,15 @@ class SubscriptionFulfillmentModuleTests(FulfillmentTestMixin, SubscriptionProdu
 
         subscription_type = self.subscription.attr.subscription_type.option
         subscription_expiration = get_subscription_expiration_date(self.subscription)
-        number_of_courses = self.subscription.attribute_values.filter(attribute__code='number_of_courses').first()
+        subscription_number_of_courses = self.subscription.attribute_values.filter(
+            attribute__code='subscription_number_of_courses'
+        ).first()
         self.user_subscription_api_payload = {
             'user': self.order.user.username,
             'subscription_id': self.subscription.id,
             'expiration_date': str(subscription_expiration) if subscription_expiration else subscription_expiration,
             'subscription_type': subscription_type,
-            'max_allowed_courses': number_of_courses.value if number_of_courses else None,
+            'max_allowed_courses': subscription_number_of_courses.value if subscription_number_of_courses else None,
         }
 
     def test_get_supported_lines(self):

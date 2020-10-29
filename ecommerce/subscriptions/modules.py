@@ -94,13 +94,16 @@ class SubscriptionFulfillmentModule(BaseFulfillmentModule):
             subscription = line.product
             subscription_type = subscription.attr.subscription_type.option
             subscription_expiration = get_subscription_expiration_date(subscription)
-            number_of_courses = subscription.attribute_values.filter(attribute__code='number_of_courses').first()
+            subscription_expiration = str(subscription_expiration) if subscription_expiration else None
+            subscription_number_of_courses = subscription.attribute_values.filter(
+                attribute__code='subscription_number_of_courses'
+            ).first()
             data = {
                 'user': order.user.username,
                 'subscription_id': subscription.id,
-                'expiration_date': str(subscription_expiration) if subscription_expiration else subscription_expiration,
+                'expiration_date': subscription_expiration,
                 'subscription_type': subscription_type,
-                'max_allowed_courses': number_of_courses.value if number_of_courses else None,
+                'max_allowed_courses': subscription_number_of_courses.value if subscription_number_of_courses else None
             }
             try:
                 response = self._post_to_user_subscription_api(data, user=order.user)
