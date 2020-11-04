@@ -4,7 +4,6 @@ import base64
 import datetime
 import json
 import logging
-import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
@@ -34,7 +33,6 @@ from CyberSource import (
 )
 from CyberSource.rest import ApiException
 from django.conf import settings
-from django.urls import reverse
 from jwt.algorithms import RSAAlgorithm
 from oscar.apps.payment.exceptions import GatewayError, TransactionDeclined, UserCancelled
 from oscar.core.loading import get_class, get_model
@@ -43,9 +41,7 @@ from zeep import Client
 from zeep.helpers import serialize_object
 from zeep.wsse import UsernameToken
 
-from ecommerce.core.constants import ISO_8601_FORMAT
 from ecommerce.core.url_utils import get_ecommerce_url
-from ecommerce.extensions.checkout.utils import get_receipt_page_url
 from ecommerce.extensions.payment.constants import APPLE_PAY_CYBERSOURCE_CARD_TYPE_MAP, CYBERSOURCE_CARD_TYPE_MAP
 from ecommerce.extensions.payment.exceptions import (
     AuthorizationError,
@@ -54,7 +50,6 @@ from ecommerce.extensions.payment.exceptions import (
     InvalidCybersourceDecision,
     InvalidSignatureError,
     PartialAuthorizationError,
-    PCIViolation,
     ProcessorMisconfiguredError,
     RedundantPaymentNotificationError
 )
@@ -251,7 +246,86 @@ class CybersourceREST(ApplePayMixin, BaseClientSidePaymentProcessor):
         Returns:
             dict: CyberSource-specific parameters required to complete a transaction, including a signature.
         """
-        return {'payment_page_url': self.client_side_payment_url}
+        sop_config_values = (self.sop_access_key, self.sop_payment_page_url, self.sop_profile_id, self.sop_secret_key,)
+        if use_client_side_checkout and not all(sop_config_values):
+            raise ProcessorMisconfiguredError(
+                'CyberSource Silent Order POST cannot be used unless a profile ID, access key, '
+                'secret key, and payment page URL are ALL configured in settings.'
+            )
+
+        parameters = {}
+
+        # Sign all fields
+        parameters['signed_field_names'] = ','.join(sorted(parameters.keys()))
+        parameters['signature'] = self._generate_signature(parameters, use_client_side_checkout)
+
+        payment_page_url = self.sop_payment_page_url if use_client_side_checkout else self.payment_page_url
+        parameters['payment_page_url'] = payment_page_url
+
+        return parameters
+
+    def normalize_processor_response(self, response: dict) -> UnhandledCybersourceResponse:
+        # Raise an exception for payments that were not accepted. Consuming code should be responsible for handling
+        # and logging the exception.
+        try:
+            decision = Decision(response['decision'].upper())
+        except ValueError:
+            decision = response['decision']
+
+        _response = UnhandledCybersourceResponse(
+            decision=decision,
+            duplicate_payment=(
+                decision == Decision.error and int(response['reason_code']) == 104
+            ),
+            partial_authorization=(
+                'auth_amount' in response and
+                response['auth_amount'] and
+                response['auth_amount'] != response['req_amount']
+            ),
+            currency=response['req_currency'],
+            total=Decimal(response['req_amount']),
+            card_number=response['req_card_number'],
+            card_type=CYBERSOURCE_CARD_TYPE_MAP.get(response['req_card_type']),
+            transaction_id=response.get('transaction_id', ''),   # Error Notifications do not include a transaction id.
+            order_id=response['req_reference_number'],
+            raw_json=self.serialize_order_completion(response),
+        )
+        return _response
+
+    def serialize_order_completion(self, order_completion_message):
+        return serialize_object(order_completion_message)
+
+    def extract_reason_code(self, order_completion_message):
+        return order_completion_message.get('reason_code')
+
+    def extract_payment_response_message(self, order_completion_message):
+        return order_completion_message.get('message')
+
+    def get_billing_address(self, order_completion_message):
+
+        field = 'req_bill_to_address_line1'
+        # Address line 1 is optional if flag is enabled
+        line1 = (
+            order_completion_message.get(field, '')
+            if waffle.switch_is_active('optional_location_fields')
+            else order_completion_message[field]
+        )
+        return BillingAddress(
+            first_name=order_completion_message['req_bill_to_forename'],
+            last_name=order_completion_message['req_bill_to_surname'],
+            line1=line1,
+
+            # Address line 2 is optional
+            line2=order_completion_message.get('req_bill_to_address_line2', ''),
+
+            # Oscar uses line4 for city
+            line4=order_completion_message['req_bill_to_address_city'],
+            # Postal code is optional
+            postcode=order_completion_message.get('req_bill_to_address_postal_code', ''),
+            # State is optional
+            state=order_completion_message.get('req_bill_to_address_state', ''),
+            country=Country.objects.get(
+                iso_3166_1_a2=order_completion_message['req_bill_to_address_country']))
 
     def handle_processor_response(self, response: UnhandledCybersourceResponse, basket=None):
         """
