@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Unit tests of Cybersource payment processor implementation."""
 
+
 import copy
 import json
 from decimal import Decimal
@@ -380,16 +381,6 @@ class CybersourceTests(CybersourceMixin, PaymentProcessorTestCaseMixin, TestCase
                           amount, currency)
         self.assert_processor_response_recorded(self.processor.NAME, transaction_id, response, basket)
         self.assertEqual(source.amount_refunded, 0)
-
-    def test_client_side_payment_url(self):
-        """ Verify the property returns the Silent Order POST URL. """
-        processor_config = settings.PAYMENT_PROCESSOR_CONFIG[self.partner.name.lower()][self.processor.NAME.lower()]
-        expected = processor_config['sop_payment_page_url']
-        self.assertEqual(self.processor.client_side_payment_url, expected)
-
-    def test_get_template_name(self):
-        """ Verify the method returns the path to the client-side template. """
-        self.assertEqual(self.processor.get_template_name(), 'payment/cybersource.html')
 
     @responses.activate
     def test_request_apple_pay_authorization(self):
