@@ -32,8 +32,11 @@ class SubscriptionListSerializerTests(SubscriptionProductMixin, TestCase):
             'partner': self.partner
         }
         subscription = self.create_subscription()
+        date_created = str(subscription.date_created).replace(' ', 'T').replace('+00:00', 'Z')
         expected_data = {
+            'id': subscription.id,
             'title': subscription.title,
+            'date_created': date_created,
             'subscription_type': subscription.attr.subscription_type.option,
             'subscription_actual_price': subscription.attr.subscription_actual_price,
             'subscription_price': subscription.attr.subscription_price,
@@ -88,8 +91,14 @@ class SubscriptionSerializerTests(SubscriptionProductMixin, TestCase):
                 'subscription_duration_value': None
             },
         }
+        date_created = str(subscription.date_created).replace(' ', 'T').replace('+00:00', 'Z')
+        date_updated = str(subscription.date_updated).replace(' ', 'T').replace('+00:00', 'Z')
         expected_data = {
+            'id': subscription.id,
             'title': subscription.title,
+            'description': subscription.description,
+            'date_created': date_created,
+            'date_updated': date_updated,
             'subscription_type': subscription_type,
             'subscription_actual_price': subscription.attr.subscription_actual_price,
             'subscription_price': subscription.attr.subscription_price,

@@ -37,7 +37,7 @@ define([
                     subscription_actual_price: subscription.get('subscription_actual_price') + ' USD',
                     subscription_price: subscription.get('subscription_price') + ' USD',
                     subscription_status: subscription.get('subscription_status') ? 'Active': 'Inactive',
-                    date_created: moment(subscription.get('date_created')).format('MMMM DD, YYYY, h:mm A'),
+                    date_created: moment.utc(subscription.get('date_created')).format('MMMM DD, YYYY, h:mm A'),
                     course_payments: subscription.get('course_payments', true)
                 };
             },

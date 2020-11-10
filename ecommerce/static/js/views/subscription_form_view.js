@@ -9,27 +9,21 @@ define([
     'ecommerce',
     'underscore',
     'underscore.string',
-    'utils/utils',
     'text!templates/_alert_div.html',
     'text!templates/subscription_form.html',
-    'models/subscription_model',
-    'collections/subscription_collection',
     'views/form_view',
 ],
     function($,
-              Backbone,
-              BackboneSuper,
-              BackboneValidation,
-              BackboneStickit,
-              ecommerce,
-              _,
-              _s,
-              Utils,
-              AlertDivTemplate,
-              SubscriptionFormTemplate,
-              Subscription,
-              Subscriptions,
-              FormView) {
+            Backbone,
+            BackboneSuper,
+            BackboneValidation,
+            BackboneStickit,
+            ecommerce,
+            _,
+            _s,
+            AlertDivTemplate,
+            SubscriptionFormTemplate,
+            FormView) {
         'use strict';
 
         return FormView.extend({
@@ -56,9 +50,12 @@ define([
                 },
             ],
 
-            baseCouponBindings: {
+            baseSubscriptionBindings: {
                 'input[name=title]': {
                     observe: 'title'
+                },
+                'textarea[name=description]': {
+                    observe: 'description'
                 },
                 'input[name=subscription_type]': {
                     observe: 'subscription_type'
@@ -92,7 +89,7 @@ define([
             },
 
             bindings: function() {
-                return _.extend({}, this.baseCouponBindings);
+                return _.extend({}, this.baseSubscriptionBindings);
             },
 
             events: {
@@ -103,6 +100,7 @@ define([
             getEditableAttributes: function() {
                 return [
                     'title',
+                    'description',
                     'subscription_active_status',
                 ];
             },

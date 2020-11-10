@@ -49,6 +49,7 @@ define([
             defaults: {
                 id: null,
                 title: null,
+                description: '',
                 subscription_type: SUBSCRIPTION_TYPES.limited_access,
                 subscription_duration_value: 0,
                 subscription_duration_unit: SUBSCRIPTION_DURATION_UNITS.days,
