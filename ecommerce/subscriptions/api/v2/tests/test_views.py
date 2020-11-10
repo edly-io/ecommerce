@@ -22,7 +22,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         """
         self.create_subscription(stockrecords__partner=self.site.partner)
         expected_keys = [
-            'title', 'subscription_type', 'subscription_actual_price', 'subscription_price', 'subscription_status',
+            'id', 'title', 'subscription_type', 'subscription_actual_price', 'subscription_price', 'subscription_status',
             'display_order', 'partner_sku', 'is_course_payments_enabled'
         ]
         request_url = reverse('api:v2:subscriptions-list')
