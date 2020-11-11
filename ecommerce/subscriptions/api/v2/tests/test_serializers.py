@@ -33,6 +33,7 @@ class SubscriptionListSerializerTests(SubscriptionProductMixin, TestCase):
         }
         subscription = self.create_subscription()
         expected_data = {
+            'id': subscription.id,
             'title': subscription.title,
             'subscription_type': subscription.attr.subscription_type.option,
             'subscription_actual_price': subscription.attr.subscription_actual_price,
@@ -89,6 +90,7 @@ class SubscriptionSerializerTests(SubscriptionProductMixin, TestCase):
             },
         }
         expected_data = {
+            'id': subscription.id,
             'title': subscription.title,
             'subscription_type': subscription_type,
             'subscription_actual_price': subscription.attr.subscription_actual_price,

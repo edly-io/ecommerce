@@ -92,7 +92,7 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'title', 'subscription_type', 'subscription_actual_price', 'subscription_price',
+            'id', 'title', 'subscription_type', 'subscription_actual_price', 'subscription_price',
             'subscription_status', 'display_order', 'partner_sku', 'is_course_payments_enabled'
         ]
 
@@ -325,6 +325,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = (
-            'title', 'subscription_type', 'subscription_actual_price', 'subscription_price', 'subscription_status',
+            'id', 'title', 'subscription_type', 'subscription_actual_price', 'subscription_price', 'subscription_status',
             'subscription_number_of_courses', 'subscription_duration_value', 'subscription_duration_unit'
         )
