@@ -73,6 +73,7 @@ class SubscriptionFactory(DjangoModelFactory):
         model = Product
 
     title = FuzzyText()
+    description = FuzzyText()
     product_class = SubFactory(ProductClassFactory)
     stockrecords = RelatedFactory('oscar.test.factories.StockRecordFactory', 'product')
 

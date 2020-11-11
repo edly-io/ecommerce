@@ -41,6 +41,7 @@ define([
                 templateData,
                 id = this.model.get('id'),
                 title = this.model.get('title'),
+                description = this.model.get('description'),
                 subscriptionType = SubscriptionUtils.formatSubscriptionType(this.model.get('subscription_type')),
                 subscriptionStatus = this.model.get('subscription_status'),
                 dateCreated = this.model.get('date_created'),
@@ -54,6 +55,7 @@ define([
                 templateData = {
                     id,
                     title,
+                    description,
                     subscription_type: subscriptionType,
                     subscription_status: subscriptionStatus,
                     subscription_actual_price: subscriptionActualPrice,

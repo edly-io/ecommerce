@@ -92,7 +92,7 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'title', 'subscription_type', 'subscription_actual_price', 'subscription_price',
+            'id', 'title', 'date_created', 'subscription_type', 'subscription_actual_price', 'subscription_price',
             'subscription_status', 'display_order', 'partner_sku', 'is_course_payments_enabled'
         ]
 
@@ -212,6 +212,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             raise Exception(message)
 
         title = validated_data['title']
+        description = validated_data['description']
         subscription_attributes = self._get_subscription_attributes(validated_data)
         partner = self.context['partner']
         try:
@@ -219,6 +220,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
                 product_class = ProductClass.objects.get(name=SUBSCRIPTION_PRODUCT_CLASS_NAME)
                 subscription = Product.objects.create(
                     title=title,
+                    description=description,
                     course=None,
                     is_discountable=True,
                     structure=Product.STANDALONE,
@@ -240,6 +242,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         Update a subscription product.
         """
         subscription.title = validated_data['title']
+        subscription.description = validated_data['description']
         attribute_values = self._get_subscription_attributes(validated_data)
         self._save_subscription_attributes(subscription, attribute_values)
         subscription.save()
@@ -325,6 +328,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = (
-            'id', 'title', 'subscription_type', 'subscription_actual_price', 'subscription_price', 'subscription_status',
+            'id', 'title', 'description', 'date_created', 'date_updated',
+            'subscription_type', 'subscription_status', 'subscription_actual_price', 'subscription_price',
             'subscription_number_of_courses', 'subscription_duration_value', 'subscription_duration_unit'
         )

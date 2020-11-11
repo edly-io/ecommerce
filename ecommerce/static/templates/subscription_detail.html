@@ -25,6 +25,13 @@
                 <span><%= dateEdited %></span>
             </div>
         </div>
+        <% if(description) {%>
+            <div class="info-item grid-item">
+                <div class="heading"><%= gettext('Subscription Description:') %></div>
+                <div class="value"><%= description %></div>
+            </div>
+        <%}%>
+
         <% if(subscription_actual_price) {%>
         <div class="info-item grid-item">
             <div class="heading"><%= gettext('Subscription Actual Price:') %></div>

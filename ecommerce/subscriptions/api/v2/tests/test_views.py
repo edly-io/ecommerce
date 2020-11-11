@@ -22,8 +22,8 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         """
         self.create_subscription(stockrecords__partner=self.site.partner)
         expected_keys = [
-            'id', 'title', 'subscription_type', 'subscription_actual_price', 'subscription_price', 'subscription_status',
-            'display_order', 'partner_sku', 'is_course_payments_enabled'
+            'id', 'title', 'date_created', 'subscription_type', 'subscription_actual_price', 'subscription_price',
+            'subscription_status', 'display_order', 'partner_sku', 'is_course_payments_enabled'
         ]
         request_url = reverse('api:v2:subscriptions-list')
         response = self.client.get(request_url)
@@ -61,6 +61,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         """
         subscription_data = {
             'title': 'Test subscription',
+            'description': 'Test subscription description',
             'subscription_type': LIMITED_ACCESS,
             'subscription_actual_price': 100.00,
             'subscription_price': 50.00,
@@ -85,6 +86,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         subscription = self.create_subscription(stockrecords__partner=self.site.partner)
         subscription_data = {
             'title': 'Test subscription',
+            'description': 'Test subscription description',
             'subscription_type': LIMITED_ACCESS,
             'subscription_actual_price': 100.00,
             'subscription_price': 50.00,
@@ -100,6 +102,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         response = self.client.get(request_url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.get('title'), subscription_data.get('title'))
+        self.assertEqual(response.data.get('description'), subscription_data.get('description'))
         self.assertFalse(response.data.get('subscription_status'))
 
     def test_toggle_course_payments(self):
