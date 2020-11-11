@@ -45,7 +45,6 @@ define([
             renderSubscriptionTable: function() {
                 var filterPlaceholder = gettext('Search...'),
                     $emptyLabel = '<label class="sr">' + filterPlaceholder + '</label>';
-                SubscriptionUtils.setCoursePaymentsButtonText();
 
                 if (!$.fn.dataTable.isDataTable('#subscriptionTable')) {
                     this.$el.find('#subscriptionTable').DataTable({
