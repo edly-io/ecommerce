@@ -38,7 +38,9 @@ def get_lms_resource_for_user(user, site, endpoint, resource_name=None, query_di
 
     try:
         data_list = endpoint.get(**query_dict) or []
-        data_list = data_list[0] if len(data_list) > 0 else []
+        if isinstance(data_list, list):
+            data_list = data_list[0] if len(data_list) > 0 else []
+
         TieredCache.set_all_tiers(cache_key, data_list, settings.LMS_API_CACHE_TIMEOUT)
     except (ConnectionError, SlumberBaseException, Timeout) as exc:
         logger.error('Failed to retrieve %s : %s', resource_name, str(exc))
