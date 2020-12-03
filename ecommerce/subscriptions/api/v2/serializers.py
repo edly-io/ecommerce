@@ -46,6 +46,12 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
     display_order = serializers.SerializerMethodField()
     is_course_payments_enabled = serializers.SerializerMethodField()
 
+    def get_description(self, product):
+        """
+        Get description for a subscription.
+        """
+        return product.attr.description
+
     def get_subscription_type(self, product):
         """
         Get selected subscription type for a subscription.
@@ -92,7 +98,7 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'title', 'date_created', 'subscription_type', 'subscription_actual_price', 'subscription_price',
+            'id', 'title', 'description', 'date_created', 'subscription_type', 'subscription_actual_price', 'subscription_price',
             'subscription_status', 'display_order', 'partner_sku', 'is_course_payments_enabled'
         ]
 

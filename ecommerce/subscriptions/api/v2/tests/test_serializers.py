@@ -36,6 +36,7 @@ class SubscriptionListSerializerTests(SubscriptionProductMixin, TestCase):
         expected_data = {
             'id': subscription.id,
             'title': subscription.title,
+            'description': subscription.description,
             'date_created': date_created,
             'subscription_type': subscription.attr.subscription_type.option,
             'subscription_actual_price': subscription.attr.subscription_actual_price,
