@@ -103,9 +103,11 @@ def prepare_basket(request, products, voucher=None):
             )
             continue
 
+        orders_lines = OrderLine.objects.filter(product=product, order__user=request.user)
         if product.is_enrollment_code_product or \
                 not UserAlreadyPlacedOrder.user_already_placed_order(user=request.user,
-                                                                     product=product, site=request.site):
+                                                                     product=product, site=request.site) \
+                or ( product.is_subscription_product and orders_lines ):
             basket.add_product(product, 1)
             # Call signal handler to notify listeners that something has been added to the basket
             basket_addition.send(sender=basket_addition, product=product, user=request.user, request=request,
