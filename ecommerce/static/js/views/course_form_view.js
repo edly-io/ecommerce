@@ -57,8 +57,14 @@ define([
                 },
                 verified: {
                     type: 'verified',
-                    displayName: gettext('Verified'),
-                    helpText: gettext('Paid certificate track with initial verification and Verified Certificate')
+                    displayName: gettext('Verified and Audit'),
+                    helpText: gettext('Paid certificate track with initial verification and Verified Certificate.') +
+                        ' ' + gettext('Also includes the free audit track.')
+                },
+                'verified-only': {
+                    type: 'verified-only',
+                    displayName: gettext('Verified Only'),
+                    helpText: gettext('Paid certificate track with initial verification and Verified Certificate.')
                 },
                 professional: {
                     type: 'professional',
@@ -162,24 +168,25 @@ define([
                 if (disablePaidCourseModes === 'True') {
                     activeCourseTypes = ['audit'];
                 }
-                else {
-                    switch (courseType) {
-                        case 'audit':
-                            activeCourseTypes = ['audit', 'verified', 'credit'];
-                            break;
-                        case 'verified':
-                            activeCourseTypes = ['verified', 'credit'];
-                            break;
-                        case 'professional':
-                            activeCourseTypes = ['professional'];
-                            break;
-                        case 'credit':
-                            activeCourseTypes = ['credit'];
-                            break;
-                        default:
-                            activeCourseTypes = ['audit', 'verified', 'professional', 'credit'];
-                            break;
-                    }
+                switch (courseType) {
+                case 'audit':
+                    activeCourseTypes = ['audit', 'verified', 'credit'];
+                    break;
+                case 'verified':
+                    activeCourseTypes = ['verified', 'credit'];
+                    break;
+                case 'verified-only':
+                    activeCourseTypes = ['verified-only', 'credit'];
+                    break;
+                case 'professional':
+                    activeCourseTypes = ['professional'];
+                    break;
+                case 'credit':
+                    activeCourseTypes = ['credit'];
+                    break;
+                default:
+                    activeCourseTypes = ['audit', 'verified', 'verified-only', 'professional', 'credit'];
+                    break;
                 }
 
                 return activeCourseTypes;

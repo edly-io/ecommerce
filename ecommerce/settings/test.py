@@ -1,21 +1,13 @@
 from __future__ import absolute_import
 
-from urlparse import urljoin
-
 from path import Path
+from six.moves.urllib.parse import urljoin
 
 from ecommerce.settings.base import *
 
 SITE_ID = 1
 PROTOCOL = 'http'
 ALLOWED_HOSTS = ['*']
-
-# TEST SETTINGS
-INSTALLED_APPS += (
-    'django_nose',
-)
-
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 # Disable syslog logging since we usually do not have syslog enabled in test environments.
 LOGGING['handlers']['local'] = {'class': 'logging.NullHandler'}
@@ -172,6 +164,8 @@ COMPREHENSIVE_THEME_DIRS = [
 DEFAULT_SITE_THEME = "test-theme"
 
 ENTERPRISE_API_URL = urljoin(ENTERPRISE_SERVICE_URL, 'api/v1/')
+
+ENTERPRISE_CATALOG_API_URL = urljoin(ENTERPRISE_CATALOG_SERVICE_URL, 'api/v1/')
 
 # Don't bother sending fake events to Segment. Doing so creates unnecessary threads.
 SEND_SEGMENT_EVENTS = False

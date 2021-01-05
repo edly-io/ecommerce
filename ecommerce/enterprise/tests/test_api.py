@@ -1,14 +1,21 @@
+from __future__ import absolute_import
+
 import ddt
 import httpretty
 from django.conf import settings
+from django.test import override_settings
 from edx_django_utils.cache import TieredCache
 from mock import patch
 from oscar.core.loading import get_model
+from oscar.test.factories import BasketFactory
+from requests.exceptions import ConnectionError as ReqConnectionError
+from waffle.testutils import override_flag
 
 from ecommerce.core.tests import toggle_switch
 from ecommerce.core.utils import get_cache_key
 from ecommerce.courses.tests.factories import CourseFactory
 from ecommerce.enterprise import api as enterprise_api
+from ecommerce.enterprise.constants import USE_ENTERPRISE_CATALOG
 from ecommerce.enterprise.tests.mixins import EnterpriseServiceMockMixin
 from ecommerce.extensions.catalogue.tests.mixins import DiscoveryTestMixin
 from ecommerce.extensions.partner.strategy import DefaultStrategy
@@ -33,6 +40,8 @@ class EnterpriseAPITests(EnterpriseServiceMockMixin, DiscoveryTestMixin, TestCas
         self.request.user = self.learner
         self.request.site = self.site
         self.request.strategy = DefaultStrategy()
+
+        self.basket = BasketFactory(site=self.site, owner=self.learner, strategy=self.request.strategy)
 
     def tearDown(self):
         # Reset HTTPretty state (clean up registered urls and request history)
@@ -100,33 +109,6 @@ class EnterpriseAPITests(EnterpriseServiceMockMixin, DiscoveryTestMixin, TestCas
         enterprise_api.fetch_enterprise_learner_data(self.request.site, self.learner)
         self._assert_num_requests(expected_number_of_requests)
 
-    def test_fetch_enterprise_learner_entitlements(self):
-        """
-        Verify that method "fetch_enterprise_learner_data" returns a proper
-        response for the enterprise learner.
-        """
-        # API should be hit only twice in this test case,
-        # once by `fetch_enterprise_learner_data` and once by `fetch_enterprise_learner_entitlements`.
-        expected_number_of_requests = 3
-
-        self.mock_access_token_response()
-        self.mock_enterprise_learner_api()
-        enterprise_learners = enterprise_api.fetch_enterprise_learner_data(self.request.site, self.learner)
-
-        enterprise_learner_id = enterprise_learners['results'][0]['id']
-        self.mock_enterprise_learner_entitlements_api(enterprise_learner_id)
-        enterprise_api.fetch_enterprise_learner_entitlements(self.request.site, enterprise_learner_id)
-
-        # Verify the API was hit just two times, once by `fetch_enterprise_learner_data`
-        # and once by `fetch_enterprise_learner_entitlements`
-        self._assert_num_requests(expected_number_of_requests)
-
-        # Now fetch the enterprise learner entitlements again and verify that there was
-        # no actual call to Enterprise API, as the data will be taken from
-        # the cache
-        enterprise_api.fetch_enterprise_learner_entitlements(self.request.site, enterprise_learner_id)
-        self._assert_num_requests(expected_number_of_requests)
-
     @ddt.data(
         (True, None),
         (True, 'fake-uuid'),
@@ -141,11 +123,62 @@ class EnterpriseAPITests(EnterpriseServiceMockMixin, DiscoveryTestMixin, TestCas
         self.mock_catalog_contains_course_runs(
             [self.course_run.id],
             'fake-uuid',
+            self.site.siteconfiguration.enterprise_api_url,
             enterprise_customer_catalog_uuid=enterprise_customer_catalog_uuid,
             contains_content=expected,
         )
 
         self._assert_contains_course_runs(expected, [self.course_run.id], 'fake-uuid', enterprise_customer_catalog_uuid)
+
+    @ddt.data(
+        (True, None),
+        (True, 'fake-uuid'),
+        (False, None),
+        (False, 'fake-uuid'),
+    )
+    @ddt.unpack
+    def test_catalog_contains_course_runs_enterprise_catalog_service(self, expected, enterprise_customer_catalog_uuid):
+        """
+        Verify that `catalog_contains_course_runs` returns the appropriate
+        response when the  Enterprise Catalog service is hit instead of the base
+        Enterprise API.
+        """
+        with override_flag(USE_ENTERPRISE_CATALOG, active=True):
+            self.mock_catalog_contains_course_runs(
+                [self.course_run.id],
+                'fake-uuid',
+                self.site.siteconfiguration.enterprise_catalog_api_url,
+                enterprise_customer_catalog_uuid=enterprise_customer_catalog_uuid,
+                contains_content=expected,
+                catalog_resource='enterprise-catalogs',
+            )
+
+            self._assert_contains_course_runs(expected, [self.course_run.id], 'fake-uuid',
+                                              enterprise_customer_catalog_uuid)
+
+    @ddt.data(
+        (True, [], 'enterprise-catalogs', settings.ENTERPRISE_CATALOG_API_URL),
+        (True, ['fake_enterprise_uuid'], 'enterprise_catalogs', settings.ENTERPRISE_API_URL),
+        (False, [], 'enterprise_catalogs', settings.ENTERPRISE_API_URL),
+    )
+    @ddt.unpack
+    def test_catalog_contains_course_runs_enterprise_exclusion(self, flag_is_active, exclusion_list, resource, api_url):
+        """
+        Verify that `catalog_contains_course_runs` hits the correct API endpoint when waffle flag
+        active (or not) and enterprise uuid in the ENTERPRISE_CUSTOMERS_EXCLUDED_FROM_CATALOG list (or not)
+        """
+        catalog_uuid = 'fake_catalog_uuid'
+        with override_flag(USE_ENTERPRISE_CATALOG, active=flag_is_active):
+            with override_settings(ENTERPRISE_CUSTOMERS_EXCLUDED_FROM_CATALOG=exclusion_list):
+                self.mock_catalog_contains_course_runs(
+                    [self.course_run.id],
+                    'fake_enterprise_uuid',
+                    api_url,
+                    enterprise_customer_catalog_uuid=catalog_uuid,
+                    contains_content=True,
+                    catalog_resource=resource,
+                )
+                self._assert_contains_course_runs(True, [self.course_run.id], 'fake_enterprise_uuid', catalog_uuid)
 
     def test_catalog_contains_course_runs_cache_hit(self):
         """
@@ -154,6 +187,7 @@ class EnterpriseAPITests(EnterpriseServiceMockMixin, DiscoveryTestMixin, TestCas
         self.mock_catalog_contains_course_runs(
             [self.course_run.id],
             'fake-uuid',
+            self.site.siteconfiguration.enterprise_api_url,
             enterprise_customer_catalog_uuid=None,
             contains_content=True,
         )
@@ -175,9 +209,55 @@ class EnterpriseAPITests(EnterpriseServiceMockMixin, DiscoveryTestMixin, TestCas
         self.mock_catalog_contains_course_runs(
             [self.course_run.id],
             'fake-uuid',
+            self.site.siteconfiguration.enterprise_api_url,
             enterprise_customer_catalog_uuid='fake-uuid',
             contains_content=False,
             raise_exception=True,
         )
 
-        self._assert_contains_course_runs(False, [self.course_run.id], 'fake-uuid', 'fake-uuid')
+        with self.assertRaises(ReqConnectionError):
+            self._assert_contains_course_runs(False, [self.course_run.id], 'fake-uuid', 'fake-uuid')
+
+    @patch('ecommerce.enterprise.api.fetch_enterprise_learner_data')
+    @patch('ecommerce.enterprise.api.get_enterprise_id_for_current_request_user_from_jwt')
+    def test_get_enterprise_id_for_user_fetch_learner_data_has_uuid(self, mock_get_jwt_uuid, mock_fetch):
+        """
+        Verify get_enterprise_id_for_user returns enterprise id if jwt does not have
+        enterprise uuid, but is able to fetch it via api call
+        """
+        mock_get_jwt_uuid.return_value = None
+        mock_fetch.return_value = {
+            'results': [
+                {
+                    'enterprise_customer': {
+                        'uuid': 'my-uuid'
+                    }
+                }
+            ]
+        }
+        assert enterprise_api.get_enterprise_id_for_user('some-site', self.learner) == 'my-uuid'
+
+    @patch('ecommerce.enterprise.api.fetch_enterprise_learner_data')
+    @patch('ecommerce.enterprise.api.get_enterprise_id_for_current_request_user_from_jwt')
+    def test_get_enterprise_id_for_user_fetch_errors(self, mock_get_jwt_uuid, mock_fetch):
+        """
+        Verify if that learner data fetch errors, get_enterprise_id_for_user
+        returns None
+        """
+        mock_get_jwt_uuid.return_value = None
+        mock_fetch.side_effect = [KeyError]
+
+        assert enterprise_api.get_enterprise_id_for_user('some-site', self.learner) is None
+
+    @patch('ecommerce.enterprise.api.fetch_enterprise_learner_data')
+    @patch('ecommerce.enterprise.api.get_enterprise_id_for_current_request_user_from_jwt')
+    def test_get_enterprise_id_for_user_no_uuid_in_response(self, mock_get_jwt_uuid, mock_fetch):
+        """
+        Verify if learner data fetch is successful but does not include uuid field,
+        None is returned
+        """
+        mock_get_jwt_uuid.return_value = None
+        mock_fetch.return_value = {
+            'results': []
+        }
+        assert enterprise_api.get_enterprise_id_for_user('some-site', self.learner) is None

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import datetime
 import json
 from uuid import uuid4
@@ -11,6 +13,7 @@ from django.db import transaction
 from django.utils.timezone import now
 from oscar.core.loading import get_model
 from oscar.test.factories import BasketFactory, ProductFactory, RangeFactory
+from waffle.testutils import override_flag
 
 from ecommerce.core.constants import ENROLLMENT_CODE_PRODUCT_CLASS_NAME
 from ecommerce.core.tests import toggle_switch
@@ -23,6 +26,7 @@ from ecommerce.extensions.basket.utils import (
     apply_voucher_on_basket_and_check_discount,
     attribute_cookie_data,
     get_basket_switch_data,
+    get_payment_microfrontend_url_if_configured,
     prepare_basket
 )
 from ecommerce.extensions.catalogue.tests.mixins import DiscoveryTestMixin
@@ -30,6 +34,7 @@ from ecommerce.extensions.order.constants import DISABLE_REPEAT_ORDER_CHECK_SWIT
 from ecommerce.extensions.order.exceptions import AlreadyPlacedOrderException
 from ecommerce.extensions.order.utils import UserAlreadyPlacedOrder
 from ecommerce.extensions.partner.models import StockRecord
+from ecommerce.extensions.payment.constants import DISABLE_MICROFRONTEND_FOR_BASKET_PAGE_FLAG_NAME
 from ecommerce.extensions.test.factories import create_order, prepare_voucher
 from ecommerce.referrals.models import Referral
 from ecommerce.tests.testcases import TestCase, TransactionTestCase
@@ -42,6 +47,7 @@ BUNDLE = 'bundle_identifier'
 Option = get_model('catalogue', 'Option')
 Product = get_model('catalogue', 'Product')
 ProductClass = get_model('catalogue', 'ProductClass')
+TEST_BUNDLE_ID = '12345678-1234-1234-1234-123456789abc'
 
 
 def timeoutException():
@@ -382,10 +388,10 @@ class BasketUtilsTests(DiscoveryTestMixin, BasketMixin, TestCase):
         basket = prepare_basket(request, [product])
         with self.assertRaises(BasketAttribute.DoesNotExist):
             BasketAttribute.objects.get(basket=basket, attribute_type__name=BUNDLE)
-        request.GET = {'bundle': 'test_bundle'}
+        request.GET = {'bundle': TEST_BUNDLE_ID}
         basket = prepare_basket(request, [product])
         bundle_id = BasketAttribute.objects.get(basket=basket, attribute_type__name=BUNDLE).value_text
-        self.assertEqual(bundle_id, 'test_bundle')
+        self.assertEqual(bundle_id, TEST_BUNDLE_ID)
 
     def test_prepare_basket_with_bundle_voucher(self):
         """
@@ -398,7 +404,7 @@ class BasketUtilsTests(DiscoveryTestMixin, BasketMixin, TestCase):
         request = self.request
         basket = prepare_basket(request, [product], voucher)
         self.assertTrue(basket.vouchers.all())
-        request.GET = {'bundle': 'test_bundle'}
+        request.GET = {'bundle': TEST_BUNDLE_ID}
         basket = prepare_basket(request, [product])
         self.assertFalse(basket.vouchers.all())
 
@@ -408,12 +414,12 @@ class BasketUtilsTests(DiscoveryTestMixin, BasketMixin, TestCase):
         """
         product = ProductFactory(categories=[], stockrecords__partner__short_code='second')
         request = self.request
-        request.GET = {'bundle': 'test_bundle'}
+        request.GET = {'bundle': TEST_BUNDLE_ID}
         basket = prepare_basket(request, [product])
 
         # Verify that the bundle attribute exists for the basket when bundle is added to basket
         bundle_id = BasketAttribute.objects.get(basket=basket, attribute_type__name=BUNDLE).value_text
-        self.assertEqual(bundle_id, 'test_bundle')
+        self.assertEqual(bundle_id, TEST_BUNDLE_ID)
 
         # Verify that the attribute is deleted when a non-bundle product is added to the basket
         request.GET = {}
@@ -644,6 +650,26 @@ class BasketUtilsTests(DiscoveryTestMixin, BasketMixin, TestCase):
         self.assertEqual(applied, False)
         self.assertEqual(msg, 'Basket does not qualify for coupon code {code}.'.format(code=invalid_voucher.code))
 
+    @ddt.data(
+        (True, '/payment', False, '/payment'),  # Microfrontend not disabled
+        (True, '/payment', True, None),  # Microfrontend disabled
+    )
+    @ddt.unpack
+    def test_disable_microfrontend_for_basket_page_flag(
+            self,
+            microfrontend_enabled,
+            payment_microfrontend_url,
+            disable_microfrontend_flag_active,
+            expected_result
+    ):
+        """
+        Verify that the `disable_microfrontend_for_basket_page_flag` correctly disables the microfrontend url retrieval
+        """
+        with override_flag(DISABLE_MICROFRONTEND_FOR_BASKET_PAGE_FLAG_NAME, active=disable_microfrontend_flag_active):
+            self.site_configuration.enable_microfrontend_for_basket_page = microfrontend_enabled
+            self.site_configuration.payment_microfrontend_url = payment_microfrontend_url
+            self.assertEqual(get_payment_microfrontend_url_if_configured(self.request), expected_result)
+
 
 class BasketUtilsTransactionTests(TransactionTestCase):
     def setUp(self):
@@ -652,11 +678,7 @@ class BasketUtilsTransactionTests(TransactionTestCase):
         self.site_configuration.utm_cookie_name = 'test.edx.utm'
         toggle_switch(DISABLE_REPEAT_ORDER_CHECK_SWITCH_NAME, False)
         BasketAttributeType.objects.get_or_create(name=BUNDLE)
-        course_entitlement_option = Option()
-        course_entitlement_option.name = 'Course Entitlement'
-        course_entitlement_option.code = 'course_entitlement'
-        course_entitlement_option.type = Option.OPTIONAL
-        course_entitlement_option.save()
+        Option.objects.get_or_create(name='Course Entitlement', code='course_entitlement', type=Option.OPTIONAL)
 
     def _setup_request_cookie(self):
         utm_campaign = 'test-campaign'

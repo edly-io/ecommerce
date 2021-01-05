@@ -28,7 +28,12 @@ define([
                 id: null,
                 max_uses: 1,
                 price: 0,
-                quantity: 1
+                quantity: 1,
+                enterprise_catalog_url: '/api/v2/enterprise/customer_catalogs/',
+                contract_discount_type: 'Percentage',
+                contract_discount_value: null,
+                prepaid_invoice_amount: null,
+                sales_force_id: null
             },
 
             couponValidation: {
@@ -37,6 +42,21 @@ define([
                 notify_email: {
                     pattern: 'email',
                     required: false
+                },
+                sales_force_id: {
+                    required: false
+                },
+                contract_discount_value: {
+                    required: function() {
+                        return !this.attributes.editing;
+                    },
+                    pattern: 'number'
+                },
+                prepaid_invoice_amount: {
+                    required: function() {
+                        return this.get('contract_discount_type') === 'Absolute';
+                    },
+                    pattern: 'number'
                 }
             },
 

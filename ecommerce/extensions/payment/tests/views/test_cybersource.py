@@ -1,12 +1,14 @@
 """ Tests of the Payment Views. """
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
+import itertools
 import json
 
 import ddt
 import mock
 import responses
 from django.conf import settings
+from django.contrib.auth import get_user
 from django.test.client import RequestFactory
 from django.urls import reverse
 from freezegun import freeze_time
@@ -16,17 +18,20 @@ from oscar.test import factories
 from testfixtures import LogCapture
 
 from ecommerce.core.constants import ENROLLMENT_CODE_PRODUCT_CLASS_NAME, ENROLLMENT_CODE_SWITCH
-from ecommerce.core.models import BusinessClient
+from ecommerce.core.models import BusinessClient, User
 from ecommerce.core.tests import toggle_switch
 from ecommerce.core.url_utils import get_lms_url
 from ecommerce.courses.tests.factories import CourseFactory
 from ecommerce.extensions.api.serializers import OrderSerializer
+from ecommerce.extensions.basket.constants import PURCHASER_BEHALF_ATTRIBUTE
 from ecommerce.extensions.basket.utils import basket_add_organization_attribute
+from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
 from ecommerce.extensions.order.constants import PaymentEventTypeName
 from ecommerce.extensions.payment.exceptions import InvalidBasketError, InvalidSignatureError
 from ecommerce.extensions.payment.processors.cybersource import Cybersource
 from ecommerce.extensions.payment.tests.mixins import CybersourceMixin, CybersourceNotificationTestsMixin
-from ecommerce.extensions.payment.views.cybersource import CybersourceInterstitialView, OrderCreationMixin
+from ecommerce.extensions.payment.utils import SDNClient
+from ecommerce.extensions.payment.views.cybersource import CybersourceInterstitialView
 from ecommerce.extensions.test.factories import create_basket, create_order
 from ecommerce.invoice.models import Invoice
 from ecommerce.tests.testcases import TestCase
@@ -34,6 +39,8 @@ from ecommerce.tests.testcases import TestCase
 JSON = 'application/json'
 
 Basket = get_model('basket', 'Basket')
+BasketAttribute = get_model('basket', 'BasketAttribute')
+BasketAttributeType = get_model('basket', 'BasketAttributeType')
 Order = get_model('order', 'Order')
 OrderNumberGenerator = get_class('order.utils', 'OrderNumberGenerator')
 PaymentEvent = get_model('order', 'PaymentEvent')
@@ -45,7 +52,7 @@ Source = get_model('payment', 'Source')
 post_checkout = get_class('checkout.signals', 'post_checkout')
 
 
-class LoginMixin(object):
+class LoginMixin:
     def setUp(self):
         super(LoginMixin, self).setUp()
         self.user = self.create_user()
@@ -55,6 +62,7 @@ class LoginMixin(object):
 @ddt.ddt
 class CybersourceSubmitViewTests(CybersourceMixin, TestCase):
     path = reverse('cybersource:submit')
+    CYBERSOURCE_VIEW_LOGGER_NAME = 'ecommerce.extensions.payment.views.cybersource'
 
     def setUp(self):
         super(CybersourceSubmitViewTests, self).setUp()
@@ -89,7 +97,7 @@ class CybersourceSubmitViewTests(CybersourceMixin, TestCase):
         """ Verify the view redirects anonymous users to the login page. """
         self.client.logout()
         response = self.client.post(self.path)
-        expected_url = '{base}?next={path}'.format(base=self.get_full_url(path=reverse(settings.LOGIN_URL)),
+        expected_url = '{base}?next={path}'.format(base=reverse(settings.LOGIN_URL),
                                                    path=self.path)
         self.assertRedirects(response, expected_url, fetch_redirect_response=False)
 
@@ -106,7 +114,7 @@ class CybersourceSubmitViewTests(CybersourceMixin, TestCase):
             'error': error_msg,
             'field_errors': {'basket': error_msg}
         }
-        self.assertDictEqual(json.loads(response.content), expected)
+        self.assertDictEqual(response.json(), expected)
 
     def test_missing_basket(self):
         """ Verify the view returns an HTTP 400 status if the basket is missing. """
@@ -127,6 +135,33 @@ class CybersourceSubmitViewTests(CybersourceMixin, TestCase):
         error_msg = 'There was a problem retrieving your basket. Refresh the page to try again.'
         self._assert_basket_error(basket.id, error_msg)
 
+    def test_sdn_check_match(self):
+        """Verify the endpoint returns an sdn check failure if the sdn check finds a hit."""
+        self.site.siteconfiguration.enable_sdn_check = True
+        self.site.siteconfiguration.save()
+
+        basket_id = self._create_valid_basket().id
+        data = self._generate_data(basket_id)
+        expected_response = {'error': 'There was an error submitting the basket', 'sdn_check_failure': {'hit_count': 1}}
+        logger_name = self.CYBERSOURCE_VIEW_LOGGER_NAME
+
+        with mock.patch.object(SDNClient, 'search', return_value={'total': 1}) as sdn_validator_mock:
+            with mock.patch.object(User, 'deactivate_account', return_value=True):
+                with LogCapture(logger_name) as cybersource_logger:
+                    response = self.client.post(self.path, data)
+                    self.assertTrue(sdn_validator_mock.called)
+                    self.assertEqual(response.json(), expected_response)
+                    self.assertEqual(response.status_code, 403)
+                    cybersource_logger.check_present(
+                        (
+                            logger_name,
+                            'INFO',
+                            'SDNCheck function called for basket [{}]. It received 1 hit(s).'.format(basket_id)
+                        ),
+                    )
+                    # Make sure user is logged out
+                    self.assertEqual(get_user(self.client).is_authenticated, False)
+
     @freeze_time('2016-01-01')
     def test_valid_request(self):
         """ Verify the view returns the CyberSource parameters if the request is valid. """
@@ -137,7 +172,7 @@ class CybersourceSubmitViewTests(CybersourceMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['content-type'], JSON)
 
-        actual = json.loads(response.content)['form_fields']
+        actual = response.json()['form_fields']
         transaction_uuid = actual['transaction_uuid']
         extra_parameters = {
             'payment_method': 'card',
@@ -178,8 +213,26 @@ class CybersourceSubmitViewTests(CybersourceMixin, TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response['content-type'], JSON)
 
-        errors = json.loads(response.content)['field_errors']
+        errors = response.json()['field_errors']
         self.assertIn(field, errors)
+
+
+class CybersourceSubmitAPIViewTests(CybersourceSubmitViewTests):
+    path = reverse('cybersource:api_submit')
+
+    def setUp(self):  # pylint: disable=useless-super-delegation
+        super(CybersourceSubmitAPIViewTests, self).setUp()
+
+    def test_login_required(self):
+        """ Verify the view returns 401 for unauthenticated users. """
+        self.client.logout()
+        response = self.client.post(self.path)
+        self.assertEqual(response.status_code, 401)
+
+    @freeze_time('2016-01-01')
+    def test_valid_request(self):
+        """ Verify the view returns the CyberSource parameters if the request is valid. """
+        super(CybersourceSubmitAPIViewTests, self).test_valid_request()
 
 
 @ddt.ddt
@@ -188,7 +241,12 @@ class CybersourceInterstitialViewTests(CybersourceNotificationTestsMixin, TestCa
     path = reverse('cybersource:redirect')
     view = CybersourceInterstitialView
 
-    def test_payment_declined(self):
+    @ddt.data(
+        ('12345678-1234-1234-1234-123456789abc', 1),
+        (None, 0)
+    )
+    @ddt.unpack
+    def test_payment_declined(self, bundle, bundle_attr_count):
         """
         Verify that the user is redirected to the basket summary page when their
         payment is declined.
@@ -196,27 +254,53 @@ class CybersourceInterstitialViewTests(CybersourceNotificationTestsMixin, TestCa
         # Basket merging clears lines on the old basket. We need to take a snapshot
         # of lines currently on this basket before it gets merged with a new basket.
         old_lines = list(self.basket.lines.all())
+        if bundle:
+            BasketAttribute.objects.update_or_create(
+                basket=self.basket,
+                attribute_type=BasketAttributeType.objects.get(name='bundle_identifier'),
+                value_text=bundle
+            )
 
         notification = self.generate_notification(
             self.basket,
             billing_address=self.billing_address,
         )
 
+        logger_name = self.CYBERSOURCE_VIEW_LOGGER_NAME
         with mock.patch.object(self.view, 'validate_notification', side_effect=TransactionDeclined):
-            response = self.client.post(self.path, notification)
+            with LogCapture(logger_name) as cybersource_logger:
+                response = self.client.post(self.path, notification)
 
-            self.assertRedirects(
-                response,
-                self.get_full_url(path=reverse('basket:summary')),
-                status_code=302,
-                fetch_redirect_response=False
-            )
+                self.assertRedirects(
+                    response,
+                    self.get_full_url(path=reverse('basket:summary')),
+                    status_code=302,
+                    fetch_redirect_response=False
+                )
 
-            new_basket = Basket.objects.get(status='Open')
-            merged_basket_count = Basket.objects.filter(status='Merged').count()
+                new_basket = Basket.objects.get(status='Open')
+                merged_basket_count = Basket.objects.filter(status='Merged').count()
+                new_basket_bundle_count = BasketAttribute.objects.filter(
+                    basket=new_basket,
+                    attribute_type=BasketAttributeType.objects.get(name='bundle_identifier')
+                ).count()
 
-            self.assertEqual(list(new_basket.lines.all()), old_lines)
-            self.assertEqual(merged_basket_count, 1)
+                self.assertEqual(list(new_basket.lines.all()), old_lines)
+                self.assertEqual(merged_basket_count, 1)
+                self.assertEqual(new_basket_bundle_count, bundle_attr_count)
+
+                log_msg = 'Created new basket [{}] from old basket [{}] for declined transaction with bundle [{}].'
+                cybersource_logger.check_present(
+                    (
+                        logger_name,
+                        'INFO',
+                        log_msg.format(
+                            new_basket.id,
+                            self.basket.id,
+                            bundle
+                        )
+                    ),
+                )
 
     @ddt.data(InvalidSignatureError, InvalidBasketError, Exception)
     def test_invalid_payment_error(self, error_class):
@@ -277,7 +361,8 @@ class CybersourceInterstitialViewTests(CybersourceNotificationTestsMixin, TestCa
             billing_address=self.billing_address,
         )
         request_data.update({'organization': 'Dummy Business Client'})
-        # Manually add organization attribute on the basket for testing
+        request_data.update({PURCHASER_BEHALF_ATTRIBUTE: "False"})
+        # Manually add organization and purchaser attributes on the basket for testing
         basket_add_organization_attribute(self.basket, request_data)
 
         response = self.client.post(self.path, request_data)
@@ -306,7 +391,7 @@ class CybersourceInterstitialViewTests(CybersourceNotificationTestsMixin, TestCa
         """
         prior_order = create_order()
         dummy_request = RequestFactory(SERVER_NAME='testserver.fake').get('')
-        dummy_mixin = OrderCreationMixin()
+        dummy_mixin = EdxOrderPlacementMixin()
         dummy_mixin.payment_processor = Cybersource(self.site)
 
         with LogCapture(self.DUPLICATE_ORDER_LOGGER_NAME) as lc:
@@ -337,6 +422,26 @@ class CybersourceInterstitialViewTests(CybersourceNotificationTestsMixin, TestCa
 @ddt.ddt
 class ApplePayStartSessionViewTests(LoginMixin, TestCase):
     url = reverse('cybersource:apple_pay:start_session')
+    payment_microfrontend_domain = 'payment-mfe.org'
+
+    def _call_to_apple_pay_and_assert_response(self, status, body, request_from_mfe=False, expected_mfe=False):
+        url = 'https://apple-pay-gateway.apple.com/paymentservices/startSession'
+        body = json.dumps(body)
+        responses.add(responses.POST, url, body=body, status=status, content_type=JSON)
+
+        post_data = {'url': url}
+        if request_from_mfe:
+            post_data.update({'is_payment_microfrontend': True})
+
+        response = self.client.post(self.url, json.dumps(post_data), JSON)
+        self.assertEqual(response.status_code, status)
+        self.assertEqual(response.content.decode('utf-8'), body)
+
+        expected_domain_name = self.payment_microfrontend_domain if expected_mfe else 'testserver.fake'
+        self.assertEqual(
+            json.loads(responses.calls[0].request.body.decode('utf-8'))['domainName'],
+            expected_domain_name,
+        )
 
     @ddt.data(
         (200, {'foo': 'bar'}),
@@ -346,13 +451,22 @@ class ApplePayStartSessionViewTests(LoginMixin, TestCase):
     @responses.activate
     def test_post(self, status, body):
         """ The view should POST to the given URL and return the response. """
-        url = 'https://apple-pay-gateway.apple.com/paymentservices/startSession'
-        body = json.dumps(body)
-        responses.add(responses.POST, url, body=body, status=status, content_type=JSON)
+        self._call_to_apple_pay_and_assert_response(status, body)
 
-        response = self.client.post(self.url, json.dumps({'url': url}), JSON)
-        self.assertEqual(response.status_code, status)
-        self.assertEqual(response.content, body)
+    @responses.activate
+    @ddt.data(*itertools.product((True, False), (True, False)))
+    @ddt.unpack
+    def test_with_microfrontend(self, request_from_mfe, enable_microfrontend):
+        self.site.siteconfiguration.enable_microfrontend_for_basket_page = enable_microfrontend
+        self.site.siteconfiguration.payment_microfrontend_url = 'http://{}'.format(self.payment_microfrontend_domain)
+        self.site.siteconfiguration.save()
+
+        self._call_to_apple_pay_and_assert_response(
+            200,
+            {'foo': 'bar'},
+            request_from_mfe,
+            request_from_mfe and enable_microfrontend,
+        )
 
     def test_post_without_url(self):
         """ The view should return HTTP 400 if no url parameter is posted. """

@@ -1,13 +1,17 @@
-import json
+from __future__ import absolute_import
+
 import logging
 import re
-from urllib import urlencode
 
 import lxml
 import requests
+import six  # pylint: disable=ungrouped-imports
 from django.conf import settings
+from django.contrib.auth import logout
 from django.utils.translation import ugettext_lazy as _
 from oscar.core.loading import get_model
+from requests.exceptions import HTTPError, Timeout
+from six.moves.urllib.parse import urlencode
 
 from ecommerce.core.constants import SEAT_PRODUCT_CLASS_NAME
 from ecommerce.extensions.analytics.utils import parse_tracking_context
@@ -15,6 +19,41 @@ from ecommerce.extensions.payment.models import SDNCheckFailure
 
 logger = logging.getLogger(__name__)
 Basket = get_model('basket', 'Basket')
+BasketAttribute = get_model('basket', 'BasketAttribute')
+BasketAttributeType = get_model('basket', 'BasketAttributeType')
+
+
+def get_basket_program_uuid(basket):
+    """
+    Return the program UUID associated with the given basket, if one exists.
+    Arguments:
+        basket (Basket): The basket object.
+    Returns:
+        string: The program UUID if the basket is associated with a bundled purchase, otherwise None.
+    """
+    try:
+        attribute_type = BasketAttributeType.objects.get(name='bundle_identifier')
+    except BasketAttributeType.DoesNotExist:
+        return None
+    bundle_attributes = BasketAttribute.objects.filter(
+        basket=basket,
+        attribute_type=attribute_type
+    )
+    bundle_attribute = bundle_attributes.first()
+    return bundle_attribute.value_text if bundle_attribute else None
+
+
+def get_program_uuid(order):
+    """
+    Return the program UUID associated with the given order, if one exists.
+
+    Arguments:
+        order (Order): The order object.
+
+    Returns:
+        string: The program UUID if the order is associated with a bundled purchase, otherwise None.
+    """
+    return get_basket_program_uuid(order.basket)
 
 
 class LxmlObjectJsonEncoder(json.JSONEncoder):
@@ -65,7 +104,7 @@ def middle_truncate(string, chars):
     if chars < indicator_length:
         raise ValueError
 
-    slice_size = (chars - indicator_length) / 2
+    slice_size = (chars - indicator_length) // 2
     start, end = string[:slice_size], string[-slice_size:]
     truncated = u'{start}{indicator}{end}'.format(start=start, indicator=indicator, end=end)
 
@@ -90,14 +129,14 @@ def embargo_check(user, site, products):
     """ Checks if the user has access to purchase products by calling the LMS embargo API.
 
     Args:
-        request (object): The current request
+        request : The current request
         products (list): A list of products to check access against
 
     Returns:
         Bool
     """
     courses = []
-    _, _, ip = parse_tracking_context(user)
+    _, _, ip = parse_tracking_context(user, usage='embargo')
 
     for product in products:
         # We only are checking Seats
@@ -121,7 +160,42 @@ def embargo_check(user, site, products):
     return True
 
 
-class SDNClient(object):
+def checkSDN(request, name, city, country):
+    """
+    Performs an SDN check and returns hits of the user failures.
+    """
+    hit_count = 0
+
+    site_configuration = request.site.siteconfiguration
+    basket = Basket.get_basket(request.user, site_configuration.site)
+
+    if site_configuration.enable_sdn_check:
+        sdn_check = SDNClient(
+            api_url=settings.SDN_CHECK_API_URL,
+            api_key=settings.SDN_CHECK_API_KEY,
+            sdn_list=site_configuration.sdn_api_list
+        )
+        try:
+            response = sdn_check.search(name, city, country)
+            hit_count = response['total']
+            if hit_count > 0:
+                sdn_check.deactivate_user(
+                    basket,
+                    name,
+                    city,
+                    country,
+                    response
+                )
+                logout(request)
+        except (HTTPError, Timeout):
+            # If the SDN API endpoint is down or times out
+            # the user is allowed to make the purchase.
+            pass
+
+    return hit_count
+
+
+class SDNClient:
     """A utility class that handles SDN related operations."""
 
     def __init__(self, api_url, api_key, sdn_list):
@@ -146,21 +220,25 @@ class SDNClient(object):
         """
         params = urlencode({
             'sources': self.sdn_list,
-            'api_key': self.api_key,
             'type': 'individual',
-            'name': unicode(name).encode('utf-8'),
+            'name': six.text_type(name).encode('utf-8'),
             # We are using the city as the address parameter value as indicated in the documentation:
             # http://developer.trade.gov/consolidated-screening-list.html
-            'address': unicode(city).encode('utf-8'),
+            'address': six.text_type(city).encode('utf-8'),
             'countries': country
         })
         sdn_check_url = '{api_url}?{params}'.format(
             api_url=self.api_url,
             params=params
         )
+        auth_header = {'Authorization': 'Bearer {}'.format(self.api_key)}
 
         try:
-            response = requests.get(sdn_check_url, timeout=settings.SDN_CHECK_REQUEST_TIMEOUT)
+            response = requests.get(
+                sdn_check_url,
+                headers=auth_header,
+                timeout=settings.SDN_CHECK_REQUEST_TIMEOUT
+            )
         except requests.exceptions.Timeout:
             logger.warning('Connection to US Treasury SDN API timed out for [%s].', name)
             raise
@@ -172,7 +250,7 @@ class SDNClient(object):
             )
             raise requests.exceptions.HTTPError('Unable to connect to SDN API')
 
-        return json.loads(response.content)
+        return response.json()
 
     def deactivate_user(self, basket, name, city, country, search_results):
         """ Deactivates a user account.

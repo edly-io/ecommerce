@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """Unit tests of Paypal payment processor implementation."""
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import json
 import logging
-from urlparse import urljoin
 
 import ddt
 import mock
@@ -18,6 +17,7 @@ from factory.fuzzy import FuzzyInteger
 from oscar.apps.payment.exceptions import GatewayError
 from oscar.core.loading import get_model
 from paypalrestsdk.resource import Resource  # pylint:disable=ungrouped-imports
+from six.moves.urllib.parse import urljoin  # pylint: disable=import-error
 from testfixtures import LogCapture
 
 from ecommerce.core.tests import toggle_switch
@@ -139,6 +139,14 @@ class PaypalTests(PaypalMixin, PaymentProcessorTestCaseMixin, TestCase):
         last_request_body = json.loads(responses.calls[-1].request.body)
         expected = urljoin(self.site.siteconfiguration.build_ecommerce_url(), reverse('paypal:execute'))
         self.assertEqual(last_request_body['redirect_urls']['return_url'], expected)
+
+    @responses.activate
+    def test_get_courseid_title(self):
+        for line in self.basket.all_lines():
+            self.assertEqual(
+                'a/b/c|Seat in Demo Course with test-certificate-type certificate',
+                self.processor.get_courseid_title(line)
+            )
 
     @responses.activate
     def test_get_transaction_parameters_with_retry(self):
@@ -285,7 +293,8 @@ class PaypalTests(PaypalMixin, PaymentProcessorTestCaseMixin, TestCase):
         self.processor.get_transaction_parameters(self.basket, request=self.request)
         payment_creation_payload = mock_payment.call_args[0][0]
         self.assertNotIn('experience_profile_id', payment_creation_payload)
-        self.assertRaises(Exception('MissingConfig Exception'))
+        with self.assertRaises(Exception) as ex:
+            self.assertEqual(ex.message, 'MissingConfig Exception')
 
         msg = 'Creating PayPal WebProfile resulted in exception. Will continue without one.'
         mock_logger.warning.assert_any_call(msg)

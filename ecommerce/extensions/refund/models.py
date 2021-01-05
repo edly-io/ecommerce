@@ -1,7 +1,8 @@
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import logging
 
+import six
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -10,6 +11,7 @@ from ecommerce_worker.sailthru.v1.tasks import send_course_refund_email
 from oscar.apps.payment.exceptions import PaymentError
 from oscar.core.loading import get_class, get_model
 from oscar.core.utils import get_default_currency
+from simple_history.models import HistoricalRecords
 
 from ecommerce.core.constants import COURSE_ENTITLEMENT_PRODUCT_CLASS_NAME, SEAT_PRODUCT_CLASS_NAME
 from ecommerce.extensions.analytics.utils import audit_log
@@ -27,7 +29,7 @@ PaymentEventType = get_model('order', 'PaymentEventType')
 post_refund = get_class('refund.signals', 'post_refund')
 
 
-class StatusMixin(object):
+class StatusMixin:
     pipeline_setting = None
 
     @property
@@ -59,7 +61,7 @@ class StatusMixin(object):
         self.save()
 
     def __str__(self):
-        return unicode(self.id)
+        return six.text_type(self.id)
 
 
 class Refund(StatusMixin, TimeStampedModel):
@@ -81,6 +83,7 @@ class Refund(StatusMixin, TimeStampedModel):
         ]
     )
 
+    history = HistoricalRecords()
     pipeline_setting = 'OSCAR_REFUND_STATUS_PIPELINE'
 
     @classmethod
@@ -105,39 +108,41 @@ class Refund(StatusMixin, TimeStampedModel):
         """
         unrefunded_lines = [line for line in lines if not line.refund_lines.exclude(status=REFUND_LINE.DENIED).exists()]
 
-        if unrefunded_lines:
-            status = getattr(settings, 'OSCAR_INITIAL_REFUND_STATUS', REFUND.OPEN)
-            total_credit_excl_tax = sum([line.line_price_excl_tax for line in unrefunded_lines])
-            refund = cls.objects.create(
-                order=order,
-                user=order.user,
-                status=status,
-                total_credit_excl_tax=total_credit_excl_tax
+        if not unrefunded_lines:
+            return None
+
+        status = getattr(settings, 'OSCAR_INITIAL_REFUND_STATUS', REFUND.OPEN)
+        total_credit_excl_tax = sum([line.line_price_excl_tax for line in unrefunded_lines])
+        refund = cls.objects.create(
+            order=order,
+            user=order.user,
+            status=status,
+            total_credit_excl_tax=total_credit_excl_tax
+        )
+
+        audit_log(
+            'refund_created',
+            amount=total_credit_excl_tax,
+            currency=refund.currency,
+            order_number=order.number,
+            refund_id=refund.id,
+            user_id=refund.user.id
+        )
+
+        status = getattr(settings, 'OSCAR_INITIAL_REFUND_LINE_STATUS', REFUND_LINE.OPEN)
+        for line in unrefunded_lines:
+            RefundLine.objects.create(
+                refund=refund,
+                order_line=line,
+                line_credit_excl_tax=line.line_price_excl_tax,
+                quantity=line.quantity,
+                status=status
             )
 
-            audit_log(
-                'refund_created',
-                amount=total_credit_excl_tax,
-                currency=refund.currency,
-                order_number=order.number,
-                refund_id=refund.id,
-                user_id=refund.user.id
-            )
+        if total_credit_excl_tax == 0:
+            refund.approve(notify_purchaser=False)
 
-            status = getattr(settings, 'OSCAR_INITIAL_REFUND_LINE_STATUS', REFUND_LINE.OPEN)
-            for line in unrefunded_lines:
-                RefundLine.objects.create(
-                    refund=refund,
-                    order_line=line,
-                    line_credit_excl_tax=line.line_price_excl_tax,
-                    quantity=line.quantity,
-                    status=status
-                )
-
-            if total_credit_excl_tax == 0:
-                refund.approve(notify_purchaser=False)
-
-            return refund
+        return refund
 
     @property
     def num_items(self):
@@ -238,10 +243,10 @@ class Refund(StatusMixin, TimeStampedModel):
         if self.status == REFUND.COMPLETE:
             logger.info('Refund [%d] has already been completed. No additional action is required to approve.', self.id)
             return True
-        elif not self.can_approve:
+        if not self.can_approve:
             logger.warning('Refund [%d] has status set to [%s] and cannot be approved.', self.id, self.status)
             return False
-        elif self.status in (REFUND.OPEN, REFUND.PAYMENT_REFUND_ERROR):
+        if self.status in (REFUND.OPEN, REFUND.PAYMENT_REFUND_ERROR):
             try:
                 self._issue_credit()
                 self.set_status(REFUND.PAYMENT_REFUNDED)
@@ -311,6 +316,7 @@ class RefundLine(StatusMixin, TimeStampedModel):
         ]
     )
 
+    history = HistoricalRecords()
     pipeline_setting = 'OSCAR_REFUND_LINE_STATUS_PIPELINE'
 
     def deny(self):

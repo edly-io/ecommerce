@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import hashlib
 
 import ddt
@@ -5,7 +7,7 @@ import httpretty
 from edx_django_utils.cache import TieredCache
 from mock import patch
 from opaque_keys.edx.keys import CourseKey
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError as ReqConnectionError
 
 from ecommerce.coupons.tests.mixins import DiscoveryMockMixin
 from ecommerce.courses.tests.factories import CourseFactory
@@ -62,8 +64,8 @@ class UtilsTests(DiscoveryTestMixin, DiscoveryMockMixin, TestCase):
             key = product.attr.UUID
             self.mock_course_detail_endpoint(product, discovery_api_url=self.site_configuration.discovery_api_url)
 
-        cache_key = 'courses_api_detail_{}{}'.format(key, self.partner.short_code)
-        cache_key = hashlib.md5(cache_key).hexdigest()
+        cache_key = u'courses_api_detail_{}{}'.format(key, self.partner.short_code)
+        cache_key = hashlib.md5(cache_key.encode('utf-8')).hexdigest()
         course_cached_response = TieredCache.get_cached_response(cache_key)
         self.assertFalse(course_cached_response.is_found)
 
@@ -135,8 +137,8 @@ class GetCourseCatalogUtilTests(DiscoveryMockMixin, TestCase):
         Helper method to validate the response from the method
         "get_course_catalogs".
         """
-        cache_key = '{}.catalog.api.data'.format(self.request.site.domain)
-        cache_key = hashlib.md5(cache_key).hexdigest()
+        cache_key = u'{}.catalog.api.data'.format(self.request.site.domain)
+        cache_key = hashlib.md5(cache_key.encode('utf-8')).hexdigest()
         course_catalogs_cached_response = TieredCache.get_cached_response(cache_key)
         self.assertFalse(course_catalogs_cached_response.is_found)
 
@@ -158,8 +160,8 @@ class GetCourseCatalogUtilTests(DiscoveryMockMixin, TestCase):
         self.mock_catalog_detail_endpoint(self.site_configuration.discovery_api_url)
 
         catalog_id = 1
-        cache_key = '{}.catalog.api.data.{}'.format(self.request.site.domain, catalog_id)
-        cache_key = hashlib.md5(cache_key).hexdigest()
+        cache_key = u'{}.catalog.api.data.{}'.format(self.request.site.domain, catalog_id)
+        cache_key = hashlib.md5(cache_key.encode('utf-8')).hexdigest()
         course_catalogs_cached_response = TieredCache.get_cached_response(cache_key)
         self.assertFalse(course_catalogs_cached_response.is_found)
 
@@ -216,7 +218,7 @@ class GetCourseCatalogUtilTests(DiscoveryMockMixin, TestCase):
         Verify that method "get_course_catalogs" raises exception in case
         the Course Discovery API fails to return data.
         """
-        exception = ConnectionError
+        exception = ReqConnectionError
         self.mock_access_token_response()
         self.mock_discovery_api_failure(exception, self.site_configuration.discovery_api_url)
 

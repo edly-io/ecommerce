@@ -1,9 +1,8 @@
 """Development settings and globals."""
 from __future__ import absolute_import
 
-from urlparse import urljoin
-
 from corsheaders.defaults import default_headers as corsheaders_default_headers
+from six.moves.urllib.parse import urljoin
 
 from ecommerce.settings.base import *
 
@@ -77,9 +76,9 @@ JWT_AUTH.update({
     ),
 })
 
-CORS_ORIGIN_WHITELIST = [
-    'http://localhost:1991',
-    ]
+CORS_ORIGIN_WHITELIST = (
+    'http://localhost:1991'
+)
 CORS_ALLOW_HEADERS = corsheaders_default_headers + (
     'use-jwt-cookie',
 )
@@ -153,9 +152,13 @@ ENABLE_AUTO_AUTH = True
 SAILTHRU_KEY = 'abc123'
 SAILTHRU_SECRET = 'top_secret'
 
+REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] + ('rest_framework.renderers.BrowsableAPIRenderer',)
+
 #####################################################################
 # Lastly, see if the developer has any local overrides.
 if os.path.isfile(join(dirname(abspath(__file__)), 'private.py')):
     from .private import *  # pylint: disable=import-error
 
 ENTERPRISE_API_URL = urljoin(ENTERPRISE_SERVICE_URL, 'api/v1/')
+
+ENTERPRISE_CATALOG_API_URL = urljoin(ENTERPRISE_CATALOG_SERVICE_URL, 'api/v1/')

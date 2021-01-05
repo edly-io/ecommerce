@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import hashlib
 
 from django.conf import settings
@@ -33,8 +35,8 @@ def get_course_info_from_catalog(site, product):
     api = site.siteconfiguration.discovery_api_client
     partner_short_code = site.siteconfiguration.partner.short_code
 
-    cache_key = 'courses_api_detail_{}{}'.format(key, partner_short_code)
-    cache_key = hashlib.md5(cache_key).hexdigest()
+    cache_key = u'courses_api_detail_{}{}'.format(key, partner_short_code)
+    cache_key = hashlib.md5(cache_key.encode('utf-8')).hexdigest()
     course_cached_response = TieredCache.get_cached_response(cache_key)
     if course_cached_response.is_found:
         return course_cached_response.value
@@ -68,8 +70,8 @@ def get_course_catalogs(site, resource_id=None):
     resource = 'catalogs'
     base_cache_key = '{}.catalog.api.data'.format(site.domain)
 
-    cache_key = '{}.{}'.format(base_cache_key, resource_id) if resource_id else base_cache_key
-    cache_key = hashlib.md5(cache_key).hexdigest()
+    cache_key = u'{}.{}'.format(base_cache_key, resource_id) if resource_id else base_cache_key
+    cache_key = hashlib.md5(cache_key.encode('utf-8')).hexdigest()
 
     cached_response = TieredCache.get_cached_response(cache_key)
     if cached_response.is_found:
@@ -98,6 +100,6 @@ def get_certificate_type_display_value(certificate_type):
     }
 
     if certificate_type not in display_values:
-        raise ValueError('Certificate Type [%s] not found.', certificate_type)
+        raise ValueError('Certificate Type [{}] not found.'.format(certificate_type))
 
     return display_values[certificate_type]

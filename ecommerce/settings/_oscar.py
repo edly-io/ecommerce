@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 
 from django.utils.translation import ugettext_lazy as _
-from oscar import get_core_apps
 from oscar.defaults import *
 
 from ecommerce.extensions.fulfillment.status import LINE, ORDER
@@ -15,26 +14,51 @@ OSCAR_HOMEPAGE = reverse_lazy('dashboard:index')
 
 # APP CONFIGURATION
 OSCAR_APPS = [
+    'oscar',
+    'oscar.apps.address',
+    'oscar.apps.shipping',
+    'oscar.apps.catalogue.reviews',
+    'oscar.apps.search',
+    'oscar.apps.wishlists',
+
+    'ecommerce.extensions',
     'ecommerce.extensions.api',
     'ecommerce.extensions.fulfillment',
     'ecommerce.extensions.refund',
     'ecommerce.extensions.edly_ecommerce_app',
-] + get_core_apps([
     'ecommerce.extensions.analytics',
     'ecommerce.extensions.basket',
     'ecommerce.extensions.catalogue',
     'ecommerce.extensions.checkout',
     'ecommerce.extensions.customer',
-    'ecommerce.extensions.dashboard',
-    'ecommerce.extensions.dashboard.offers',
-    'ecommerce.extensions.dashboard.orders',
-    'ecommerce.extensions.dashboard.users',
     'ecommerce.extensions.offer',
     'ecommerce.extensions.order',
     'ecommerce.extensions.partner',
     'ecommerce.extensions.payment',
     'ecommerce.extensions.voucher',
-])
+
+    'oscar.apps.dashboard.reports',
+    'oscar.apps.dashboard.catalogue',
+    'oscar.apps.dashboard.partners',
+    'oscar.apps.dashboard.pages',
+    'oscar.apps.dashboard.ranges',
+    'oscar.apps.dashboard.reviews',
+    'oscar.apps.dashboard.vouchers',
+    'oscar.apps.dashboard.communications',
+    'oscar.apps.dashboard.shipping',
+
+    'ecommerce.extensions.dashboard',
+    'ecommerce.extensions.dashboard.offers',
+    'ecommerce.extensions.dashboard.refunds',
+    'ecommerce.extensions.dashboard.orders',
+    'ecommerce.extensions.dashboard.users',
+
+    # 3rd-party apps that oscar depends on
+    'haystack',
+    'treebeard',
+    'django_tables2',
+    'sorl.thumbnail',
+]
 # END APP CONFIGURATION
 
 
@@ -46,6 +70,8 @@ OSCAR_INITIAL_LINE_STATUS = LINE.OPEN
 
 # This dict defines the new order statuses than an order can move to
 OSCAR_ORDER_STATUS_PIPELINE = {
+    ORDER.PENDING: (ORDER.OPEN, ORDER.PAYMENT_ERROR),
+    ORDER.PAYMENT_ERROR: (),
     ORDER.OPEN: (ORDER.COMPLETE, ORDER.FULFILLMENT_ERROR),
     ORDER.FULFILLMENT_ERROR: (ORDER.COMPLETE,),
     ORDER.COMPLETE: ()
@@ -81,7 +107,6 @@ FULFILLMENT_MODULES = [
     'ecommerce.extensions.fulfillment.modules.EnrollmentCodeFulfillmentModule',
     'ecommerce.extensions.fulfillment.modules.CourseEntitlementFulfillmentModule',
     'ecommerce.extensions.fulfillment.modules.DonationsFromCheckoutTestFulfillmentModule',
-    'ecommerce.journals.fulfillment.modules.JournalFulfillmentModule',  # TODO: journals dependency
     'ecommerce.subscriptions.modules.SubscriptionFulfillmentModule',
 ]
 
@@ -92,6 +117,7 @@ HAYSTACK_CONNECTIONS = {
 }
 
 AUTHENTICATION_BACKENDS = (
+    'rules.permissions.ObjectPermissionBackend',
     'oscar.apps.customer.auth_backends.EmailBackend',
     'django.contrib.auth.backends.ModelBackend',
 )
@@ -234,7 +260,7 @@ OSCAR_DASHBOARD_NAVIGATION = [
             },
             {
                 'label': _('Refunds'),
-                'url_name': 'dashboard:refunds:list',
+                'url_name': 'dashboard:refunds-list',
             },
         ]
     },

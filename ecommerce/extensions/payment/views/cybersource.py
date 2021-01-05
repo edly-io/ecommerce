@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import logging
 
@@ -8,15 +8,16 @@ import waffle
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect
-from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
+from edx_django_utils import monitoring as monitoring_utils
+from edx_rest_api_client.client import EdxRestApiClient
+from edx_rest_api_client.exceptions import SlumberHttpBaseException
 from oscar.apps.partner import strategy
 from oscar.apps.payment.exceptions import GatewayError, PaymentError, TransactionDeclined, UserCancelled
 from oscar.core.loading import get_class, get_model
@@ -25,25 +26,35 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from ecommerce.core.url_utils import absolute_redirect, get_lms_url
 from ecommerce.extensions.api.serializers import OrderSerializer
-from ecommerce.extensions.basket.utils import basket_add_organization_attribute
+from ecommerce.extensions.basket.utils import (
+    basket_add_organization_attribute,
+    get_payment_microfrontend_or_basket_url
+)
 from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
 from ecommerce.extensions.checkout.utils import get_receipt_page_url
+from ecommerce.extensions.offer.constants import DYNAMIC_DISCOUNT_FLAG
 from ecommerce.extensions.payment.exceptions import (
     AuthorizationError,
     DuplicateReferenceNumber,
+    ExcessivePaymentForOrderError,
     InvalidBasketError,
-    InvalidSignatureError
+    InvalidSignatureError,
+    RedundantPaymentNotificationError
 )
 from ecommerce.extensions.payment.processors.cybersource import Cybersource
-from ecommerce.extensions.payment.utils import clean_field_value
+from ecommerce.extensions.payment.utils import checkSDN, clean_field_value
 from ecommerce.extensions.payment.views import BasePaymentSubmitView
 
 logger = logging.getLogger(__name__)
 
 Applicator = get_class('offer.applicator', 'Applicator')
 Basket = get_model('basket', 'Basket')
+BasketAttribute = get_model('basket', 'BasketAttribute')
+BasketAttributeType = get_model('basket', 'BasketAttributeType')
 BillingAddress = get_model('order', 'BillingAddress')
+BUNDLE = 'bundle_identifier'
 Country = get_model('address', 'Country')
 NoShippingRequired = get_class('shipping.methods', 'NoShippingRequired')
 Order = get_model('order', 'Order')
@@ -52,41 +63,10 @@ OrderTotalCalculator = get_class('checkout.calculators', 'OrderTotalCalculator')
 PaymentProcessorResponse = get_model('payment', 'PaymentProcessorResponse')
 
 
-class CyberSourceProcessorMixin(object):
+class CyberSourceProcessorMixin:
     @cached_property
     def payment_processor(self):
         return Cybersource(self.request.site)
-
-
-class OrderCreationMixin(EdxOrderPlacementMixin):
-    def create_order(self, request, basket, billing_address):
-        order_number = OrderNumberGenerator().order_number(basket)
-        try:
-            # Note (CCB): In the future, if we do end up shipping physical products, we will need to
-            # properly implement shipping methods. For more, see
-            # http://django-oscar.readthedocs.org/en/latest/howto/how_to_configure_shipping.html.
-            shipping_method = NoShippingRequired()
-            shipping_charge = shipping_method.calculate(basket)
-
-            # Note (CCB): This calculation assumes the payment processor has not sent a partial authorization,
-            # thus we use the amounts stored in the database rather than those received from the payment processor.
-            order_total = OrderTotalCalculator().calculate(basket, shipping_charge)
-            user = basket.owner
-
-            return self.handle_order_placement(
-                order_number,
-                user,
-                basket,
-                None,
-                shipping_method,
-                shipping_charge,
-                billing_address,
-                order_total,
-                request=request
-            )
-        except Exception:  # pylint: disable=broad-except
-            self.log_order_placement_exception(order_number, basket.id)
-            raise
 
 
 class CybersourceSubmitView(BasePaymentSubmitView):
@@ -112,12 +92,36 @@ class CybersourceSubmitView(BasePaymentSubmitView):
         request = self.request
         user = request.user
 
+        hit_count = checkSDN(
+            request,
+            data['first_name'] + ' ' + data['last_name'],
+            data['city'],
+            data['country'])
+
+        if hit_count > 0:
+            logger.info(
+                'SDNCheck function called for basket [%d]. It received %d hit(s).',
+                request.basket.id,
+                hit_count,
+            )
+            response_to_return = {
+                'error': 'There was an error submitting the basket',
+                'sdn_check_failure': {'hit_count': hit_count}}
+
+            return JsonResponse(response_to_return, status=403)
+
+        logger.info(
+            'SDNCheck function called for basket [%d]. It did not receive a hit.',
+            request.basket.id,
+        )
+
         # Add extra parameters for Silent Order POST
         extra_parameters = {
             'payment_method': 'card',
             'unsigned_field_names': ','.join(Cybersource.PCI_FIELDS),
             'bill_to_email': user.email,
-            'device_fingerprint_id': request.session.session_key,
+            # Fall back to order number when there is no session key (JWT auth)
+            'device_fingerprint_id': request.session.session_key or basket.order_number,
         }
 
         for source, destination in six.iteritems(self.FIELD_MAPPINGS):
@@ -131,6 +135,7 @@ class CybersourceSubmitView(BasePaymentSubmitView):
 
         logger.info(
             'Parameters signed for CyberSource transaction [%s], associated with basket [%d].',
+            # TODO: transaction_id is None in logs. This should be fixed.
             parameters.get('transaction_id'),
             basket.id
         )
@@ -150,7 +155,32 @@ class CybersourceSubmitView(BasePaymentSubmitView):
         return response
 
 
-class CybersourceNotificationMixin(CyberSourceProcessorMixin, OrderCreationMixin):
+class CybersourceSubmitAPIView(APIView, CybersourceSubmitView):
+    # DRF APIView wrapper which allows clients to use
+    # JWT authentication when making Cybersource submit
+    # requests.
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        logger.info(
+            '%s called for basket [%d]. It is in the [%s] state.',
+            self.__class__.__name__,
+            request.basket.id,
+            request.basket.status
+        )
+        return super(CybersourceSubmitAPIView, self).post(request)
+
+
+class CybersourceInterstitialView(CyberSourceProcessorMixin, EdxOrderPlacementMixin, View):
+    """
+    Interstitial view for Cybersource Payments.
+
+    Side effect:
+        Sets the custom metric ``payment_response_validation`` to one of the following:
+            'success', 'redirect-to-receipt', 'redirect-to-payment-page', 'redirect-to-error-page'
+
+    """
+
     # Disable atomicity for the view. Otherwise, we'd be unable to commit to the database
     # until the request had concluded; Django will refuse to commit when an atomic() block
     # is active, since that would break atomicity. Without an order present in the database
@@ -158,7 +188,7 @@ class CybersourceNotificationMixin(CyberSourceProcessorMixin, OrderCreationMixin
     @method_decorator(transaction.non_atomic_requests)
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
-        return super(CybersourceNotificationMixin, self).dispatch(request, *args, **kwargs)
+        return super(CybersourceInterstitialView, self).dispatch(request, *args, **kwargs)
 
     def _get_billing_address(self, cybersource_response):
         field = 'req_bill_to_address_line1'
@@ -183,6 +213,48 @@ class CybersourceNotificationMixin(CyberSourceProcessorMixin, OrderCreationMixin
             country=Country.objects.get(
                 iso_3166_1_a2=cybersource_response['req_bill_to_address_country']))
 
+    def _add_dynamic_discount_to_request(self, basket):
+        # TODO: Remove as a part of REVMI-124 as this is a hacky solution
+        # The problem is that orders are being created after payment processing, and the discount is not
+        # saved in the database, so it needs to be calculated again in order to save the correct info to the
+        # order. REVMI-124 will create the order before payment processing, when we have the discount context.
+        if waffle.flag_is_active(self.request, DYNAMIC_DISCOUNT_FLAG) and basket.lines.count() == 1:  # pragma: no cover  pylint: disable=line-too-long
+            discount_lms_url = get_lms_url('/api/discounts/')
+            lms_discount_client = EdxRestApiClient(discount_lms_url,
+                                                   jwt=self.request.site.siteconfiguration.access_token)
+            ck = basket.lines.first().product.course_id
+            user_id = basket.owner.lms_user_id
+            try:
+                response = lms_discount_client.user(user_id).course(ck).get()
+                self.request.POST = self.request.POST.copy()
+                self.request.POST['discount_jwt'] = response.get('jwt')
+                logger.info(
+                    """Received discount jwt from LMS with
+                    url: [%s],
+                    user_id: [%s],
+                    course_id: [%s],
+                    and basket_id: [%s]
+                    returned [%s]""",
+                    discount_lms_url,
+                    str(user_id),
+                    ck,
+                    basket.id,
+                    response)
+            except (SlumberHttpBaseException, requests.exceptions.Timeout) as error:
+                logger.warning(
+                    """Failed to receive discount jwt from LMS with
+                    url: [%s],
+                    user_id: [%s],
+                    course_id: [%s],
+                    and basket_id: [%s]
+                    returned [%s]""",
+                    discount_lms_url,
+                    str(user_id),
+                    ck,
+                    basket.id,
+                    vars(error.response) if hasattr(error, 'response') else '')
+            # End TODO
+
     def _get_basket(self, basket_id):
         if not basket_id:
             return None
@@ -191,160 +263,274 @@ class CybersourceNotificationMixin(CyberSourceProcessorMixin, OrderCreationMixin
             basket_id = int(basket_id)
             basket = Basket.objects.get(id=basket_id)
             basket.strategy = strategy.Default()
+
+            # TODO: Remove as a part of REVMI-124 as this is a hacky solution
+            # The problem is that orders are being created after payment processing, and the discount is not
+            # saved in the database, so it needs to be calculated again in order to save the correct info to the
+            # order. REVMI-124 will create the order before payment processing, when we have the discount context.
+            self._add_dynamic_discount_to_request(basket)
+            # End TODO
+
             Applicator().apply(basket, basket.owner, self.request)
+            logger.info(
+                'Applicator applied, basket id: [%s]',
+                basket.id)
             return basket
-        except (ValueError, ObjectDoesNotExist):
+        except (ValueError, ObjectDoesNotExist) as error:
+            logger.warning(
+                'Could not get basket--error: [%s]',
+                str(error))
             return None
 
-    def validate_notification(self, notification):
+    def get_ids_from_notification(self, notification):
+        transaction_id = notification.get('transaction_id')
+        order_number = notification.get('req_reference_number')
+        try:
+            basket_id = OrderNumberGenerator().basket_id(order_number)
+        except:  # pylint: disable=bare-except
+            logger.exception(
+                'Error generating basket_id from CyberSource notification with transaction [%s] and order [%s].',
+                transaction_id,
+                order_number,
+            )
+        return (transaction_id, order_number, basket_id)
+
+    # Note: method has too-many-statements, but it enables tracking that all exception handling gets logged
+    def validate_notification(self, notification):  # pylint: disable=too-many-statements
         # Note (CCB): Orders should not be created until the payment processor has validated the response's signature.
         # This validation is performed in the handle_payment method. After that method succeeds, the response can be
         # safely assumed to have originated from CyberSource.
         basket = None
         transaction_id = None
+        notification = notification or {}
+        unhandled_exception_logging = True
 
         try:
-            transaction_id = notification.get('transaction_id')
-            order_number = notification.get('req_reference_number')
-            basket_id = OrderNumberGenerator().basket_id(order_number)
 
-            logger.info(
-                'Received CyberSource payment notification for transaction [%s], associated with basket [%d].',
-                transaction_id,
-                basket_id
-            )
-
-            basket = self._get_basket(basket_id)
-
-            if not basket:
-                logger.error('Received CyberSource payment notification for non-existent basket [%s].', basket_id)
-                raise InvalidBasketError
-
-            if basket.status != Basket.FROZEN:
-                # We don't know how serious this situation is at this point, hence
-                # the INFO level logging. This notification is most likely CyberSource
-                # telling us that they've declined an attempt to pay for an existing order.
-                logger.info(
-                    'Received CyberSource payment notification for basket [%d] which is in a non-frozen state, [%s]',
-                    basket.id, basket.status
-                )
-        finally:
-            # Store the response in the database regardless of its authenticity.
-            ppr = self.payment_processor.record_processor_response(
-                notification, transaction_id=transaction_id, basket=basket
-            )
-
-        # Explicitly delimit operations which will be rolled back if an exception occurs.
-        with transaction.atomic():
             try:
-                self.handle_payment(notification, basket)
-            except InvalidSignatureError:
-                logger.exception(
-                    'Received an invalid CyberSource response. The payment response was recorded in entry [%d].',
-                    ppr.id
-                )
-                raise
-            except (UserCancelled, TransactionDeclined) as exception:
+                transaction_id, order_number, basket_id = self.get_ids_from_notification(notification)
+
                 logger.info(
-                    'CyberSource payment did not complete for basket [%d] because [%s]. '
-                    'The payment response [%s] was recorded in entry [%d].',
-                    basket.id,
-                    exception.__class__.__name__,
-                    notification.get("message", "Unknown Error"),
-                    ppr.id
+                    'Received CyberSource payment notification for transaction [%s], associated with order [%s]'
+                    ' and basket [%d].',
+                    transaction_id,
+                    order_number,
+                    basket_id
                 )
-                raise
-            except DuplicateReferenceNumber:
-                logger.info(
-                    'Received CyberSource payment notification for basket [%d] which is associated '
-                    'with existing order [%s]. No payment was collected, and no new order will be created.',
-                    basket.id,
-                    order_number
+
+                basket = self._get_basket(basket_id)
+
+                if not basket:
+                    error_message = (
+                        'Received CyberSource payment notification for non-existent basket [%s].' % basket_id
+                    )
+                    logger.error(error_message)
+                    unhandled_exception_logging = False
+                    raise InvalidBasketError(error_message)
+
+                if basket.status != Basket.FROZEN:
+                    # We don't know how serious this situation is at this point, hence
+                    # the INFO level logging. This notification is most likely CyberSource
+                    # telling us that they've declined an attempt to pay for an existing order.
+                    logger.info(
+                        'Received CyberSource payment notification for basket [%d] which is in a non-frozen state,'
+                        ' [%s]',
+                        basket.id, basket.status
+                    )
+            finally:
+                # Store the response in the database regardless of its authenticity.
+                ppr = self.payment_processor.record_processor_response(
+                    notification, transaction_id=transaction_id, basket=basket
                 )
-                raise
-            except AuthorizationError:
-                logger.info(
-                    'Payment Authorization was declined for basket [%d]. The payment response was '
-                    'recorded in entry [%d].',
-                    basket.id,
-                    ppr.id,
-                )
-            except PaymentError:
+                self._set_payment_response_custom_metrics(basket, notification, order_number, ppr, transaction_id)
+
+            # Explicitly delimit operations which will be rolled back if an exception occurs.
+            with transaction.atomic():
+                try:
+                    self.handle_payment(notification, basket)
+                except (UserCancelled, TransactionDeclined, AuthorizationError) as exception:
+                    self._log_cybersource_payment_failure(
+                        exception, basket, order_number, transaction_id, notification, ppr,
+                        logger_function=logger.info,
+                    )
+                    unhandled_exception_logging = False
+                    raise
+                except DuplicateReferenceNumber:
+                    logger.info(
+                        'Received CyberSource payment notification for basket [%d] which is associated '
+                        'with existing order [%s]. No payment was collected, and no new order will be created.',
+                        basket.id,
+                        order_number
+                    )
+                    unhandled_exception_logging = False
+                    raise
+                except RedundantPaymentNotificationError:
+                    logger.info(
+                        'Received redundant CyberSource payment notification with same transaction ID for basket [%d] '
+                        'which is associated with an existing order [%s]. No payment was collected.',
+                        basket.id,
+                        order_number
+                    )
+                    unhandled_exception_logging = False
+                    raise
+                except ExcessivePaymentForOrderError:
+                    logger.info(
+                        'Received duplicate CyberSource payment notification with different transaction ID for basket '
+                        '[%d] which is associated with an existing order [%s]. Payment collected twice, request a '
+                        'refund.',
+                        basket.id,
+                        order_number
+                    )
+                    unhandled_exception_logging = False
+                    raise
+                except InvalidSignatureError as exception:
+                    self._log_cybersource_payment_failure(
+                        exception, basket, order_number, transaction_id, notification, ppr,
+                        message_prefix='CyberSource response was invalid.',
+                    )
+                    unhandled_exception_logging = False
+                    raise
+                except (PaymentError, Exception) as exception:
+                    self._log_cybersource_payment_failure(
+                        exception, basket, order_number, transaction_id, notification, ppr,
+                    )
+                    unhandled_exception_logging = False
+                    raise
+
+        except:  # pylint: disable=bare-except
+            if unhandled_exception_logging:
                 logger.exception(
-                    'CyberSource payment failed for basket [%d]. The payment response [%s] was recorded in entry [%d].',
-                    basket.id,
-                    notification.get("message", "Unknown Error"),
-                    ppr.id
+                    'Unhandled exception processing CyberSource payment notification for transaction [%s], order [%s], '
+                    'and basket [%d].',
+                    transaction_id,
+                    order_number,
+                    basket_id
                 )
-                raise
-            except:  # pylint: disable=bare-except
-                logger.exception(
-                    'Attempts to handle payment for basket [%d] failed. The payment response [%s] was recorded in'
-                    ' entry [%d].',
-                    basket.id,
-                    notification.get("message", "Unknown Error"),
-                    ppr.id
-                )
-                raise
+            raise
 
         return basket
 
+    def _set_payment_response_custom_metrics(self, basket, notification, order_number, ppr, transaction_id):
+        # IMPORTANT: Do not set metric for the entire `notification`, because it includes PII.
+        #   It is accessible using the `payment_response_record_id` if needed.
+        monitoring_utils.set_custom_metric('payment_response_processor_name', 'cybersource')
+        monitoring_utils.set_custom_metric('payment_response_basket_id', basket.id)
+        monitoring_utils.set_custom_metric('payment_response_order_number', order_number)
+        monitoring_utils.set_custom_metric('payment_response_transaction_id', transaction_id)
+        monitoring_utils.set_custom_metric('payment_response_record_id', ppr.id)
+        # For reason_code, see https://support.cybersource.com/s/article/What-does-this-response-code-mean#code_table
+        reason_code = notification.get("reason_code", "not-found")
+        monitoring_utils.set_custom_metric('payment_response_reason_code', reason_code)
+        payment_response_message = notification.get("message", 'Unknown Error')
+        monitoring_utils.set_custom_metric('payment_response_message', payment_response_message)
 
-class CybersourceInterstitialView(CybersourceNotificationMixin, View):
-    """ Interstitial view for Cybersource Payments. """
+    def _log_cybersource_payment_failure(
+            self, exception, basket, order_number, transaction_id, notification, ppr,
+            message_prefix=None, logger_function=None
+    ):
+        """ Logs standard payment response as exception log unless logger_function supplied. """
+        message_prefix = message_prefix + ' ' if message_prefix else ''
+        logger_function = logger_function if logger_function else logger.exception
+        # pylint: disable=logging-not-lazy
+        logger_function(
+            message_prefix +
+            'CyberSource payment failed due to [%s] for transaction [%s], order [%s], and basket [%d]. '
+            'The complete payment response [%s] was recorded in entry [%d].',
+            exception.__class__.__name__,
+            transaction_id,
+            order_number,
+            basket.id,
+            notification.get("message", "Unknown Error"),
+            ppr.id
+        )
 
     def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         """Process a CyberSource merchant notification and place an order for paid products as appropriate."""
+        notification = request.POST.dict()
         try:
-            notification = request.POST.dict()
             basket = self.validate_notification(notification)
+            monitoring_utils.set_custom_metric('payment_response_validation', 'success')
         except DuplicateReferenceNumber:
             # CyberSource has told us that they've declined an attempt to pay
             # for an existing order. If this happens, we can redirect the browser
             # to the receipt page for the existing order.
+            monitoring_utils.set_custom_metric('payment_response_validation', 'redirect-to-receipt')
             return self.redirect_to_receipt_page(notification)
         except TransactionDeclined:
             # Declined transactions are the most common cause of errors during payment
             # processing and tend to be easy to correct (e.g., an incorrect CVV may have
             # been provided). The recovery path is not as clear for other exceptions,
             # so we let those drop through to the payment error page.
-            order_number = request.POST.get('req_reference_number')
-            old_basket_id = OrderNumberGenerator().basket_id(order_number)
-            old_basket = Basket.objects.get(id=old_basket_id)
+            self._merge_old_basket_into_new(request)
 
-            new_basket = Basket.objects.create(owner=old_basket.owner, site=request.site)
+            messages.error(self.request, _('transaction declined'), extra_tags='transaction-declined-message')
 
-            # We intentionally avoid thawing the old basket here to prevent order
-            # numbers from being reused. For more, refer to commit a1efc68.
-            new_basket.merge(old_basket, add_quantities=False)
+            monitoring_utils.set_custom_metric('payment_response_validation', 'redirect-to-payment-page')
+            # TODO:
+            # 1. There are sometimes messages from CyberSource that would make a more helpful message for users.
+            # 2. We could have similar handling of other exceptions like UserCancelled and AuthorizationError
 
-            message = _(
-                'An error occurred while processing your payment. You have not been charged. '
-                'Please double-check the information you provided and try again. '
-                'For help, {link_start}contact support{link_end}.'
-            ).format(
-                link_start='<a href="{}">'.format(request.site.siteconfiguration.payment_support_url),
-                link_end='</a>',
-            )
+            redirect_url = get_payment_microfrontend_or_basket_url(self.request)
+            return HttpResponseRedirect(redirect_url)
 
-            messages.error(request, mark_safe(message))
-
-            return redirect(reverse('basket:summary'))
         except:  # pylint: disable=bare-except
-            return redirect(reverse('payment_error'))
+            # logging handled by validate_notification, because not all exceptions are problematic
+            monitoring_utils.set_custom_metric('payment_response_validation', 'redirect-to-error-page')
+            return absolute_redirect(request, 'payment_error')
 
         try:
             order = self.create_order(request, basket, self._get_billing_address(notification))
             self.handle_post_order(order)
-
             return self.redirect_to_receipt_page(notification)
         except:  # pylint: disable=bare-except
-            return redirect(reverse('payment_error'))
+            transaction_id, order_number, basket_id = self.get_ids_from_notification(notification)
+            logger.exception(
+                'Error processing order for transaction [%s], with order [%s] and basket [%d].',
+                transaction_id,
+                order_number,
+                basket_id
+            )
+            return absolute_redirect(request, 'payment_error')
+
+    def _merge_old_basket_into_new(self, request):
+        """
+        Upon declined transaction merge old basket into new one and also copy bundle attibute
+        over to new basket if any.
+        """
+        order_number = request.POST.get('req_reference_number')
+        old_basket_id = OrderNumberGenerator().basket_id(order_number)
+        old_basket = Basket.objects.get(id=old_basket_id)
+
+        bundle_attributes = BasketAttribute.objects.filter(
+            basket=old_basket,
+            attribute_type=BasketAttributeType.objects.get(name=BUNDLE)
+        )
+        bundle = bundle_attributes.first().value_text if bundle_attributes.count() > 0 else None
+
+        new_basket = Basket.objects.create(owner=old_basket.owner, site=request.site)
+
+        # We intentionally avoid thawing the old basket here to prevent order
+        # numbers from being reused. For more, refer to commit a1efc68.
+        new_basket.merge(old_basket, add_quantities=False)
+        if bundle:
+            BasketAttribute.objects.update_or_create(
+                basket=new_basket,
+                attribute_type=BasketAttributeType.objects.get(name=BUNDLE),
+                defaults={'value_text': bundle}
+            )
+
+        logger.info(
+            'Created new basket [%d] from old basket [%d] for declined transaction with bundle [%s].',
+            new_basket.id,
+            old_basket_id,
+            bundle
+        )
 
     def redirect_to_receipt_page(self, notification):
         receipt_page_url = get_receipt_page_url(
             self.request.site.siteconfiguration,
-            order_number=notification.get('req_reference_number')
+            order_number=notification.get('req_reference_number'),
+            disable_back_button=True,
         )
 
         return redirect(receipt_page_url)
@@ -355,13 +541,25 @@ class ApplePayStartSessionView(CyberSourceProcessorMixin, APIView):
 
     def post(self, request):
         url = request.data.get('url')
-
         if not url:
             raise ValidationError({'error': 'url is required'})
 
+        # The domain name sent to Apple Pay needs to match the domain name of the frontend.
+        # We use a URL parameter to indicate whether the new Payment microfrontend was used to
+        # make this request - since the use of the new microfrontend is request-specific - depends
+        # on the state of the waffle toggle, the user's A/B test bucket, and user's toggle choice.
+        #
+        # As an alternative implementation, one can look at the domain of the requesting client,
+        # instead of relying on this boolean URL parameter. We are going with a URL parameter since
+        # it is simplest for testing at this time.
+        if request.data.get('is_payment_microfrontend'):
+            domain_name = request.site.siteconfiguration.payment_domain_name
+        else:
+            domain_name = request.site.domain
+
         data = {
             'merchantIdentifier': self.payment_processor.apple_pay_merchant_identifier,
-            'domainName': request.site.domain,
+            'domainName': domain_name,
             'displayName': request.site.name,
         }
 
@@ -374,7 +572,7 @@ class ApplePayStartSessionView(CyberSourceProcessorMixin, APIView):
         return JsonResponse(response.json(), status=response.status_code)
 
 
-class CybersourceApplePayAuthorizationView(CyberSourceProcessorMixin, OrderCreationMixin, APIView):
+class CybersourceApplePayAuthorizationView(CyberSourceProcessorMixin, EdxOrderPlacementMixin, APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def _get_billing_address(self, apple_pay_payment_contact):
@@ -426,7 +624,7 @@ class CybersourceApplePayAuthorizationView(CyberSourceProcessorMixin, OrderCreat
         except GatewayError:
             return Response({'error': 'payment_failed'}, status=status.HTTP_502_BAD_GATEWAY)
 
-        order = self.create_order(request, basket, billing_address)
+        order = self.create_order(request, basket, billing_address=billing_address)
         return Response(OrderSerializer(order, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
     def handle_payment(self, response, basket):

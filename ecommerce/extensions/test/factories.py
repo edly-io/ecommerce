@@ -1,23 +1,40 @@
+from __future__ import absolute_import
+
 import uuid
-from datetime import datetime
+from datetime import timedelta
 
 import factory
 from django.utils.timezone import now
+from oscar.test.factories import Basket, BenefitFactory
 from oscar.test.factories import ConditionalOfferFactory as BaseConditionalOfferFactory
+from oscar.test.factories import (
+    ConditionFactory,
+    D,
+    Free,
+    OrderCreator,
+    OrderTotalCalculator,
+    ProductFactory,
+    RangeFactory
+)
 from oscar.test.factories import VoucherFactory as BaseVoucherFactory
-from oscar.test.factories import *  # pylint:disable=wildcard-import,unused-wildcard-import
+from oscar.test.factories import create_product, create_stockrecord, get_class, get_model
 
 from ecommerce.enterprise.benefits import BENEFIT_MAP as ENTERPRISE_BENEFIT_MAP
 from ecommerce.enterprise.benefits import EnterpriseAbsoluteDiscountBenefit, EnterprisePercentageDiscountBenefit
 from ecommerce.enterprise.conditions import AssignableEnterpriseCustomerCondition, EnterpriseCustomerCondition
-from ecommerce.extensions.offer.models import OFFER_PRIORITY_ENTERPRISE, OFFER_PRIORITY_VOUCHER, OfferAssignment
-# TODO: journals dependency
-from ecommerce.journals.benefits import JournalBundleAbsoluteDiscountBenefit, JournalBundlePercentageDiscountBenefit
-from ecommerce.journals.conditions import JournalBundleCondition
+from ecommerce.extensions.offer.dynamic_conditional_offer import DynamicPercentageDiscountBenefit
+from ecommerce.extensions.offer.models import (
+    OFFER_PRIORITY_ENTERPRISE,
+    OFFER_PRIORITY_MANUAL_ORDER,
+    OFFER_PRIORITY_VOUCHER,
+    OfferAssignment
+)
+from ecommerce.extensions.order.benefits import ManualEnrollmentOrderDiscountBenefit
+from ecommerce.extensions.order.conditions import ManualEnrollmentOrderDiscountCondition
 from ecommerce.programs.benefits import AbsoluteDiscountBenefitWithoutRange, PercentageDiscountBenefitWithoutRange
 from ecommerce.programs.conditions import ProgramCourseRunSeatsCondition
 from ecommerce.programs.custom import class_path
-from ecommerce.tests.factories import SiteConfigurationFactory
+from ecommerce.tests.factories import SiteConfigurationFactory, UserFactory
 
 Benefit = get_model('offer', 'Benefit')
 Catalog = get_model('catalogue', 'Catalog')
@@ -95,10 +112,10 @@ def prepare_voucher(code='COUPONTEST', _range=None, start_datetime=None, end_dat
         product = ProductFactory(categories=[])
 
     if start_datetime is None:
-        start_datetime = now() - datetime.timedelta(days=1)
+        start_datetime = now() - timedelta(days=1)
 
     if end_datetime is None:
-        end_datetime = now() + datetime.timedelta(days=10)
+        end_datetime = now() + timedelta(days=10)
 
     voucher = VoucherFactory(
         code=code,
@@ -135,10 +152,10 @@ def prepare_enterprise_voucher(code='COUPONTEST', start_datetime=None, end_datet
                                enterprise_customer=None, enterprise_customer_catalog=None):
     """ Helper function to create a voucher and add an enterprise conditional offer to it. """
     if start_datetime is None:
-        start_datetime = now() - datetime.timedelta(days=1)
+        start_datetime = now() - timedelta(days=1)
 
     if end_datetime is None:
-        end_datetime = now() + datetime.timedelta(days=10)
+        end_datetime = now() + timedelta(days=10)
 
     voucher = VoucherFactory(
         code=code,
@@ -199,7 +216,7 @@ class ProgramCourseRunSeatsConditionFactory(ConditionFactory):
     program_uuid = factory.LazyFunction(uuid.uuid4)
     proxy_class = class_path(ProgramCourseRunSeatsCondition)
 
-    class Meta(object):
+    class Meta:
         model = ProgramCourseRunSeatsCondition
 
 
@@ -234,15 +251,38 @@ class EnterpriseCustomerConditionFactory(ConditionFactory):
     enterprise_customer_catalog_uuid = factory.LazyFunction(uuid.uuid4)
     proxy_class = class_path(EnterpriseCustomerCondition)
 
-    class Meta(object):
+    class Meta:
         model = EnterpriseCustomerCondition
 
 
 class AssignableEnterpriseCustomerConditionFactory(ConditionFactory):
     proxy_class = class_path(AssignableEnterpriseCustomerCondition)
 
-    class Meta(object):
+    class Meta:
         model = AssignableEnterpriseCustomerCondition
+
+
+class ManualEnrollmentOrderDiscountConditionFactory(ConditionFactory):
+    proxy_class = class_path(ManualEnrollmentOrderDiscountCondition)
+
+    class Meta:
+        model = ManualEnrollmentOrderDiscountCondition
+
+
+class ManualEnrollmentOrderDiscountBenefitFactory(BenefitFactory):
+    range = None
+    type = ''
+    value = 100
+    proxy_class = class_path(ManualEnrollmentOrderDiscountBenefit)
+
+
+class ManualEnrollmentOrderOfferFactory(ConditionalOfferFactory):
+    benefit = factory.SubFactory(ManualEnrollmentOrderDiscountBenefitFactory)
+    condition = factory.SubFactory(ManualEnrollmentOrderDiscountConditionFactory)
+    max_basket_applications = None
+    offer_type = ConditionalOffer.USER
+    priority = OFFER_PRIORITY_MANUAL_ORDER
+    status = ConditionalOffer.OPEN
 
 
 class EnterpriseOfferFactory(ConditionalOfferFactory):
@@ -259,43 +299,12 @@ class OfferAssignmentFactory(factory.DjangoModelFactory):
     code = factory.Sequence(lambda n: 'VOUCHERCODE{number}'.format(number=n))
     user_email = factory.Sequence(lambda n: 'example_%s@example.com' % n)
 
-    class Meta(object):
+    class Meta:
         model = OfferAssignment
 
 
-# TODO: journals dependency
-class JournalAbsoluteDiscountBenefitFactory(BenefitFactory):
+class DynamicPercentageDiscountBenefitFactory(BenefitFactory):
     range = None
     type = ''
-    value = 10
-    proxy_class = class_path(JournalBundleAbsoluteDiscountBenefit)
-
-
-# TODO: journals dependency
-class JournalPercentageDiscountBenefitFactory(BenefitFactory):
-    range = None
-    type = ''
-    value = 10
-    proxy_class = class_path(JournalBundlePercentageDiscountBenefit)
-
-
-# TODO: journals dependency
-class JournalConditionFactory(ConditionFactory):
-    range = None
-    type = ''
-    value = None
-    journal_bundle_uuid = factory.LazyFunction(uuid.uuid4)
-    proxy_class = class_path(JournalBundleCondition)
-
-    class Meta(object):
-        model = JournalBundleCondition
-
-
-# TODO: journals dependency
-class JournalBundleOfferFactory(ConditionalOfferFactory):
-    benefit = factory.SubFactory(JournalPercentageDiscountBenefitFactory)
-    condition = factory.SubFactory(JournalConditionFactory)
-    max_basket_applications = 1
-    offer_type = ConditionalOffer.SITE
-    priority = OFFER_PRIORITY_ENTERPRISE
-    status = ConditionalOffer.OPEN
+    value = 1
+    proxy_class = class_path(DynamicPercentageDiscountBenefit)

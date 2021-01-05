@@ -1,11 +1,12 @@
 """
 This command generates enrollment codes for courses.
 """
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import logging
 import os
 
+import six
 from django.core.management import BaseCommand, CommandError
 
 from ecommerce.core.constants import ENROLLMENT_CODE_SEAT_TYPES
@@ -18,7 +19,6 @@ class CourseInfoError(Exception):
     """
     Raised when course does not have all the required data.
     """
-    pass
 
 
 class Command(BaseCommand):
@@ -79,7 +79,7 @@ class Command(BaseCommand):
         total_courses = 0
 
         courses = Course.objects.all()[0:batch_limit]
-        while len(courses) > 0:
+        while courses:
             total_courses += len(courses)
             logger.info('Creating enrollment code for %d courses.', courses.count())
 
@@ -90,7 +90,7 @@ class Command(BaseCommand):
                     logger.error(
                         'Enrollment code generation failed for "%s" course. Because %s',
                         course.id,
-                        error.message,
+                        six.text_type(error),
                     )
                     failed_courses.append(course.id)
 
@@ -131,7 +131,7 @@ class Command(BaseCommand):
                     logger.error(
                         'Enrollment code generation failed for "%s" course. Because %s',
                         course.id,
-                        error.message,
+                        six.text_type(error),
                     )
                     failed_courses.append(course.id)
         return total_courses, failed_courses
@@ -220,11 +220,11 @@ class Command(BaseCommand):
             id_verification_required = getattr(seat.attr, 'id_verification_required', False)
 
             return seat_type, price, id_verification_required
-        elif len(seats) > 1:
+        if len(seats) > 1:
             raise CourseInfoError(
                 'Course "%s" has multiple seats eligible for enrollment codes.' % course.id
             )
-        else:
-            raise CourseInfoError(
-                'Course "%s" does not have any seat eligible for enrollment codes.' % course.id
-            )
+
+        raise CourseInfoError(
+            'Course "%s" does not have any seat eligible for enrollment codes.' % course.id
+        )

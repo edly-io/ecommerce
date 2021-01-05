@@ -1,5 +1,5 @@
 """ CyberSource payment processing. """
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import base64
 import datetime
@@ -8,6 +8,7 @@ import logging
 import uuid
 from decimal import Decimal
 
+import six
 from django.conf import settings
 from django.urls import reverse
 from oscar.apps.payment.exceptions import GatewayError, TransactionDeclined, UserCancelled
@@ -23,11 +24,13 @@ from ecommerce.extensions.payment.constants import APPLE_PAY_CYBERSOURCE_CARD_TY
 from ecommerce.extensions.payment.exceptions import (
     AuthorizationError,
     DuplicateReferenceNumber,
+    ExcessivePaymentForOrderError,
     InvalidCybersourceDecision,
     InvalidSignatureError,
     PartialAuthorizationError,
     PCIViolation,
-    ProcessorMisconfiguredError
+    ProcessorMisconfiguredError,
+    RedundantPaymentNotificationError
 )
 from ecommerce.extensions.payment.helpers import sign
 from ecommerce.extensions.payment.processors import (
@@ -35,12 +38,13 @@ from ecommerce.extensions.payment.processors import (
     BaseClientSidePaymentProcessor,
     HandledProcessorResponse
 )
-from ecommerce.extensions.payment.utils import clean_field_value
+from ecommerce.extensions.payment.utils import clean_field_value, get_basket_program_uuid
 
 logger = logging.getLogger(__name__)
 
 Order = get_model('order', 'Order')
 OrderNumberGenerator = get_class('order.utils', 'OrderNumberGenerator')
+PaymentProcessorResponse = get_model('payment', 'PaymentProcessorResponse')
 
 
 class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
@@ -181,10 +185,12 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
                 order_number=basket.order_number,
                 override_url=site.siteconfiguration.build_ecommerce_url(
                     reverse('cybersource:redirect')
-                )
+                ),
+                disable_back_button=True,
             ),
             'override_custom_cancel_page': self.cancel_page_url,
         }
+        extra_data = []
         # Level 2/3 details
         if self.send_level_2_3_details:
             parameters['amex_data_taa1'] = site.name
@@ -193,6 +199,14 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
             # Note (CCB): This field (purchase order) is required for Visa;
             # but, is not actually used by us/exposed on the order form.
             parameters['user_po'] = 'BLANK'
+
+            # Add a parameter specifying the basket's program, None if not present.
+            # This program UUID will *always* be in the merchant_defined_data1, if exists.
+            program_uuid = get_basket_program_uuid(basket)
+            if program_uuid:
+                extra_data.append("program,{program_uuid}".format(program_uuid=program_uuid))
+            else:
+                extra_data.append(None)
 
             for index, line in enumerate(basket.all_lines()):
                 parameters['item_{}_code'.format(index)] = line.product.get_product_class().slug
@@ -209,6 +223,16 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
                 parameters['item_{}_unit_of_measure'.format(index)] = 'ITM'
                 parameters['item_{}_unit_price'.format(index)] = str(line.unit_price_incl_tax)
 
+                # For each basket line having a course product, add course_id and course type
+                # as an extra CSV-formatted parameter sent to Cybersource.
+                # These extra course parameters will be in parameters merchant_defined_data2+.
+                line_course = line.product.course
+                if line_course:
+                    extra_data.append("course,{course_id},{course_type}".format(
+                        course_id=line_course.id if line_course else None,
+                        course_type=line_course.type if line_course else None
+                    ))
+
         # Only send consumer_id for hosted payment page
         if not use_sop_profile:
             parameters['consumer_id'] = basket.owner.username
@@ -217,10 +241,17 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
         parameters.update(kwargs.get('extra_parameters', {}))
 
         # Mitigate PCI compliance issues
-        signed_field_names = parameters.keys()
+        signed_field_names = list(parameters.keys())
         if any(pci_field in signed_field_names for pci_field in self.PCI_FIELDS):
             raise PCIViolation('One or more PCI-related fields is contained in the payment parameters. '
                                'This service is NOT PCI-compliant! Deactivate this service immediately!')
+
+        if extra_data:
+            # CyberSource allows us to send additional data in merchant_defined_data# fields.
+            for num, item in enumerate(extra_data, start=1):
+                if item:
+                    key = u"merchant_defined_data{num}".format(num=num)
+                    parameters[key] = item
 
         return parameters
 
@@ -264,12 +295,11 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
                 # the order creation process. to upgrade user in correct course mode.
                 if Order.objects.filter(number=response['req_reference_number']).exists():
                     raise DuplicateReferenceNumber
-                else:
-                    logger.info(
-                        'Received duplicate CyberSource payment notification for basket [%d] which is not associated '
-                        'with any existing order. Continuing to validation and order creation processes.',
-                        basket.id,
-                    )
+                logger.info(
+                    'Received duplicate CyberSource payment notification for basket [%d] which is not associated '
+                    'with any existing order. Continuing to validation and order creation processes.',
+                    basket.id,
+                )
             else:
                 raise {
                     'cancel': UserCancelled,
@@ -278,16 +308,22 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
                     'review': AuthorizationError,
                 }.get(decision, InvalidCybersourceDecision)
 
-        # Raise an exception if the authorized amount differs from the requested amount.
-        # Note (CCB): We should never reach this point in production since partial authorization is disabled
-        # for our account, and should remain that way until we have a proper solution to allowing users to
-        # complete authorization for the entire order
-        if response['auth_amount'] and response['auth_amount'] != response['req_amount']:
+        transaction_id = response.get('transaction_id', '')  # Error Notifications do not include a transaction id.
+        if transaction_id and decision == 'accept':
+            if Order.objects.filter(number=response['req_reference_number']).exists():
+                if PaymentProcessorResponse.objects.filter(transaction_id=transaction_id).exists():
+                    raise RedundantPaymentNotificationError
+                raise ExcessivePaymentForOrderError
+
+        if 'auth_amount' in response and response['auth_amount'] and response['auth_amount'] != response['req_amount']:
+            # Raise an exception if the authorized amount differs from the requested amount.
+            # Note (CCB): We should never reach this point in production since partial authorization is disabled
+            # for our account, and should remain that way until we have a proper solution to allowing users to
+            # complete authorization for the entire order
             raise PartialAuthorizationError
 
         currency = response['req_currency']
         total = Decimal(response['req_amount'])
-        transaction_id = response.get('transaction_id', None)  # Error Notifications does not include a transaction id.
         card_number = response['req_card_number']
         card_type = CYBERSOURCE_CARD_TYPE_MAP.get(response['req_card_type'])
 
@@ -363,7 +399,7 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
             }
             purchase_totals = {
                 'currency': currency,
-                'grandTotalAmount': unicode(amount),
+                'grandTotalAmount': six.text_type(amount),
             }
 
             response = client.service.runTransaction(
@@ -385,11 +421,10 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
 
         if response.decision == 'ACCEPT':
             return request_id
-        else:
-            raise GatewayError(
-                'Failed to issue CyberSource credit for order [{order_number}]. '
-                'Complete response has been recorded in entry [{response_id}]'.format(
-                    order_number=order_number, response_id=ppr.id))
+        raise GatewayError(
+            'Failed to issue CyberSource credit for order [{order_number}]. '
+            'Complete response has been recorded in entry [{response_id}]'.format(
+                order_number=order_number, response_id=ppr.id))
 
     def request_apple_pay_authorization(self, basket, billing_address, payment_token):
         """
@@ -429,7 +464,7 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
             }
             encrypted_payment = {
                 'descriptor': 'RklEPUNPTU1PTi5BUFBMRS5JTkFQUC5QQVlNRU5U',
-                'data': base64.b64encode(json.dumps(payment_token['paymentData'])),
+                'data': base64.b64encode(json.dumps(payment_token['paymentData']).encode('utf-8')),
                 'encoding': 'Base64',
             }
             card = {
@@ -490,9 +525,8 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
                 card_number='Apple Pay',
                 card_type=CYBERSOURCE_CARD_TYPE_MAP.get(card_type)
             )
-        else:
-            msg = ('CyberSource rejected an Apple Pay authorization request for basket [{basket_id}]. '
-                   'Complete response has been recorded in entry [{response_id}]')
-            msg = msg.format(basket_id=basket.id, response_id=ppr.id)
-            logger.warning(msg)
+        msg = ('CyberSource rejected an Apple Pay authorization request for basket [{basket_id}]. '
+               'Complete response has been recorded in entry [{response_id}]')
+        msg = msg.format(basket_id=basket.id, response_id=ppr.id)
+        logger.warning(msg)
         raise GatewayError(msg)

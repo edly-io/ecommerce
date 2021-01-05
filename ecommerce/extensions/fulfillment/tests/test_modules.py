@@ -1,29 +1,43 @@
 """Tests of the Fulfillment API's fulfillment modules."""
+from __future__ import absolute_import
+
 import datetime
 import json
 import uuid
+from decimal import Decimal
 
 import ddt
 import httpretty
 import mock
+from django.conf import settings
 from django.test import override_settings
 from oscar.core.loading import get_class, get_model
 from oscar.test import factories
-from requests.exceptions import ConnectionError, Timeout
+from requests.exceptions import ConnectionError as ReqConnectionError
+from requests.exceptions import Timeout
+from six import assertCountEqual
+from six.moves.urllib.parse import urlencode
 from testfixtures import LogCapture
+from waffle.testutils import override_switch
 
 from ecommerce.core.constants import (
     COUPON_PRODUCT_CLASS_NAME,
     COURSE_ENTITLEMENT_PRODUCT_CLASS_NAME,
     DONATIONS_FROM_CHECKOUT_TESTS_PRODUCT_TYPE_NAME,
     ENROLLMENT_CODE_PRODUCT_CLASS_NAME,
+    HUBSPOT_FORMS_INTEGRATION_ENABLE,
+    ISO_8601_FORMAT,
     SEAT_PRODUCT_CLASS_NAME
 )
 from ecommerce.core.url_utils import get_lms_enrollment_api_url, get_lms_entitlement_api_url
 from ecommerce.coupons.tests.mixins import CouponMixin
+from ecommerce.courses.models import Course
 from ecommerce.courses.tests.factories import CourseFactory
 from ecommerce.courses.utils import mode_for_product
+from ecommerce.enterprise.conditions import EnterpriseCustomerCondition
 from ecommerce.entitlements.utils import create_or_update_course_entitlement
+from ecommerce.extensions.basket.constants import PURCHASER_BEHALF_ATTRIBUTE
+from ecommerce.extensions.basket.utils import basket_add_organization_attribute
 from ecommerce.extensions.catalogue.tests.mixins import DiscoveryTestMixin
 from ecommerce.extensions.fulfillment.modules import (
     CouponFulfillmentModule,
@@ -34,10 +48,17 @@ from ecommerce.extensions.fulfillment.modules import (
 )
 from ecommerce.extensions.fulfillment.status import LINE
 from ecommerce.extensions.fulfillment.tests.mixins import FulfillmentTestMixin
-from ecommerce.extensions.test.factories import create_order
+from ecommerce.extensions.payment.models import EnterpriseContractMetadata
+from ecommerce.extensions.test.factories import (
+    ConditionalOfferFactory,
+    EnterpriseCustomerConditionFactory,
+    EnterprisePercentageDiscountBenefitFactory,
+    create_order
+)
 from ecommerce.extensions.voucher.models import OrderLineVouchers
 from ecommerce.extensions.voucher.utils import create_vouchers
 from ecommerce.programs.tests.mixins import ProgramTestMixin
+from ecommerce.tests.factories import UserFactory
 from ecommerce.tests.testcases import TestCase
 
 JSON = 'application/json'
@@ -46,10 +67,13 @@ LOGGER_NAME = 'ecommerce.extensions.analytics.utils'
 Applicator = get_class('offer.applicator', 'Applicator')
 Benefit = get_model('offer', 'Benefit')
 Catalog = get_model('catalogue', 'Catalog')
+ConditionalOffer = get_model('offer', 'ConditionalOffer')
+OrderDiscount = get_model('order', 'OrderDiscount')
 Option = get_model('catalogue', 'Option')
 Product = get_model('catalogue', 'Product')
 ProductAttribute = get_model('catalogue', 'ProductAttribute')
 ProductClass = get_model('catalogue', 'ProductClass')
+Range = get_model('offer', 'Range')
 StockRecord = get_model('partner', 'StockRecord')
 Voucher = get_model('voucher', 'Voucher')
 
@@ -66,7 +90,7 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
     def setUp(self):
         super(EnrollmentFulfillmentModuleTests, self).setUp()
 
-        self.user = factories.UserFactory()
+        self.user = UserFactory()
         self.user.tracking_context = {
             'ga_client_id': 'test-client-id', 'lms_user_id': 'test-user-id', 'lms_ip': '127.0.0.1'
         }
@@ -135,11 +159,11 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
         """Happy path test to ensure we can properly fulfill enrollments."""
         httpretty.register_uri(httpretty.POST, get_lms_enrollment_api_url(), status=200, body='{}', content_type=JSON)
         # Attempt to enroll.
-        with LogCapture(LOGGER_NAME) as l:
+        with LogCapture(LOGGER_NAME) as logger:
             EnrollmentFulfillmentModule().fulfill_product(self.order, list(self.order.lines.all()))
 
             line = self.order.lines.get()
-            l.check(
+            logger.check_present(
                 (
                     LOGGER_NAME,
                     'INFO',
@@ -159,7 +183,7 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
         self.assertEqual(LINE.COMPLETE, line.status)
 
         last_request = httpretty.last_request()
-        actual_body = json.loads(last_request.body)
+        actual_body = json.loads(last_request.body.decode('utf-8'))
         actual_headers = last_request.headers
 
         expected_body = {
@@ -174,6 +198,11 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
                     'namespace': 'order',
                     'name': 'order_number',
                     'value': self.order.number
+                },
+                {
+                    'namespace': 'order',
+                    'name': 'date_placed',
+                    'value': self.order.date_placed.strftime(ISO_8601_FORMAT)
                 }
             ]
         }
@@ -200,6 +229,87 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
         # No exceptions should be raised and the order should be fulfilled
         self.assertEqual(lines[0].status, 'Complete')
 
+    @httpretty.activate
+    def test_enrollment_module_fulfill_order_enterprise_discount_calculation(self):
+        """
+        Verify an orderline is updated with calculated enterprise discount data
+        if a product is fulfilled with an enterprise offer for an enterprise
+        customer and that enterprise offer has `enterprise_contract_metadata`
+        associated with it.
+        """
+        httpretty.register_uri(httpretty.POST, get_lms_enrollment_api_url(), status=200, body='{}', content_type=JSON)
+        self.create_seat_and_order(certificate_type='credit', provider='MIT')
+        discount = self.order.discounts.create()
+
+        benefit = EnterprisePercentageDiscountBenefitFactory.create()
+        condition = EnterpriseCustomerConditionFactory.create()
+        offer = ConditionalOfferFactory.create(
+            benefit_id=benefit.id,
+            condition_id=condition.id,
+        )
+        ecm = EnterpriseContractMetadata.objects.create(
+            discount_type=EnterpriseContractMetadata.FIXED,
+            discount_value=Decimal('200.00'),
+            amount_paid=Decimal('500.00')
+        )
+        offer.enterprise_contract_metadata = ecm
+        offer.save()
+        discount.offer_id = offer.id
+        discount.save()
+        basket_strategy = self.order.basket.strategy
+        self.order.refresh_from_db()
+        # restore lost basket strategy after call to refresh_from_db
+        self.order.basket.strategy = basket_strategy
+
+        with mock.patch.object(Range, 'contains_product') as mock_contains:
+            mock_contains.return_value = True
+            with mock.patch.object(EnterpriseCustomerCondition, 'is_satisfied') as mock_satisfied:
+                mock_satisfied.return_value = True
+                Applicator().apply_offers(self.order.basket, [offer])
+            __, lines = EnrollmentFulfillmentModule().fulfill_product(self.order, list(self.order.lines.all()))
+
+        # No exceptions should be raised and the order should be fulfilled
+        self.assertEqual(lines[0].status, 'Complete')
+        self.assertIsInstance(lines[0].effective_contract_discount_percentage, Decimal)
+        self.assertIsInstance(lines[0].effective_contract_discounted_price, Decimal)
+
+    @httpretty.activate
+    def test_enrollment_module_fulfill_order_no_enterprise_discount_calculation(self):
+        """
+        Verify an orderline is NOT updated with calculated enterprise discount data
+        if a product is fulfilled with an enterprise offer for an enterprise
+        customer and that enterprise offer has NO `enterprise_contract_metadata`
+        associated with it.
+        """
+        httpretty.register_uri(httpretty.POST, get_lms_enrollment_api_url(), status=200, body='{}', content_type=JSON)
+        self.create_seat_and_order(certificate_type='credit', provider='MIT')
+        discount = self.order.discounts.create()
+
+        benefit = EnterprisePercentageDiscountBenefitFactory.create()
+        condition = EnterpriseCustomerConditionFactory.create()
+        offer = ConditionalOfferFactory.create(
+            benefit_id=benefit.id,
+            condition_id=condition.id,
+        )
+        discount.offer_id = offer.id
+        discount.save()
+        basket_strategy = self.order.basket.strategy
+        self.order.refresh_from_db()
+        # restore lost basket strategy after call to refresh_from_db
+        self.order.basket.strategy = basket_strategy
+
+        with mock.patch.object(Range, 'contains_product') as mock_contains:
+            mock_contains.return_value = True
+            with mock.patch.object(EnterpriseCustomerCondition, 'is_satisfied') as mock_satisfied:
+                mock_satisfied.return_value = True
+                Applicator().apply_offers(self.order.basket, [offer])
+            __, lines = EnrollmentFulfillmentModule().fulfill_product(self.order, list(self.order.lines.all()))
+
+        # No exceptions should be raised and the order should be fulfilled
+        self.assertEqual(lines[0].status, 'Complete')
+        assert lines[0].effective_contract_discount_percentage is None
+        assert lines[0].effective_contract_discounted_price is None
+
     @override_settings(EDX_API_KEY=None)
     def test_enrollment_module_not_configured(self):
         """Test that lines receive a configuration error status if fulfillment configuration is invalid."""
@@ -212,7 +322,7 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
         EnrollmentFulfillmentModule().fulfill_product(self.order, list(self.order.lines.all()))
         self.assertEqual(LINE.FULFILLMENT_CONFIGURATION_ERROR, self.order.lines.all()[0].status)
 
-    @mock.patch('requests.post', mock.Mock(side_effect=ConnectionError))
+    @mock.patch('requests.post', mock.Mock(side_effect=ReqConnectionError))
     def test_enrollment_module_network_error(self):
         """Test that lines receive a network error status if a fulfillment request experiences a network error."""
         EnrollmentFulfillmentModule().fulfill_product(self.order, list(self.order.lines.all()))
@@ -240,10 +350,10 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
         httpretty.register_uri(httpretty.POST, get_lms_enrollment_api_url(), status=200, body='{}', content_type=JSON)
         line = self.order.lines.first()
 
-        with LogCapture(LOGGER_NAME) as l:
+        with LogCapture(LOGGER_NAME) as logger:
             self.assertTrue(EnrollmentFulfillmentModule().revoke_line(line))
 
-            l.check(
+            logger.check_present(
                 (
                     LOGGER_NAME,
                     'INFO',
@@ -260,7 +370,7 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
             )
 
         last_request = httpretty.last_request()
-        actual_body = json.loads(last_request.body)
+        actual_body = json.loads(last_request.body.decode('utf-8'))
         actual_headers = last_request.headers
 
         expected_body = {
@@ -292,9 +402,9 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
 
         line = self.order.lines.first()
         logger_name = 'ecommerce.extensions.fulfillment.modules'
-        with LogCapture(logger_name) as l:
+        with LogCapture(logger_name) as logger:
             self.assertTrue(EnrollmentFulfillmentModule().revoke_line(line))
-            l.check(
+            logger.check_present(
                 (logger_name, 'INFO', 'Attempting to revoke fulfillment of Line [{}]...'.format(line.id)),
                 (logger_name, 'INFO', 'Skipping revocation for line [%d]: %s' % (line.id, message))
             )
@@ -308,9 +418,9 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
 
         line = self.order.lines.first()
         logger_name = 'ecommerce.extensions.fulfillment.modules'
-        with LogCapture(logger_name) as l:
+        with LogCapture(logger_name) as logger:
             self.assertFalse(EnrollmentFulfillmentModule().revoke_line(line))
-            l.check(
+            logger.check_present(
                 (logger_name, 'INFO', 'Attempting to revoke fulfillment of Line [{}]...'.format(line.id)),
                 (logger_name, 'ERROR', 'Failed to revoke fulfillment of Line [%d]: %s' % (line.id, message))
             )
@@ -328,9 +438,9 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
         line = self.order.lines.first()
         logger_name = 'ecommerce.extensions.fulfillment.modules'
 
-        with LogCapture(logger_name) as l:
+        with LogCapture(logger_name) as logger:
             self.assertFalse(EnrollmentFulfillmentModule().revoke_line(line))
-            l.check(
+            logger.check_present(
                 (logger_name, 'INFO', 'Attempting to revoke fulfillment of Line [{}]...'.format(line.id)),
                 (logger_name, 'ERROR', 'Failed to revoke fulfillment of Line [{}].'.format(line.id))
             )
@@ -343,11 +453,11 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
         httpretty.register_uri(httpretty.POST, get_lms_enrollment_api_url(), status=200, body='{}', content_type=JSON)
 
         # Attempt to enroll.
-        with LogCapture(LOGGER_NAME) as l:
+        with LogCapture(LOGGER_NAME) as logger:
             EnrollmentFulfillmentModule().fulfill_product(self.order, list(self.order.lines.all()))
 
             line = self.order.lines.get()
-            l.check(
+            logger.check_present(
                 (
                     LOGGER_NAME,
                     'INFO',
@@ -366,7 +476,7 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
 
         self.assertEqual(LINE.COMPLETE, line.status)
 
-        actual = json.loads(httpretty.last_request().body)
+        actual = json.loads(httpretty.last_request().body.decode('utf-8'))
         expected = {
             'user': self.order.user.username,
             'is_active': True,
@@ -379,6 +489,11 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
                     'namespace': 'order',
                     'name': 'order_number',
                     'value': self.order.number
+                },
+                {
+                    'namespace': 'order',
+                    'name': 'date_placed',
+                    'value': self.order.date_placed.strftime(ISO_8601_FORMAT)
                 },
                 {
                     'namespace': 'credit',
@@ -411,8 +526,8 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
         # not available for ecommerce tests.
         try:
             # pylint: disable=protected-access
-            EnrollmentFulfillmentModule()._post_to_enrollment_api(data=data, user=self.user)
-        except ConnectionError as exp:
+            EnrollmentFulfillmentModule()._post_to_enrollment_api(data=data, user=self.user, usage='test enrollment')
+        except ReqConnectionError as exp:
             # Check that the enrollment request object has the analytics header
             # 'x-edx-ga-client-id' and 'x-forwarded-for'.
             self.assertEqual(exp.request.headers.get('x-edx-ga-client-id'), self.user.tracking_context['ga_client_id'])
@@ -440,6 +555,38 @@ class EnrollmentFulfillmentModuleTests(ProgramTestMixin, DiscoveryTestMixin, Ful
         # No exceptions should be raised and the order should be fulfilled
         self.assertEqual(lines[0].status, 'Complete')
 
+    def test_calculate_effective_discount_percentage_percentage(self):
+        """
+        Test correct values for discount percentage are evaluated when discount
+        type is PERCENTAGE.
+        """
+        module = EnrollmentFulfillmentModule()
+        ecm = EnterpriseContractMetadata(
+            discount_type=EnterpriseContractMetadata.PERCENTAGE,
+            discount_value=Decimal('12.3456'),
+            amount_paid=Decimal('12000.00')
+        )
+        # pylint: disable=protected-access
+        actual = module._calculate_effective_discount_percentage(ecm)
+        expected = Decimal('.123456')
+        self.assertEqual(actual, expected)
+
+    def test_calculate_effective_discount_percentage_fixed(self):
+        """
+        Test correct values for discount percentage are evaluated when discount
+        type is FIXED.
+        """
+        module = EnrollmentFulfillmentModule()
+        ecm = EnterpriseContractMetadata(
+            discount_type=EnterpriseContractMetadata.FIXED,
+            discount_value=Decimal('12.3456'),
+            amount_paid=Decimal('12000.00')
+        )
+        # pylint: disable=protected-access
+        actual = module._calculate_effective_discount_percentage(ecm)
+        expected = Decimal('12.3456') / (Decimal('12.3456') + Decimal('12000.00'))
+        self.assertEqual(actual, expected)
+
 
 class CouponFulfillmentModuleTest(CouponMixin, FulfillmentTestMixin, TestCase):
     """ Test coupon fulfillment. """
@@ -447,7 +594,7 @@ class CouponFulfillmentModuleTest(CouponMixin, FulfillmentTestMixin, TestCase):
     def setUp(self):
         super(CouponFulfillmentModuleTest, self).setUp()
         coupon = self.create_coupon()
-        user = factories.UserFactory()
+        user = UserFactory()
         basket = factories.BasketFactory(owner=user, site=self.site)
         basket.add_product(coupon, 1)
         self.order = create_order(number=1, basket=basket, user=user)
@@ -489,7 +636,7 @@ class DonationsFromCheckoutTestFulfillmentModuleTest(FulfillmentTestMixin, TestC
             product_class=donation_class,
             title='Test product'
         )
-        user = factories.UserFactory()
+        user = UserFactory()
         basket = factories.BasketFactory(owner=user, site=self.site)
         factories.create_stockrecord(donation, num_in_stock=2, price_excl_tax=10)
         basket.add_product(donation, 1)
@@ -522,12 +669,57 @@ class EnrollmentCodeFulfillmentModuleTests(DiscoveryTestMixin, TestCase):
     """ Test Enrollment code fulfillment. """
     QUANTITY = 5
 
+    def create_order_with_billing_address(self):
+        """ Creates an order object with a bit of extra information for HubSpot unit tests"""
+        enrollment_code = Product.objects.get(product_class__name=ENROLLMENT_CODE_PRODUCT_CLASS_NAME)
+        user = UserFactory()
+        basket = factories.BasketFactory(owner=user, site=self.site)
+        basket.add_product(enrollment_code, self.QUANTITY)
+
+        # add organization and purchaser attributes manually to the basket for testing purposes
+        basket_data = {
+            'organization': 'Dummy Business Client',
+            PURCHASER_BEHALF_ATTRIBUTE: 'True'
+        }
+        basket_add_organization_attribute(basket, basket_data)
+
+        # add some additional data the billing address to exercise some of the code paths in the unit we are testing
+        billing_address = factories.BillingAddressFactory()
+        billing_address.line2 = 'Suite 321'
+        billing_address.line4 = "City"
+        billing_address.state = "State"
+        billing_address.country.name = "United States of America"
+
+        # create new order adding in the additional billing address info
+        return create_order(number=2, basket=basket, user=user, billing_address=billing_address)
+
+    def add_required_attributes_to_basket(self, order, purchased_by_org):
+        """ Utility method that will setup Basket with attributes needed for unit tests """
+        # add organization and purchaser attributes manually to the basket for testing purposes
+        basket_data = {
+            'organization': 'Dummy Business Client',
+            PURCHASER_BEHALF_ATTRIBUTE: '{}'.format(purchased_by_org)
+        }
+        basket_add_organization_attribute(order.basket, basket_data)
+
+    def set_hubspot_settings(self):
+        # set the HubSpot specific settings with values that make it look close to a real world configuration
+        settings.HUBSPOT_FORMS_API_URI = "https://forms.hubspot.com/uploads/form/v2/"
+        settings.HUBSPOT_PORTAL_ID = "0"
+        settings.HUBSPOT_SALES_LEAD_FORM_GUID = "00000000-1111-2222-3333-4444444444444444"
+
+    def format_hubspot_request_url(self):
+        return "{}{}/{}?&".format(
+            settings.HUBSPOT_FORMS_API_URI,
+            settings.HUBSPOT_PORTAL_ID,
+            settings.HUBSPOT_SALES_LEAD_FORM_GUID)
+
     def setUp(self):
         super(EnrollmentCodeFulfillmentModuleTests, self).setUp()
         course = CourseFactory(partner=self.partner)
         course.create_or_update_seat('verified', True, 50, create_enrollment_code=True)
         enrollment_code = Product.objects.get(product_class__name=ENROLLMENT_CODE_PRODUCT_CLASS_NAME)
-        user = factories.UserFactory()
+        user = UserFactory()
         basket = factories.BasketFactory(owner=user, site=self.site)
         basket.add_product(enrollment_code, self.QUANTITY)
         self.order = create_order(number=1, basket=basket, user=user)
@@ -564,13 +756,218 @@ class EnrollmentCodeFulfillmentModuleTests(DiscoveryTestMixin, TestCase):
         with self.assertRaises(NotImplementedError):
             EnrollmentCodeFulfillmentModule().revoke_line(line)
 
+    def test_get_fulfillment_data(self):
+        """ Test for gathering data to send to HubSpot """
+        order = self.create_order_with_billing_address()
+
+        # extract some of the course info we need to build our "expected" string for comparisons later
+        product = order.lines.first().product
+        course = Course.objects.get(id=product.attr.course_key)
+
+        course_name_data = urlencode({
+            'ecommerce_course_name': course.name
+        })
+
+        course_id_data = urlencode({
+            'ecommerce_course_id': course.id
+        })
+
+        customer_email_data = urlencode({
+            'email': order.basket.owner.email
+        })
+
+        expected_request_entries = [
+            "firstname=John",
+            "lastname=Doe",
+            "company=Dummy+Business+Client",
+            course_name_data,
+            course_id_data,
+            "deal_value=250.00",
+            "address=Streetname%2C+Suite+321",
+            "bulk_purchase_quantity=5",
+            "city=City",
+            "country=United+States",
+            "state=State",
+            customer_email_data,
+        ]
+        generated_request_body = EnrollmentCodeFulfillmentModule().get_order_fulfillment_data_for_hubspot(order)
+        assertCountEqual(self, expected_request_entries, generated_request_body.split('&'))
+
+    def test_determine_if_enterprise_purchase_expect_true(self):
+        """ Test for being able to retrieve 'purchased_behalf_of' attribute from Basket and the checkbox is checked. """
+        self.add_required_attributes_to_basket(self.order, True)
+        purchased_by_organization = EnrollmentCodeFulfillmentModule().determine_if_enterprise_purchase(self.order)
+        self.assertEqual(True, purchased_by_organization)
+
+    def test_determine_if_enterprise_purchase_expect_false(self):
+        """ Test for being able to retrieve 'purchased_behalf_of' attribute value from Basket and the checkbox is
+        not checked. """
+        self.add_required_attributes_to_basket(self.order, False)
+        purchased_by_organization = EnrollmentCodeFulfillmentModule().determine_if_enterprise_purchase(self.order)
+        self.assertEqual(False, purchased_by_organization)
+
+    def test_determine_if_enterprise_purchase_no_organization(self):
+        """ Test for ensuring we send back a usable value if 'purchased_behalf_of' attribute is missing from Basket
+        for some reason. """
+        purchased_by_organization = EnrollmentCodeFulfillmentModule().determine_if_enterprise_purchase(self.order)
+        self.assertEqual(False, purchased_by_organization)
+
+    @httpretty.activate
+    def test_send_to_hubspot_happy_path(self):
+        """ Test for constructing and sending the HubSpot request. Verifies expected logs are appearing. """
+        order = self.create_order_with_billing_address()
+
+        self.set_hubspot_settings()
+        hubspot_url = self.format_hubspot_request_url()
+        httpretty.register_uri(
+            httpretty.POST,
+            hubspot_url,
+            content_type='application/x-www-form-urlencoded',
+            status=204
+        )
+
+        logger_name = "ecommerce.extensions.fulfillment.modules"
+        with LogCapture(logger_name) as logger:
+            response = EnrollmentCodeFulfillmentModule().send_fulfillment_data_to_hubspot(order)
+            # verify we built the uri correctly
+            self.assertEqual(response.url, hubspot_url)
+            # verify that the expected logs were generated
+            logger.check_present(
+                (
+                    logger_name,
+                    'INFO',
+                    'Gathering fulfillment data for submission to HubSpot for order [{}]'.format(order.number)
+                ),
+                (
+                    logger_name,
+                    'INFO',
+                    'Sending data to HubSpot for order [{}]'.format(order.number)
+                ),
+                (
+                    logger_name,
+                    'DEBUG',
+                    'HubSpot response: 204'
+                )
+            )
+
+    @mock.patch('requests.post', mock.Mock(side_effect=Timeout))
+    def test_send_to_hubspot_timeout(self):
+        """ Test to simulate a timeout occurring when sending data to HubSpot. Verifies expected logs appear. """
+        order = self.create_order_with_billing_address()
+
+        logger_name = "ecommerce.extensions.fulfillment.modules"
+        with LogCapture(logger_name) as logger:
+            EnrollmentCodeFulfillmentModule().send_fulfillment_data_to_hubspot(order)
+            # verify that the expected logs were generated
+            logger.check_present(
+                (
+                    logger_name,
+                    'ERROR',
+                    'Timeout occurred attempting to send data to HubSpot for order [{}]'.format(order.number)
+                )
+            )
+
+    @mock.patch('requests.post', mock.Mock(side_effect=ReqConnectionError))
+    def test_send_to_hubspot_error(self):
+        """ Test to simulate some other error occurring when sending data to HubSpot. Verifies expected logs appear. """
+        order = self.create_order_with_billing_address()
+
+        logger_name = "ecommerce.extensions.fulfillment.modules"
+        with LogCapture(logger_name) as logger:
+            EnrollmentCodeFulfillmentModule().send_fulfillment_data_to_hubspot(order)
+            # verify that the expected logs were generated
+            logger.check_present(
+                (
+                    logger_name,
+                    'ERROR',
+                    'Error occurred attempting to send data to HubSpot for order [{}]'.format(order.number)
+                )
+            )
+
+    @httpretty.activate
+    @override_switch(HUBSPOT_FORMS_INTEGRATION_ENABLE, active=True)
+    def test_fulfill_product_hubspot_waffle_switch_enabled(self):
+        """ Test that verifies if the HubSpot feature is enabled and the order contains the right information we
+            will try and transmit this data to HubSpot.
+        """
+        order = self.create_order_with_billing_address()
+        self.add_required_attributes_to_basket(order, True)
+
+        self.set_hubspot_settings()
+        hubspot_url = self.format_hubspot_request_url()
+        httpretty.register_uri(
+            httpretty.POST,
+            hubspot_url,
+            content_type='application/x-www-form-urlencoded',
+            status=204
+        )
+
+        logger_name = "ecommerce.extensions.fulfillment.modules"
+        with LogCapture(logger_name) as logger:
+            lines = self.order.lines.all()
+            EnrollmentCodeFulfillmentModule().fulfill_product(order, lines)
+            logger.check_present(
+                (
+                    logger_name,
+                    'INFO',
+                    'Attempting to fulfill \'Enrollment Code\' product types for order [{}]'.format(order.number)
+                ),
+                (
+                    logger_name,
+                    'INFO',
+                    'Gathering fulfillment data for submission to HubSpot for order [{}]'.format(order.number)
+                ),
+                (
+                    logger_name,
+                    'INFO',
+                    'Sending data to HubSpot for order [{}]'.format(order.number)
+                ),
+                (
+                    logger_name,
+                    'DEBUG',
+                    'HubSpot response: 204'
+                ),
+                (
+                    logger_name,
+                    'INFO',
+                    'Finished fulfilling \'Enrollment code\' product types for order [{}]'.format(order.number)
+                )
+            )
+
+    @override_switch(HUBSPOT_FORMS_INTEGRATION_ENABLE, active=False)
+    def test_fulfill_product_hubspot_waffle_switch_disabled(self):
+        """ Test that verifies if the HubSpot feature is disabled but the order contains the right information we do not
+        transmit this data to HubSpot
+        """
+        order = self.create_order_with_billing_address()
+        self.add_required_attributes_to_basket(order, True)
+
+        # HubSpot feature flag is disabled and we should _not_ try to send the order data to HubSpot. Verify logs look
+        # as we would expect.
+        logger_name = "ecommerce.extensions.fulfillment.modules"
+        with LogCapture(logger_name) as logger:
+            lines = self.order.lines.all()
+            EnrollmentCodeFulfillmentModule().fulfill_product(order, lines)
+            logger.check_present(
+                (
+                    logger_name,
+                    'INFO',
+                    'Attempting to fulfill \'Enrollment Code\' product types for order [{}]'.format(order.number)
+                ),
+                (
+                    logger_name,
+                    'INFO',
+                    'Finished fulfilling \'Enrollment code\' product types for order [{}]'.format(order.number)
+                )
+            )
+
 
 class EntitlementFulfillmentModuleTests(FulfillmentTestMixin, TestCase):
     """ Test Course Entitlement Fulfillment """
 
     def setUp(self):
         super(EntitlementFulfillmentModuleTests, self).setUp()
-        self.user = factories.UserFactory()
+        self.user = UserFactory()
         self.course_entitlement = create_or_update_course_entitlement(
             'verified', 100, self.partner, '111-222-333-444', 'Course Entitlement')
         basket = factories.BasketFactory(owner=self.user, site=self.site)
@@ -613,11 +1010,11 @@ class EntitlementFulfillmentModuleTests(FulfillmentTestMixin, TestCase):
                                content_type='application/json')
 
         # Attempt to fulfill entitlement.
-        with LogCapture(LOGGER_NAME) as l:
+        with LogCapture(LOGGER_NAME) as logger:
             CourseEntitlementFulfillmentModule().fulfill_product(self.order, list(self.order.lines.all()))
 
             line = self.order.lines.get()
-            l.check(
+            logger.check_present(
                 (
                     LOGGER_NAME,
                     'INFO',
@@ -653,10 +1050,10 @@ class EntitlementFulfillmentModuleTests(FulfillmentTestMixin, TestCase):
         # Fulfill order first to ensure we have all the line attributes set
         CourseEntitlementFulfillmentModule().fulfill_product(self.order, list(self.order.lines.all()))
 
-        with LogCapture(LOGGER_NAME) as l:
+        with LogCapture(LOGGER_NAME) as logger:
             self.assertTrue(CourseEntitlementFulfillmentModule().revoke_line(line))
 
-            l.check(
+            logger.check_present(
                 (
                     LOGGER_NAME,
                     'INFO',
@@ -695,10 +1092,10 @@ class EntitlementFulfillmentModuleTests(FulfillmentTestMixin, TestCase):
 
         line = self.order.lines.first()
 
-        with LogCapture(logger_name) as l:
+        with LogCapture(logger_name) as logger:
             CourseEntitlementFulfillmentModule().fulfill_product(self.order, list(self.order.lines.all()))
             self.assertEqual(LINE.FULFILLMENT_SERVER_ERROR, self.order.lines.all()[0].status)
-            l.check(
+            logger.check_present(
                 (logger_name, 'INFO', 'Attempting to fulfill "Course Entitlement" product types for order [{}]'.
                  format(self.order.number)),
                 (logger_name, 'ERROR', 'Unable to fulfill line [{}] of order [{}]'.
@@ -714,11 +1111,11 @@ class EntitlementFulfillmentModuleTests(FulfillmentTestMixin, TestCase):
 
         line = self.order.lines.first()
         with mock.patch('edx_rest_api_client.client.EdxRestApiClient',
-                        side_effect=ConnectionError):
-            with LogCapture(logger_name) as l:
+                        side_effect=ReqConnectionError):
+            with LogCapture(logger_name) as logger:
                 CourseEntitlementFulfillmentModule().fulfill_product(self.order, list(self.order.lines.all()))
                 self.assertEqual(LINE.FULFILLMENT_NETWORK_ERROR, self.order.lines.all()[0].status)
-                l.check(
+                logger.check_present(
                     (logger_name, 'INFO', 'Attempting to fulfill "Course Entitlement" product types for order [{}]'.
                      format(self.order.number)),
                     (logger_name, 'ERROR', 'Unable to fulfill line [{}] of order [{}] due to a network problem'.

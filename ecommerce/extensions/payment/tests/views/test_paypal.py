@@ -1,28 +1,41 @@
 """ Tests of the Payment Views. """
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
+
+from decimal import Decimal
 
 import ddt
+import httpretty
 import mock
 import responses
 from django.test.client import RequestFactory
 from django.urls import reverse
+from edx_rest_api_client.exceptions import SlumberHttpBaseException
 from oscar.apps.order.exceptions import UnableToPlaceOrder
 from oscar.apps.payment.exceptions import PaymentError
 from oscar.core.loading import get_class, get_model
 from oscar.test import factories
 from testfixtures import LogCapture
+from waffle.testutils import override_flag
 
-from ecommerce.core.constants import ENROLLMENT_CODE_PRODUCT_CLASS_NAME, ENROLLMENT_CODE_SWITCH
-from ecommerce.core.models import BusinessClient
+from ecommerce.core.constants import (
+    ENROLLMENT_CODE_PRODUCT_CLASS_NAME,
+    ENROLLMENT_CODE_SWITCH,
+    SEAT_PRODUCT_CLASS_NAME
+)
+from ecommerce.core.models import BusinessClient, SiteConfiguration
 from ecommerce.core.tests import toggle_switch
 from ecommerce.courses.tests.factories import CourseFactory
+from ecommerce.extensions.basket.constants import PURCHASER_BEHALF_ATTRIBUTE
 from ecommerce.extensions.basket.utils import basket_add_organization_attribute
 from ecommerce.extensions.checkout.utils import get_receipt_page_url
+from ecommerce.extensions.offer.constants import DYNAMIC_DISCOUNT_FLAG
+from ecommerce.extensions.offer.tests.test_dynamic_conditional_offer import _mock_jwt_decode_handler
 from ecommerce.extensions.payment.processors.paypal import Paypal
 from ecommerce.extensions.payment.tests.mixins import PaymentEventsMixin, PaypalMixin
 from ecommerce.extensions.payment.views.paypal import PaypalPaymentExecutionView
 from ecommerce.extensions.test.factories import create_basket, create_order
 from ecommerce.invoice.models import Invoice
+from ecommerce.tests.factories import UserFactory
 from ecommerce.tests.testcases import TestCase
 
 JSON = 'application/json'
@@ -33,6 +46,7 @@ PaymentEvent = get_model('order', 'PaymentEvent')
 PaymentEventType = get_model('order', 'PaymentEventType')
 PaymentProcessorResponse = get_model('payment', 'PaymentProcessorResponse')
 Product = get_model('catalogue', 'Product')
+ProductClass = get_model('catalogue', 'ProductClass')
 Selector = get_class('partner.strategy', 'Selector')
 SourceType = get_model('payment', 'SourceType')
 
@@ -46,8 +60,12 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
 
     def setUp(self):
         super(PaypalPaymentExecutionViewTests, self).setUp()
-
-        self.basket = create_basket(owner=factories.UserFactory(), site=self.site)
+        self.price = '100.0'
+        self.user = self.create_user()
+        self.seat_product_class, __ = ProductClass.objects.get_or_create(name=SEAT_PRODUCT_CLASS_NAME)
+        self.basket = create_basket(
+            owner=self.user, site=self.site, price=self.price, product_class=self.seat_product_class
+        )
         self.basket.freeze()
 
         self.processor = Paypal(self.site)
@@ -74,7 +92,8 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
             response,
             url_redirect or get_receipt_page_url(
                 order_number=self.basket.order_number,
-                site_configuration=self.basket.site.siteconfiguration
+                site_configuration=self.basket.site.siteconfiguration,
+                disable_back_button=True,
             ),
             fetch_redirect_response=False
         )
@@ -87,7 +106,7 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
         error_message = \
             'Order Failure: Paypal payment was received, but an order for basket [{basket_id}] ' \
             'could not be placed.'.format(basket_id=basket_id)
-        with LogCapture(logger_name) as l:
+        with LogCapture(logger_name) as logger:
             __, execution_response = self._assert_execution_redirect()
 
             # Verify that the payment execution response was recorded despite the error
@@ -98,7 +117,7 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
                 basket=self.basket
             )
 
-            l.check(
+            logger.check(
                 (logger_name, 'ERROR', error_message)
             )
 
@@ -119,7 +138,8 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
             response,
             get_receipt_page_url(
                 order_number=self.basket.order_number,
-                site_configuration=self.basket.site.siteconfiguration
+                site_configuration=self.basket.site.siteconfiguration,
+                disable_back_button=True,
             ),
             fetch_redirect_response=False
         )
@@ -136,7 +156,7 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
 
         course = CourseFactory(partner=self.partner)
         course.create_or_update_seat('verified', True, 50, create_enrollment_code=True)
-        self.basket = create_basket(owner=factories.UserFactory(), site=self.site)
+        self.basket = create_basket(owner=UserFactory(), site=self.site)
         enrollment_code = Product.objects.get(product_class__name=ENROLLMENT_CODE_PRODUCT_CLASS_NAME)
         factories.create_stockrecord(enrollment_code, num_in_stock=2, price_excl_tax='10.00')
         self.basket.add_product(enrollment_code, quantity=1)
@@ -149,6 +169,7 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
 
         # Manually add organization attribute on the basket for testing
         self.RETURN_DATA.update({'organization': 'Dummy Business Client'})
+        self.RETURN_DATA.update({PURCHASER_BEHALF_ATTRIBUTE: 'False'})
         basket_add_organization_attribute(self.basket, self.RETURN_DATA)
 
         response = self.client.get(reverse('paypal:execute'), self.RETURN_DATA)
@@ -156,7 +177,8 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
             response,
             get_receipt_page_url(
                 order_number=self.basket.order_number,
-                site_configuration=self.basket.site.siteconfiguration
+                site_configuration=self.basket.site.siteconfiguration,
+                disable_back_button=True,
             ),
             fetch_redirect_response=False
         )
@@ -187,7 +209,7 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
         with mock.patch.object(PaypalPaymentExecutionView, 'handle_payment',
                                side_effect=PaymentError) as fake_handle_payment:
             logger_name = 'ecommerce.extensions.payment.views.paypal'
-            with LogCapture(logger_name) as l:
+            with LogCapture(logger_name) as logger:
                 creation_response, __ = self._assert_execution_redirect(url_redirect=self.processor.error_url)
                 self.assertTrue(fake_handle_payment.called)
 
@@ -199,7 +221,7 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
                     basket=self.basket
                 )
 
-                l.check(
+                logger.check(
                     (
                         logger_name,
                         'INFO',
@@ -218,7 +240,7 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
         with mock.patch.object(PaypalPaymentExecutionView, 'handle_payment',
                                side_effect=KeyError) as fake_handle_payment:
             logger_name = 'ecommerce.extensions.payment.views.paypal'
-            with LogCapture(logger_name) as l:
+            with LogCapture(logger_name) as logger:
                 creation_response, __ = self._assert_execution_redirect()
                 self.assertTrue(fake_handle_payment.called)
 
@@ -230,7 +252,7 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
                     basket=self.basket
                 )
 
-                l.check(
+                logger.check(
                     (
                         logger_name,
                         'INFO',
@@ -272,8 +294,8 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
         self.request.site = self.site
         dummy_view.request = self.request
 
-        with LogCapture(self.DUPLICATE_ORDER_LOGGER_NAME) as lc:
-            dummy_view.call_handle_order_placement(prior_order.basket, self.request)
+        with LogCapture(self.DUPLICATE_ORDER_LOGGER_NAME) as lc, self.assertRaises(Exception):
+            dummy_view.create_order(request=self.request, basket=prior_order.basket)
             lc.check(
                 (
                     self.DUPLICATE_ORDER_LOGGER_NAME,
@@ -289,7 +311,7 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
         logging the exception and redirecting the user to an LMS checkout error page.
         """
         logger_name = 'ecommerce.extensions.payment.views.paypal'
-        with LogCapture(logger_name) as l:
+        with LogCapture(logger_name) as logger:
             self.mock_oauth2_response()
 
             # Create payment records with different baskets which will have same payment ID
@@ -301,7 +323,7 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
             self.processor.get_transaction_parameters(dummy_basket, request=self.request)
 
             self._assert_error_page_redirect()
-            l.check(
+            logger.check(
                 (
                     logger_name,
                     'INFO',
@@ -325,13 +347,13 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
         """
         with mock.patch.object(PaymentProcessorResponse.objects, 'get', side_effect=Exception):
             logger_name = 'ecommerce.extensions.payment.views.paypal'
-            with LogCapture(logger_name) as l:
+            with LogCapture(logger_name) as logger:
                 self.mock_oauth2_response()
                 self.mock_payment_creation_response(self.basket)
                 self.processor.get_transaction_parameters(self.basket, request=self.request)
                 self._assert_error_page_redirect()
 
-                l.check(
+                logger.check(
                     (
                         logger_name,
                         'INFO',
@@ -356,6 +378,97 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
             self.processor.error_url,
             fetch_redirect_response=False
         )
+
+    # TODO: Remove as a part of REVMI-124 as this tests a hacky solution
+    # The problem is that orders are being created after payment processing, and the discount is not
+    # saved in the database, so it needs to be calculated again in order to save the correct info to the
+    # order. REVMI-124 will create the order before payment processing, when we have the discount context.
+    @override_flag(DYNAMIC_DISCOUNT_FLAG, active=True)
+    @httpretty.activate
+    @responses.activate
+    @mock.patch.object(PaymentProcessorResponse.objects, 'get')
+    @mock.patch('ecommerce.extensions.payment.views.paypal.EdxRestApiClient')
+    @mock.patch.object(PaypalPaymentExecutionView, 'handle_payment')
+    def test_add_dynamic_discount_to_request_error(self, fake_handle_payment, mocked_client, basket_object):
+        """
+        Verify that we log a warning when the lms doesn't return a discount jwt
+        """
+        error_response = '<Response [401]>'
+        mocked_client.return_value.user.return_value.course.return_value.get.side_effect = SlumberHttpBaseException(
+            response=error_response)
+
+        basket_object.return_value.basket = self.basket
+
+        # login the user
+        self.client.login(username=self.user.username, password=self.password)
+
+        self.mock_oauth2_response()
+        self.mock_payment_creation_response(self.basket)
+        self.processor.get_transaction_parameters(self.basket, request=self.request)
+
+        logger_name = 'ecommerce.extensions.payment.views.paypal'
+        with LogCapture(logger_name) as logger:
+            with mock.patch.object(SiteConfiguration, 'access_token', return_value=self.mock_access_token_response()):
+                self.client.get(reverse('paypal:execute'), self.RETURN_DATA)
+
+            self.assertTrue(fake_handle_payment.called)
+            logger.check_present(
+                (
+                    logger_name,
+                    'INFO',
+                    'Payment [{payment_id}] approved by payer [{payer_id}]'.format(
+                        payment_id=self.PAYMENT_ID,
+                        payer_id=self.PAYER_ID
+                    )
+                ),
+                (
+                    logger_name,
+                    'WARNING',
+                    ('Failed to get discount jwt from LMS. '
+                     '[http://lms.testserver.fake/api/discounts/] returned [{error}]').format(error=error_response)
+                ),
+            )
+
+    @override_flag(DYNAMIC_DISCOUNT_FLAG, active=True)
+    @httpretty.activate
+    @responses.activate
+    @mock.patch.object(PaymentProcessorResponse.objects, 'get')
+    @mock.patch('ecommerce.extensions.payment.views.paypal.EdxRestApiClient')
+    @mock.patch('ecommerce.extensions.offer.dynamic_conditional_offer.jwt_decode_handler')
+    @mock.patch.object(PaypalPaymentExecutionView, 'handle_payment')
+    def test_add_discount_to_request(self, fake_handle_payment, jwt_decode_handler, mocked_client, basket_object):
+        """
+        Verify that we correctly add the discount to the order
+        """
+        # The applicator will attempt to decode a jwt
+        jwt_decode_handler.side_effect = _mock_jwt_decode_handler
+
+        # Mock the call to lms
+        expected_discount_percent = 15
+        expected_discount_jwt = {'discount_applicable': True, 'discount_percent': expected_discount_percent}
+        mocked_client.return_value.user.return_value.course.return_value.get.return_value = {
+            'discount_applicable': True,
+            'jwt': expected_discount_jwt
+        }
+
+        # login the user
+        self.client.login(username=self.user.username, password=self.password)
+
+        basket_object.return_value.basket = self.basket
+
+        self.mock_oauth2_response()
+
+        # Create payment records
+        self.mock_payment_creation_response(self.basket)
+        self.processor.get_transaction_parameters(self.basket, request=self.request)
+
+        with mock.patch.object(SiteConfiguration, 'access_token', return_value=self.mock_access_token_response()):
+            self.client.get(reverse('paypal:execute'), self.RETURN_DATA)
+
+        self.assertTrue(fake_handle_payment.called)
+        self.assertTrue(Order.objects.get().total_incl_tax,
+                        Decimal(self.price) * (Decimal(expected_discount_percent) / Decimal(100.0)))
+    # End TODO
 
 
 @mock.patch('ecommerce.extensions.payment.views.paypal.call_command')
