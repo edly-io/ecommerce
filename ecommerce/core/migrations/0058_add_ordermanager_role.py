@@ -22,7 +22,7 @@ def delete_roles(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0054_auto_20190626_0153'),
+        ('core', '0057_auto_20190626_0153'),
     ]
 
     operations = [

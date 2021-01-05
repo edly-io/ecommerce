@@ -12,7 +12,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0048_siteconfiguration_hubspot_secret_key'),
+        ('core', '0051_siteconfiguration_hubspot_secret_key'),
     ]
 
     operations = [

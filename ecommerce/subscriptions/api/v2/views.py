@@ -4,14 +4,14 @@ HTTP endpoints for interacting with courses.
 
 import logging
 
-from oscar.core.loading import get_model
-from rest_framework import filters, status
-from rest_framework.decorators import list_route
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
-
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django_filters.rest_framework import DjangoFilterBackend
+from oscar.core.loading import get_model
+from rest_framework import filters, status
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
 from ecommerce.core.constants import SUBSCRIPTION_PRODUCT_CLASS_NAME
 from ecommerce.extensions.api.filters import ProductFilter
@@ -33,7 +33,7 @@ class SubscriptionViewSet(NonDestroyableModelViewSet):
     Subscription viewset.
     """
     permission_classes = (AllowAny, )
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend,)
     filter_class = ProductFilter
 
     def get_queryset(self):
@@ -60,7 +60,8 @@ class SubscriptionViewSet(NonDestroyableModelViewSet):
         context['partner'] = get_partner_for_site(self.request)
         return context
 
-    @list_route(
+    @action(
+        detail=False,
         permission_classes=[IsAuthenticated, IsAdminOrCourseCreator],
         methods=['post']
     )
@@ -73,7 +74,7 @@ class SubscriptionViewSet(NonDestroyableModelViewSet):
         site_configuration.save()
         return Response(status=status.HTTP_200_OK, data={'course_payments': site_configuration.enable_course_payments})
 
-    @list_route(methods=['get'])
+    @action(detail=False, methods=['get'])
     def course_payments_status(self, request, **kwargs):
         """
         View to get course payments status.
@@ -92,7 +93,8 @@ class SubscriptionViewSet(NonDestroyableModelViewSet):
             }
         )
 
-    @list_route(
+    @action(
+        detail=False,
         permission_classes=[IsAuthenticated],
         methods=['get']
     )

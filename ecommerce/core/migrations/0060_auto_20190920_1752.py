@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0056_remove_siteconfiguration_journals_api_url'),
+        ('core', '0059_remove_siteconfiguration_journals_api_url'),
     ]
 
     operations = [

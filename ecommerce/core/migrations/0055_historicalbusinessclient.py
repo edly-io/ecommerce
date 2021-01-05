@@ -11,7 +11,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0051_ecommercefeatureroleassignment_enterprise_id'),
+        ('core', '0054_ecommercefeatureroleassignment_enterprise_id'),
     ]
 
     operations = [

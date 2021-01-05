@@ -22,7 +22,7 @@ def delete_roles(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0049_ecommercefeaturerole_ecommercefeatureroleassignment'),
+        ('core', '0052_ecommercefeaturerole_ecommercefeatureroleassignment'),
     ]
 
     operations = [

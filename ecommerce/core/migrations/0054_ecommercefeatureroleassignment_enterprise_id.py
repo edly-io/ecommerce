@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0050_add_specific_ecommerce_roles'),
+        ('core', '0053_add_specific_ecommerce_roles'),
     ]
 
     operations = [

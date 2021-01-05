@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0047_businessclient_enterprise_customer_uuid'),
+        ('core', '0050_add_course_payments_flag_in_siteconfiguration'),
     ]
 
     operations = [
