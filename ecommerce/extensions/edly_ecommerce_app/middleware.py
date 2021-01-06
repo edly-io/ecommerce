@@ -4,6 +4,7 @@ from django.contrib.auth import logout
 from django.contrib.sites.shortcuts import get_current_site
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.utils.deprecation import MiddlewareMixin
 
 from ecommerce.core.models import SiteConfiguration
 from ecommerce.extensions.edly_ecommerce_app.helpers import user_has_edly_organization_access
@@ -11,7 +12,7 @@ from ecommerce.extensions.edly_ecommerce_app.helpers import user_has_edly_organi
 logger = getLogger(__name__)
 
 
-class SettingsOverrideMiddleware(object):
+class SettingsOverrideMiddleware(MiddlewareMixin):
     """
     Django middleware to override django settings from site configuration.
     """
@@ -41,7 +42,7 @@ class SettingsOverrideMiddleware(object):
                 logger.warning('Site configuration for site (%s) has no django settings overrides.', current_site)
 
 
-class EdlyOrganizationAccessMiddleware(object):
+class EdlyOrganizationAccessMiddleware(MiddlewareMixin):
     """
     Django middleware to validate edly user organization access based on request.
     """
