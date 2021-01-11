@@ -4,6 +4,7 @@ import json
 
 import ddt
 import httpretty
+from django.test import modify_settings
 from django.urls import reverse
 from rest_framework import status
 
@@ -12,6 +13,9 @@ from ecommerce.tests.testcases import TestCase
 
 
 @ddt.ddt
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ProvidersViewSetTest(TestCase):
     path = reverse('api:v2:providers:list_providers')
 

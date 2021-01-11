@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.conf import settings
-from django.test import override_settings
+from django.test import modify_settings, override_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -12,6 +12,9 @@ from ecommerce.tests.testcases import TestCase
 Basket = get_model('basket', 'Basket')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class DummyProcessorWithUrl(DummyProcessor):
     """ Dummy payment processor class that has a test payment page url. """
     NAME = 'dummy_with_url'
@@ -24,6 +27,9 @@ class DummyProcessorWithUrl(DummyProcessor):
         return dummy_values
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class CheckoutViewTests(TestCase):
     """ Tests for CheckoutView API view. """
     path = reverse('api:v2:checkout:process')

@@ -10,6 +10,7 @@ import responses
 from django.conf import settings
 from django.contrib.auth import get_user
 from django.test.client import RequestFactory
+from django.test import modify_settings
 from django.urls import reverse
 from freezegun import freeze_time
 from oscar.apps.payment.exceptions import TransactionDeclined
@@ -52,6 +53,9 @@ Source = get_model('payment', 'Source')
 post_checkout = get_class('checkout.signals', 'post_checkout')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class LoginMixin:
     def setUp(self):
         super(LoginMixin, self).setUp()
@@ -59,6 +63,9 @@ class LoginMixin:
         self.client.login(username=self.user.username, password=self.password)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class CybersourceSubmitViewTests(CybersourceMixin, TestCase):
     path = reverse('cybersource:submit')
@@ -217,6 +224,9 @@ class CybersourceSubmitViewTests(CybersourceMixin, TestCase):
         self.assertIn(field, errors)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class CybersourceSubmitAPIViewTests(CybersourceSubmitViewTests):
     path = reverse('cybersource:api_submit')
 
@@ -235,6 +245,9 @@ class CybersourceSubmitAPIViewTests(CybersourceSubmitViewTests):
         super(CybersourceSubmitAPIViewTests, self).test_valid_request()
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class CybersourceInterstitialViewTests(CybersourceNotificationTestsMixin, TestCase):
     """ Test interstitial view for Cybersource Payments. """
@@ -419,6 +432,9 @@ class CybersourceInterstitialViewTests(CybersourceNotificationTestsMixin, TestCa
         self.assertEqual(response.status_code, 302)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class ApplePayStartSessionViewTests(LoginMixin, TestCase):
     url = reverse('cybersource:apple_pay:start_session')
@@ -475,6 +491,9 @@ class ApplePayStartSessionViewTests(LoginMixin, TestCase):
         self.assertEqual(response.data, {'error': 'url is required'})
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class CybersourceApplePayAuthorizationViewTests(LoginMixin, CybersourceMixin, TestCase):
     url = reverse('cybersource:apple_pay:authorize')

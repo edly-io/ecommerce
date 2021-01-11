@@ -6,7 +6,7 @@ import uuid
 
 import ddt
 import pytz
-from django.test import RequestFactory
+from django.test import modify_settings, RequestFactory
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -28,6 +28,9 @@ Voucher = get_model('voucher', 'Voucher')
 PRODUCT_LIST_PATH = reverse('api:v2:product-list')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ProductViewSetBase(ProductSerializerMixin, DiscoveryTestMixin, TestCase):
     def setUp(self):
         super(ProductViewSetBase, self).setUp()
@@ -40,6 +43,9 @@ class ProductViewSetBase(ProductSerializerMixin, DiscoveryTestMixin, TestCase):
         self.seat = self.course.create_or_update_seat('honor', False, 0, expires=expires)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ProductViewSetTests(ProductViewSetBase):
     def test_list(self):
         """The list endpoint should return only products with current site's partner."""
@@ -138,6 +144,9 @@ class ProductViewSetTests(ProductViewSetBase):
 
 
 @ddt.ddt
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ProductViewSetCourseEntitlementTests(ProductViewSetBase):
     def setUp(self):
         self.entitlement_data = {
@@ -178,6 +187,9 @@ class ProductViewSetCourseEntitlementTests(ProductViewSetBase):
         self.assertEqual(response.data, error_message)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ProductViewSetCouponTests(CouponMixin, ProductViewSetBase):
     def test_coupon_product_details(self):
         """Verify the endpoint returns all coupon information."""

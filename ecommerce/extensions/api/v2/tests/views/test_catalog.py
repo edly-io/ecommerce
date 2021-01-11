@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import ddt
 import httpretty
 import mock
+from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 from requests.exceptions import ConnectionError as ReqConnectionError
@@ -20,6 +21,9 @@ Catalog = get_model('catalogue', 'Catalog')
 StockRecord = get_model('partner', 'StockRecord')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @httpretty.activate
 @ddt.ddt
 class CatalogViewSetTest(CatalogMixin, DiscoveryMockMixin, ApiMockMixin, TestCase):
@@ -163,6 +167,9 @@ class CatalogViewSetTest(CatalogMixin, DiscoveryMockMixin, ApiMockMixin, TestCas
         self.assertEqual(response.data.get('results'), [])
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class PartnerCatalogViewSetTest(CatalogMixin, TestCase):
     def setUp(self):
         super(PartnerCatalogViewSetTest, self).setUp()

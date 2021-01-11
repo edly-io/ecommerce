@@ -1,11 +1,15 @@
 from __future__ import absolute_import
 
+from django.test import modify_settings
 from django.urls import reverse
 
 from ecommerce.core.url_utils import get_lms_dashboard_url
 from ecommerce.tests.testcases import TestCase
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class TestUrls(TestCase):
     def test_api_docs(self):
         """

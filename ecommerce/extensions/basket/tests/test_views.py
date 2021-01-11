@@ -16,7 +16,7 @@ import six.moves.urllib.request  # pylint: disable=import-error
 from django.conf import settings
 from django.contrib.messages import get_messages
 from django.http import HttpResponseRedirect
-from django.test import override_settings
+from django.test import modify_settings, override_settings
 from django.urls import reverse
 from edx_django_utils.cache import RequestCache, TieredCache
 from oscar.apps.basket.forms import BasketVoucherForm
@@ -73,6 +73,9 @@ COUPON_CODE = 'COUPONTEST'
 BUNDLE = 'bundle_identifier'
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class BasketAddItemsViewTests(CouponMixin, DiscoveryTestMixin, DiscoveryMockMixin, LmsApiMockMixin, BasketMixin,
                               EnterpriseServiceMockMixin, TestCase):
@@ -309,6 +312,9 @@ class BasketAddItemsViewTests(CouponMixin, DiscoveryTestMixin, DiscoveryMockMixi
         self.assertEqual(response.url, absolute_url(self.request, 'checkout:free-checkout'))
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class BasketLogicTestMixin:
     """ Helper functions for Basket API and BasketSummaryView tests. """
     def create_empty_basket(self):
@@ -373,6 +379,9 @@ class BasketLogicTestMixin:
                 ))
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class PaymentApiResponseTestMixin(BasketLogicTestMixin):
     """
     Helpers for all payment api bff endpoints which return the complete payment api response.
@@ -479,6 +488,9 @@ class PaymentApiResponseTestMixin(BasketLogicTestMixin):
         RequestCache.clear_all_namespaces()
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 @httpretty.activate
 class PaymentApiViewTests(PaymentApiResponseTestMixin, BasketMixin, DiscoveryMockMixin,
@@ -644,6 +656,9 @@ class PaymentApiViewTests(PaymentApiResponseTestMixin, BasketMixin, DiscoveryMoc
         self.assertEqual(response.data['redirect'], absolute_url(self.request, 'checkout:free-checkout'))
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @httpretty.activate
 @ddt.ddt
 class BasketSummaryViewTests(EnterpriseServiceMockMixin, DiscoveryTestMixin, DiscoveryMockMixin, LmsApiMockMixin,
@@ -1083,6 +1098,9 @@ class BasketSummaryViewTests(EnterpriseServiceMockMixin, DiscoveryTestMixin, Dis
         self.assertEqual(response.context['free_basket'], percentage_benefit == 100)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @httpretty.activate
 class VoucherAddMixin(LmsApiMockMixin, DiscoveryMockMixin):
     def setUp(self):
@@ -1310,6 +1328,9 @@ class VoucherAddMixin(LmsApiMockMixin, DiscoveryMockMixin):
             self.assertIn(u'An email has been sent to {}'.format(self.user.email), response.content.decode('utf-8'))
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @httpretty.activate
 class VoucherAddViewTests(VoucherAddMixin, TestCase):
     """ Tests for VoucherAddView. """
@@ -1412,6 +1433,9 @@ class VoucherAddViewTests(VoucherAddMixin, TestCase):
         self.assert_basket_discounts([site_offer])
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @httpretty.activate
 class QuantityApiViewTests(PaymentApiResponseTestMixin, BasketMixin, DiscoveryMockMixin, TestCase):
     """ QuantityApiViewTests basket api tests. """
@@ -1511,6 +1535,9 @@ class QuantityApiViewTests(PaymentApiResponseTestMixin, BasketMixin, DiscoveryMo
         )
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @httpretty.activate
 class VoucherAddApiViewTests(PaymentApiResponseTestMixin, VoucherAddMixin, TestCase):
     """ VoucherAddApiViewTests basket api tests. """
@@ -1553,6 +1580,9 @@ class VoucherAddApiViewTests(PaymentApiResponseTestMixin, VoucherAddMixin, TestC
         )
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @httpretty.activate
 class VoucherRemoveApiViewTests(PaymentApiResponseTestMixin, TestCase):
     """ VoucherRemoveApiViewTests basket api tests. """

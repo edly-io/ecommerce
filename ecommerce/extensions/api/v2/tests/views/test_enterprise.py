@@ -13,7 +13,7 @@ import mock
 import rules
 import six  # pylint: disable=ungrouped-imports
 from django.conf import settings
-from django.test import override_settings
+from django.test import modify_settings, override_settings
 from django.urls import reverse
 from django.utils.http import urlencode
 from django.utils.timezone import now
@@ -68,6 +68,9 @@ TEMPLATE_GREETING = 'hello there '
 TEMPLATE_CLOSING = ' kind regards'
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class TestEnterpriseCustomerView(EnterpriseServiceMockMixin, TestCase):
 
     dummy_enterprise_customer_data = [
@@ -113,6 +116,9 @@ class TestEnterpriseCustomerView(EnterpriseServiceMockMixin, TestCase):
         )
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class TestEnterpriseCustomerCatalogsViewSet(EnterpriseServiceMockMixin, TestCase):
 
     def setUp(self):
@@ -274,6 +280,9 @@ class TestEnterpriseCustomerCatalogsViewSet(EnterpriseServiceMockMixin, TestCase
 
 
 @ddt.ddt
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class EnterpriseCouponViewSetRbacTests(
         CouponMixin,
         DiscoveryTestMixin,
@@ -2683,6 +2692,9 @@ class EnterpriseCouponViewSetRbacTests(
         }
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class OfferAssignmentSummaryViewSetTests(
         CouponMixin,
         DiscoveryTestMixin,
@@ -2845,6 +2857,9 @@ class OfferAssignmentSummaryViewSetTests(
 
 
 @ddt.ddt
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class OfferAssignmentEmailTemplatesViewSetTests(JwtMixin, TestCase):
     """
     Test the enterprise offer assignment templates functionality with role based access control.

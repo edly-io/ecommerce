@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import uuid
 
 import httpretty
+from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -16,6 +17,9 @@ Benefit = get_model('offer', 'Benefit')
 ConditionalOffer = get_model('offer', 'ConditionalOffer')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ProgramOfferListViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
     path = reverse('programs:offers:list')
 
@@ -73,6 +77,9 @@ class ProgramOfferListViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
         self.assertEqual(list(response.context['object_list']), [site_conditional_offer])
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ProgramOfferUpdateViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
     def setUp(self):
         super(ProgramOfferUpdateViewTests, self).setUp()
@@ -111,6 +118,9 @@ class ProgramOfferUpdateViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
         self.assertRedirects(response, self.path)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @httpretty.activate
 class ProgramOfferCreateViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
     path = reverse('programs:offers:new')

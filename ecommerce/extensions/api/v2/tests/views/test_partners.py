@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -9,6 +10,9 @@ from ecommerce.tests.testcases import TestCase
 Partner = get_model('partner', 'Partner')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class PartnerViewTest(TestCase):
     def setUp(self):
         super(PartnerViewTest, self).setUp()

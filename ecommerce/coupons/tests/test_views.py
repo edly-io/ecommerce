@@ -13,6 +13,7 @@ import six.moves.urllib.parse  # pylint: disable=import-error
 import six.moves.urllib.request  # pylint: disable=import-error
 from django.conf import settings
 from django.http import HttpResponseRedirect
+from django.test import modify_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from factory.fuzzy import FuzzyText
@@ -62,6 +63,9 @@ def format_url(base='', path='', params=None):
     return '{base}{path}'.format(base=base, path=path)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class CouponAppViewTests(TestCase):
     path = reverse('coupons:app', args=[''])
 
@@ -85,6 +89,9 @@ class CouponAppViewTests(TestCase):
         self.assert_response_status(is_staff=True, status_code=200)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class VoucherIsValidTests(DiscoveryTestMixin, TestCase):
     def test_valid_voucher(self):
         """ Verify voucher_is_valid() assess that the voucher is valid. """
@@ -166,6 +173,9 @@ class VoucherIsValidTests(DiscoveryTestMixin, TestCase):
         self.assert_error_messages(voucher, product, user, error_msg)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class CouponOfferViewTests(ApiMockMixin, CouponMixin, DiscoveryTestMixin, EnterpriseServiceMockMixin,
                            LmsApiMockMixin, TestCase):
@@ -305,6 +315,9 @@ class CouponOfferViewTests(ApiMockMixin, CouponMixin, DiscoveryTestMixin, Enterp
         self.assertContains(response, expected_response, status_code=200)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class CouponRedeemViewTests(CouponMixin, DiscoveryTestMixin, LmsApiMockMixin, EnterpriseServiceMockMixin,
                             TestCase, DiscoveryMockMixin):
@@ -827,6 +840,9 @@ class CouponRedeemViewTests(CouponMixin, DiscoveryTestMixin, LmsApiMockMixin, En
         return self.get_full_url(path=reverse('basket:summary')) + '?coupon_redeem_redirect=1'
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class EnrollmentCodeCsvViewTests(TestCase):
     """ Tests for the EnrollmentCodeCsvView view. """

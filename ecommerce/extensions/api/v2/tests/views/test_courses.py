@@ -6,6 +6,7 @@ import jwt
 import mock
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_class, get_model
 
@@ -24,6 +25,9 @@ Selector = get_class('partner.strategy', 'Selector')
 User = get_user_model()
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class CourseViewSetTests(ProductSerializerMixin, DiscoveryTestMixin, TestCase):
     list_path = reverse('api:v2:course-list')
 

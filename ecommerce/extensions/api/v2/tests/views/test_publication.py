@@ -7,6 +7,7 @@ from decimal import Decimal
 
 import mock
 import pytz
+from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -32,6 +33,9 @@ EXPIRES = datetime(year=1992, month=4, day=24, tzinfo=pytz.utc)
 EXPIRES_STRING = EXPIRES.strftime(ISO_8601_FORMAT)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class AtomicPublicationTests(DiscoveryTestMixin, TestCase):
     def setUp(self):
         super(AtomicPublicationTests, self).setUp()

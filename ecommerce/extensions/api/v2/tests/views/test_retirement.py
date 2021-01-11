@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import ddt
+from django.test import modify_settings
 from rest_framework import status
 
 from ecommerce.extensions.analytics.utils import ECOM_TRACKING_ID_FMT
@@ -9,6 +10,9 @@ from ecommerce.tests.testcases import TestCase
 
 
 @ddt.ddt
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class EcommerceIdViewTest(TestCase):
     def test_successful_get(self):
         user = self.create_user()

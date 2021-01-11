@@ -11,7 +11,7 @@ import httpretty
 import mock
 import six  # pylint: disable=ungrouped-imports
 from django.contrib.auth import get_user_model
-from django.test import override_settings
+from django.test import modify_settings, override_settings
 from django.urls import reverse
 from edx_rest_framework_extensions.auth.jwt.cookies import jwt_cookie_name
 from oscar.core.loading import get_model
@@ -57,6 +57,9 @@ LOGGER_NAME = 'ecommerce.extensions.api.v2.views.baskets'
 
 
 @ddt.ddt
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @override_settings(
     FULFILLMENT_MODULES=['ecommerce.extensions.fulfillment.tests.modules.FakeFulfillmentModule']
 )
@@ -286,6 +289,9 @@ class BasketCreateViewTests(BasketCreationMixin, ThrottlingMixin, TransactionTes
         self.assertDictEqual(actual, expected)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class BasketViewSetTests(AccessTokenMixin, ThrottlingMixin, TestCase):
 
     def setUp(self):
@@ -356,6 +362,9 @@ class BasketViewSetTests(AccessTokenMixin, ThrottlingMixin, TestCase):
             self.assertIsNone(response.json()['results'][0]['vouchers'])
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class OrderByBasketRetrieveViewTests(OrderDetailViewTestMixin, TestCase):
     """Test cases for getting orders using the basket id. """
 
@@ -373,6 +382,9 @@ class OrderByBasketRetrieveViewTests(OrderDetailViewTestMixin, TestCase):
         self.assertEqual(response.data, self.serialize_order(self.order))
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class BasketDestroyViewTests(TestCase):
     def setUp(self):
         super(BasketDestroyViewTests, self).setUp()
@@ -397,6 +409,9 @@ class BasketDestroyViewTests(TestCase):
         self.assertFalse(Basket.objects.filter(id=self.basket.id).exists())
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class BasketCalculateViewTests(ProgramTestMixin, ThrottlingMixin, TestCase):
     def setUp(self):
         super(BasketCalculateViewTests, self).setUp()

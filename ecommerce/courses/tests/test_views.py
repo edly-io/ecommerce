@@ -5,6 +5,7 @@ import json
 import ddt
 import httpretty
 from django.conf import settings
+from django.test import modify_settings
 from django.urls import reverse
 from edx_django_utils.cache import TieredCache
 from mock import patch
@@ -46,14 +47,23 @@ class ManagementCommandViewMixin:
         self.assertEqual(response.status_code, 200)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class CourseMigrationViewTests(ManagementCommandViewMixin, TestCase):
     path = reverse('courses:migrate')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ConvertCourseViewTests(ManagementCommandViewMixin, TestCase):
     path = reverse('courses:convert_course')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class CourseAppViewTests(TestCase):
     path = reverse('courses:app', args=[''])

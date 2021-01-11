@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import stripe
 from django.conf import settings
+from django.test import modify_settings
 from django.urls import reverse
 from mock import mock
 from oscar.core.loading import get_class, get_model
@@ -30,6 +31,9 @@ Source = get_model('payment', 'Source')
 Product = get_model('catalogue', 'Product')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class StripeSubmitViewTests(PaymentEventsMixin, TestCase):
     path = reverse('stripe:submit')
 

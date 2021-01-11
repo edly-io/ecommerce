@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from django.conf import settings
+from django.test import modify_settings
 from django.urls import reverse
 from edx_django_utils.cache import TieredCache
 from waffle.models import Switch
@@ -9,6 +10,9 @@ from ecommerce.extensions.api.v2.views.payments import PAYMENT_PROCESSOR_CACHE_K
 from ecommerce.tests.testcases import TestCase
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class SignalTests(TestCase):
     def test_invalidate_processor_cache(self):
         """ Verify the payment processor cache is invalidated when payment processor switches are toggled. """

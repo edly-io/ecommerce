@@ -178,7 +178,7 @@ class AuthorizeNet(BaseClientSidePaymentProcessor):
 
         transaction_request = apicontractsv1.transactionRequestType()
         transaction_request.transactionType = AUTH_CAPTURE_TRANSACTION_TYPE
-        transaction_request.amount = unicode(basket.total_incl_tax)
+        transaction_request.amount = str(basket.total_incl_tax)
         transaction_request.order = order
 
         line_items_list = self.get_authorizenet_lineitems(basket)

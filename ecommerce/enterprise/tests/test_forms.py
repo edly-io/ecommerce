@@ -554,7 +554,7 @@ class EnterpriseOfferFormTests(EnterpriseServiceMockMixin, TestCase):
         """
         expected_errors = {
             'max_user_discount': [
-                'Ensure new value must be greater than or equal to consumed(400.00) value.'
+                'Ensure new value must be greater than or equal to consumed(400) value.'
             ]
         }
         # create an enterprise offer that can provide max $500 discount and has already consumed $400

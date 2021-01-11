@@ -5,6 +5,7 @@ import logging
 
 import ddt
 import mock
+from django.test import modify_settings
 from django.test.utils import override_settings
 from django.urls import reverse
 from testfixtures import LogCapture
@@ -15,6 +16,9 @@ from ecommerce.extensions.test import factories
 from ecommerce.tests.testcases import TestCase
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class AssignmentEmailStatusTests(TestCase):
     """ Tests for AssignmentEmailStatus API view. """
@@ -133,6 +137,9 @@ class AssignmentEmailStatusTests(TestCase):
         self.assertEqual(updated_offer_assignment.status, OFFER_ASSIGNED)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class AssignmentEmailBounceTests(TestCase):
     """ Tests for AssignmentEmailBounce API view. """
