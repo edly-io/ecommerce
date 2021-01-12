@@ -21,6 +21,7 @@ from slumber.exceptions import HttpNotFoundError, SlumberBaseException
 from analytics import Client as SegmentClient
 from ecommerce.core.url_utils import get_lms_url
 from ecommerce.core.utils import log_message_and_raise_validation_error
+from ecommerce.extensions.edly_ecommerce_app.helpers import clean_django_settings_override
 from ecommerce.extensions.payment.exceptions import ProcessorNotFoundError
 from ecommerce.extensions.payment.helpers import get_processor_class, get_processor_class_by_name
 from ecommerce.journals.constants import JOURNAL_DISCOVERY_API_PATH  # TODO: journals dependency
@@ -367,6 +368,13 @@ class SiteConfiguration(models.Model):
     def build_program_dashboard_url(self, uuid):
         """ Returns a URL to a specific student program dashboard (hosted by LMS). """
         return self.build_lms_url('/dashboard/programs/{}'.format(uuid))
+
+    def clean(self):
+        """
+        Add check for allowed django settings override.
+        """
+        super(SiteConfiguration, self).clean()
+        clean_django_settings_override(self.get_edly_configuration_value('DJANGO_SETTINGS_OVERRIDE', None))
 
     @property
     def student_dashboard_url(self):
