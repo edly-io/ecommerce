@@ -212,8 +212,8 @@ def generate_sku(product, partner):
     elif product.is_subscription_product:
         _hash = ' '.join((
             getattr(product, 'title', ''),
-            unicode(product.attr.subscription_type),
-            unicode(partner.id)
+            str(product.attr.subscription_type),
+            str(partner.id)
         )).encode('utf-8')
 
     else:
