@@ -1,11 +1,16 @@
+from __future__ import absolute_import
+
 from django.conf import settings
-from django.test import override_settings
+from django.test import modify_settings, override_settings
 from django.urls import reverse
 
 from ecommerce.extensions.payment.tests.views.test_cybersource import LoginMixin
 from ecommerce.tests.testcases import TestCase
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ApplePayMerchantDomainAssociationViewTests(LoginMixin, TestCase):
     url = reverse('apple_pay_domain_association')
 
@@ -22,7 +27,7 @@ class ApplePayMerchantDomainAssociationViewTests(LoginMixin, TestCase):
 
     def assert_response_matches(self, response, expected_status_code, expected_content):
         self.assertEqual(response.status_code, expected_status_code)
-        self.assertEqual(response.content, expected_content)
+        self.assertEqual(response.content.decode('utf-8'), expected_content)
         self.assertEqual(response['Content-Type'], 'text/plain')
 
     @override_settings()

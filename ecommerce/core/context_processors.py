@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from django.conf import settings
 
 from ecommerce.core.url_utils import get_lms_dashboard_url, get_lms_url

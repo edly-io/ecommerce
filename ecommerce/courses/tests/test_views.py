@@ -1,8 +1,11 @@
+from __future__ import absolute_import
+
 import json
 
 import ddt
 import httpretty
 from django.conf import settings
+from django.test import modify_settings
 from django.urls import reverse
 from edx_django_utils.cache import TieredCache
 from mock import patch
@@ -14,7 +17,7 @@ from ecommerce.tests.testcases import TestCase
 LOGGER_NAME = 'ecommerce.courses.views'
 
 
-class ManagementCommandViewMixin(object):
+class ManagementCommandViewMixin:
     def test_superuser_required(self):
         """ Verify the view is only accessible to superusers. """
         response = self.client.get(self.path)
@@ -44,14 +47,23 @@ class ManagementCommandViewMixin(object):
         self.assertEqual(response.status_code, 200)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class CourseMigrationViewTests(ManagementCommandViewMixin, TestCase):
     path = reverse('courses:migrate')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ConvertCourseViewTests(ManagementCommandViewMixin, TestCase):
     path = reverse('courses:convert_course')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @ddt.ddt
 class CourseAppViewTests(TestCase):
     path = reverse('courses:app', args=[''])
@@ -107,6 +119,7 @@ class CourseAppViewTests(TestCase):
     @httpretty.activate
     def test_staff_user_required(self):
         """ Verify the view is only accessible to staff users. """
+        self.mock_access_token_response()
         self.mock_credit_api_providers()
 
         user = self.create_user(is_staff=False)
@@ -122,18 +135,23 @@ class CourseAppViewTests(TestCase):
     def test_credit_providers_in_context(self):
         """ Verify the context data includes a list of credit providers. """
         self._create_and_login_staff_user()
+        self.mock_access_token_response()
 
         # Mock Credit API
         __, provider_json = self.mock_credit_api_providers()
 
         response = self.client.get(self.path)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['credit_providers'], provider_json)
+        self.assertEqual(
+            json.loads(response.context['credit_providers']),
+            json.loads(provider_json),
+        )
 
     @httpretty.activate
     def test_credit_providers_in_context_cached(self):
         """ Verify the cached context data includes a list of credit providers. """
         self._create_and_login_staff_user()
+        self.mock_access_token_response()
 
         __, provider_json = self.mock_credit_api_providers()
 
@@ -142,27 +160,33 @@ class CourseAppViewTests(TestCase):
 
             response = self.client.get(self.path)
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.context['credit_providers'], provider_json)
-            self.assertEqual(mocked_set_all_tiers.call_count, 1)
+            self.assertEqual(json.loads(response.context['credit_providers']), json.loads(provider_json))
+
+            # Assert set_all_tiers calls, 1 for access token and 1 for credit providers.
+            self.assertEqual(mocked_set_all_tiers.call_count, 2)
 
             response = self.client.get(self.path)
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.context['credit_providers'], provider_json)
-            self.assertEqual(mocked_set_all_tiers.call_count, 1)
+            self.assertEqual(
+                json.loads(response.context['credit_providers']),
+                json.loads(provider_json),
+            )
+            self.assertEqual(mocked_set_all_tiers.call_count, 2)
 
     @httpretty.activate
     def test_credit_api_failure(self):
         """ Verify the view logs an error if it fails to retrieve credit providers. """
         # Setup staff user with an OAuth 2 access token
         self._create_and_login_staff_user()
+        self.mock_access_token_response()
         self.mock_credit_api_error()
 
-        with LogCapture(LOGGER_NAME) as l:
+        with LogCapture(LOGGER_NAME) as logger:
             response = self.client.get(self.path)
 
             self.assertEqual(response.status_code, 200)
             expected = 'Failed to retrieve credit providers!'
-            l.check((LOGGER_NAME, 'ERROR', expected))
+            logger.check((LOGGER_NAME, 'ERROR', expected))
 
     @httpretty.activate
     def test_missing_access_token(self):
@@ -171,9 +195,9 @@ class CourseAppViewTests(TestCase):
         self.client.login(username=user.username, password=self.password)
         self.mock_credit_api_providers()
 
-        with LogCapture(LOGGER_NAME) as l:
+        with LogCapture(LOGGER_NAME) as logger:
             response = self.client.get(self.path)
 
             self.assertEqual(response.status_code, 200)
             expected = 'User [{}] has no access token, and will not be able to edit courses.'.format(user.username)
-            l.check((LOGGER_NAME, 'WARNING', expected))
+            logger.check((LOGGER_NAME, 'WARNING', expected))

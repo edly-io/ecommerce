@@ -1,29 +1,33 @@
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import logging
 
-import waffle
+import six
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from oscar.core.loading import get_model
-from rest_framework import filters, generics, serializers, status, viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics, serializers, status, viewsets
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from ecommerce.core.constants import COUPON_PRODUCT_CLASS_NAME
 from ecommerce.core.models import BusinessClient
 from ecommerce.core.utils import log_message_and_raise_validation_error
 from ecommerce.coupons.utils import prepare_course_seat_types
-from ecommerce.enterprise.constants import ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH
 from ecommerce.extensions.api import data as data_api
 from ecommerce.extensions.api.filters import ProductFilter
 from ecommerce.extensions.api.serializers import CategorySerializer, CouponListSerializer, CouponSerializer
 from ecommerce.extensions.basket.utils import prepare_basket
-from ecommerce.extensions.catalogue.utils import create_coupon_product, get_or_create_catalog
+from ecommerce.extensions.catalogue.utils import (
+    attach_or_update_contract_metadata_on_coupon,
+    create_coupon_product,
+    get_or_create_catalog
+)
 from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
 from ecommerce.extensions.edly_ecommerce_app.permissions import IsAdminOrCourseCreator
 from ecommerce.extensions.payment.processors.invoice import InvoicePayment
@@ -55,22 +59,19 @@ DEPRECATED_COUPON_CATEGORIES = ['Bulk Enrollment']
 class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
     """ Coupon resource. """
     permission_classes = (IsAuthenticated, IsAdminOrCourseCreator)
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = ProductFilter
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ProductFilter
 
     def get_queryset(self):
         product_filter = Product.objects.filter(
             product_class__name=COUPON_PRODUCT_CLASS_NAME,
             stockrecords__partner=self.request.site.siteconfiguration.partner
         )
-        # If we have switched to using enterprise offers, ensure that enterprise coupons do not show up
-        # in the regular coupon list view
-        if waffle.switch_is_active(ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH):
-            return product_filter.exclude(
-                coupon_vouchers__vouchers__offers__condition__enterprise_customer_uuid__isnull=False,
-            )
-
-        return product_filter
+        # Now that we have switched completely to using enterprise offers, ensure that enterprise coupons do not show up
+        # in the regular coupon list view.
+        return product_filter.exclude(
+            attributes__code='enterprise_customer_uuid',
+        )
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -101,7 +102,7 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 try:
-                    self.validate_access_for_enterprise_switch(request.data)
+                    self.validate_access_for_enterprise(request.data)
                     cleaned_voucher_data = self.clean_voucher_request_data(
                         request.data, request.site.siteconfiguration.partner
                     )
@@ -121,7 +122,6 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
                 # Create an order now since payment is handled out of band via an invoice.
                 client, __ = BusinessClient.objects.update_or_create(
                     name=cleaned_voucher_data['enterprise_customer_name'] or request.data.get('client'),
-                    defaults={'enterprise_customer_uuid': cleaned_voucher_data['enterprise_customer']}
                 )
                 invoice_data = self.create_update_data_dict(data=request.data, fields=Invoice.UPDATEABLE_INVOICE_FIELDS)
                 response_data = self.create_order_for_invoice(
@@ -165,13 +165,13 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
             title=cleaned_voucher_data['title'],
             voucher_type=cleaned_voucher_data['voucher_type'],
             program_uuid=cleaned_voucher_data['program_uuid'],
-            site=self.request.site
+            site=self.request.site,
+            sales_force_id=cleaned_voucher_data['sales_force_id'],
         )
 
-    def validate_access_for_enterprise_switch(self, request_data):
+    def validate_access_for_enterprise(self, request_data):
         enterprise_customer_data = request_data.get('enterprise_customer')
-        if (enterprise_customer_data and enterprise_customer_data.get('id') and
-                waffle.switch_is_active(ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH)):
+        if enterprise_customer_data and enterprise_customer_data.get('id'):
             raise ValidationError('Enterprise coupons can no longer be created or updated from this endpoint.')
 
     @classmethod
@@ -208,7 +208,7 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
             try:
                 course_seat_types = prepare_course_seat_types(course_seat_types)
             except (AttributeError, TypeError) as exception:
-                validation_message = 'Invalid course seat types data: {}'.format(exception.message)
+                validation_message = 'Invalid course seat types data: {}'.format(six.text_type(exception))
                 raise ValidationError(validation_message)
 
         try:
@@ -266,6 +266,10 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
             'voucher_type': voucher_type,
             'program_uuid': program_uuid,
             'notify_email': notify_email,
+            'contract_discount_type': request_data.get('contract_discount_type'),
+            'contract_discount_value': request_data.get('contract_discount_value'),
+            'prepaid_invoice_amount': request_data.get('prepaid_invoice_amount'),
+            'sales_force_id': request_data.get('sales_force_id'),
         }
 
     @classmethod
@@ -396,7 +400,7 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
         range_data = self.create_update_data_dict(data=request_data, fields=Range.UPDATABLE_RANGE_FIELDS)
 
         if not range_data:
-            return None
+            return
 
         voucher_range = vouchers.first().original_offer.benefit.range
 
@@ -431,7 +435,7 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
         if 'enterprise_customer_catalog' in request_data:
             range_data['enterprise_customer_catalog'] = request_data.get('enterprise_customer_catalog') or None
 
-        for attr, value in range_data.iteritems():
+        for attr, value in six.iteritems(range_data):
             setattr(voucher_range, attr, value)
 
         voucher_range.save()
@@ -451,9 +455,9 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
         if client_username or enterprise_customer:
             client, __ = BusinessClient.objects.update_or_create(
                 name=enterprise_customer_name or client_username,
-                defaults={'enterprise_customer_uuid': enterprise_customer}
             )
             Invoice.objects.filter(order__basket=baskets.first()).update(business_client=client)
+            coupon.attr.enterprise_customer_uuid = enterprise_customer
 
         coupon_price = request_data.get('price')
         if coupon_price:
@@ -462,11 +466,29 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
         note = request_data.get('note')
         if note is not None:
             coupon.attr.note = note
-            coupon.save()
 
         if 'notify_email' in request_data:
             coupon.attr.notify_email = request_data.get('notify_email')
-            coupon.save()
+
+        sales_force_id = request_data.get('sales_force_id')
+        if sales_force_id is not None:
+            coupon.attr.sales_force_id = sales_force_id
+
+        if 'inactive' in request_data:
+            coupon.attr.inactive = request_data.get('inactive')
+
+        coupon.save()
+
+        discount_value = request_data.get('contract_discount_value')
+        prepaid_invoice_amount = request_data.get('prepaid_invoice_amount')
+        if discount_value is not None or prepaid_invoice_amount is not None:
+            discount_type = request_data.get('contract_discount_type')
+            attach_or_update_contract_metadata_on_coupon(
+                coupon,
+                discount_type=discount_type,
+                discount_value=discount_value,
+                amount_paid=prepaid_invoice_amount,
+            )
 
     def update_offer_data(self, request_data, vouchers, site):
         """
@@ -555,7 +577,7 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
         if invoice_data:
             Invoice.objects.filter(order__lines__product=coupon).update(**invoice_data)
 
-    def destroy(self, request, pk):  # pylint: disable=unused-argument
+    def destroy(self, request, pk):  # pylint: disable=unused-argument, arguments-differ
         try:
             coupon = get_object_or_404(Product, pk=pk)
             self.perform_destroy(coupon)
@@ -563,7 +585,7 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
             return Response(status=404)
         return Response(status=204)
 
-    def perform_destroy(self, coupon):
+    def perform_destroy(self, coupon):  # pylint: disable=arguments-differ
         Voucher.objects.filter(coupon_vouchers__coupon=coupon).delete()
         StockRecord.objects.filter(product=coupon).delete()
         coupon.delete()

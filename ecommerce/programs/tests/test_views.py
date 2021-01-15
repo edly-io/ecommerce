@@ -1,6 +1,9 @@
+from __future__ import absolute_import
+
 import uuid
 
 import httpretty
+from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -14,6 +17,9 @@ Benefit = get_model('offer', 'Benefit')
 ConditionalOffer = get_model('offer', 'ConditionalOffer')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ProgramOfferListViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
     path = reverse('programs:offers:list')
 
@@ -71,6 +77,9 @@ class ProgramOfferListViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
         self.assertEqual(list(response.context['object_list']), [site_conditional_offer])
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class ProgramOfferUpdateViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
     def setUp(self):
         super(ProgramOfferUpdateViewTests, self).setUp()
@@ -109,6 +118,9 @@ class ProgramOfferUpdateViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
         self.assertRedirects(response, self.path)
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 @httpretty.activate
 class ProgramOfferCreateViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
     path = reverse('programs:offers:new')
@@ -123,8 +135,11 @@ class ProgramOfferCreateViewTests(ProgramTestMixin, ViewTestMixin, TestCase):
             'benefit_type': Benefit.PERCENTAGE,
             'benefit_value': expected_benefit_value,
         }
+        existing_offer_ids = list(ConditionalOffer.objects.all().values_list('id', flat=True))
         response = self.client.post(self.path, data, follow=False)
-        program_offer = ConditionalOffer.objects.get()
+        conditional_offers = ConditionalOffer.objects.exclude(id__in=existing_offer_ids)
+        program_offer = conditional_offers.first()
+        self.assertEqual(conditional_offers.count(), 1)
 
         self.assertRedirects(response, reverse('programs:offers:edit', kwargs={'pk': program_offer.pk}))
         self.assertIsNone(program_offer.start_datetime)

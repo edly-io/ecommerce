@@ -1,12 +1,16 @@
+from __future__ import absolute_import
+
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from oscar.apps.order.abstract_models import AbstractOrder, AbstractPaymentEvent
+from oscar.apps.order.abstract_models import AbstractLine, AbstractOrder, AbstractOrderDiscount, AbstractPaymentEvent
+from simple_history.models import HistoricalRecords
 
 from ecommerce.extensions.fulfillment.status import ORDER
 
 
 class Order(AbstractOrder):
-    partner = models.ForeignKey('partner.Partner', null=True, blank=True)
+    partner = models.ForeignKey('partner.Partner', null=True, blank=True, on_delete=models.CASCADE)
+    history = HistoricalRecords()
 
     @property
     def is_fulfillable(self):
@@ -17,6 +21,16 @@ class Order(AbstractOrder):
     def contains_coupon(self):
         """ Return a boolean if the order contains a Coupon. """
         return any(line.product.is_coupon_product for line in self.basket.all_lines())
+
+
+class OrderDiscount(AbstractOrderDiscount):
+    history = HistoricalRecords()
+
+
+class Line(AbstractLine):
+    history = HistoricalRecords()
+    effective_contract_discount_percentage = models.DecimalField(max_digits=8, decimal_places=5, null=True)
+    effective_contract_discounted_price = models.DecimalField(max_digits=12, decimal_places=2, null=True)
 
 
 class PaymentEvent(AbstractPaymentEvent):

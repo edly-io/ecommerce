@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import datetime
 from uuid import uuid4
@@ -8,23 +8,25 @@ import httpretty
 import mock
 import pytz
 from django.http import Http404
+from django.test import modify_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from opaque_keys.edx.keys import CourseKey
 from oscar.core.loading import get_model
 from oscar.test.factories import BenefitFactory, OrderFactory, OrderLineFactory, ProductFactory, RangeFactory
-from requests.exceptions import ConnectionError, Timeout
+from requests.exceptions import ConnectionError as ReqConnectionError
+from requests.exceptions import Timeout
 from rest_framework import status
 from rest_framework.test import APIRequestFactory
+from six.moves import range
 from slumber.exceptions import SlumberBaseException
-from waffle.models import Switch
 
 from ecommerce.coupons.tests.mixins import CouponMixin, DiscoveryMockMixin
 from ecommerce.courses.tests.factories import CourseFactory
-from ecommerce.enterprise.constants import ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH
 from ecommerce.extensions.api import serializers
 from ecommerce.extensions.api.v2.views.vouchers import VoucherViewSet
 from ecommerce.extensions.catalogue.tests.mixins import DiscoveryTestMixin
+from ecommerce.extensions.offer.utils import get_benefit_type
 from ecommerce.extensions.partner.strategy import DefaultStrategy
 from ecommerce.extensions.test.factories import (
     ConditionalOfferFactory,
@@ -44,6 +46,9 @@ Voucher = get_model('voucher', 'Voucher')
 
 
 @ddt.ddt
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class VoucherViewSetTests(DiscoveryMockMixin, DiscoveryTestMixin, LmsApiMockMixin, TestCase):
     """ Tests for the VoucherViewSet view set. """
     path = reverse('api:v2:vouchers-list')
@@ -146,7 +151,7 @@ class VoucherViewSetTests(DiscoveryMockMixin, DiscoveryTestMixin, LmsApiMockMixi
         return products, request, voucher
 
     def build_offers_url(self, voucher):
-        return '{path}?code={code}'.format(path=reverse('api:v2:vouchers-offers-list'), code=voucher.code)
+        return '{path}?code={code}'.format(path=reverse('api:v2:vouchers-offers'), code=voucher.code)
 
     @httpretty.activate
     def test_omitting_unavailable_seats(self):
@@ -176,7 +181,7 @@ class VoucherViewSetTests(DiscoveryMockMixin, DiscoveryTestMixin, LmsApiMockMixi
         self.assertEqual(len(offers), 2)
 
         order = OrderFactory(user=self.user)
-        order.lines.add(OrderLineFactory(product=products[0]))
+        order.lines.add(OrderLineFactory(product=products[0], partner_sku='test_sku'))
         offers = VoucherViewSet().get_offers(request=request, voucher=voucher)['results']
         self.assertEqual(len(offers), 1)
 
@@ -220,34 +225,41 @@ class VoucherViewSetTests(DiscoveryMockMixin, DiscoveryTestMixin, LmsApiMockMixi
         expired_seat = CourseFactory(partner=self.partner).create_or_update_seat('professional', False, 100)
         future_enrollment_seat = CourseFactory(partner=self.partner).create_or_update_seat('professional', False, 100)
 
-        course_discovery_results = [{
-            'key': no_enrollment_end_seat.attr.course_key,
-            'enrollment_end': None,
-            'enrollment_start': str(now() - datetime.timedelta(days=1)),
-        }, {
-            'key': no_enrollment_start_seat.attr.course_key,
-            'enrollment_start': None,
-            'enrollment_end': None,
-        }, {
-            'key': valid_seat.attr.course_key,
-            'enrollment_end': str(now() + datetime.timedelta(days=1)),
-            'enrollment_start': str(now() - datetime.timedelta(days=1)),
-        }, {
-            'key': expired_enrollment_seat.attr.course_key,
-            'enrollment_end': str(now() - datetime.timedelta(days=1)),
-            'enrollment_start': str(now() - datetime.timedelta(days=1)),
-        }, {
-            'key': expired_seat.attr.course_key,
-            'enrollment_end': None,
-            'enrollment_start': str(now() - datetime.timedelta(days=1)),
-            'end': str(now() - datetime.timedelta(days=1)),
-        }, {
-            'key': future_enrollment_seat.attr.course_key,
-            'enrollment_end': None,
-            'enrollment_start': str(now() + datetime.timedelta(days=1)),
-        }]
+        course_discovery_results = [
+            {
+                'key': no_enrollment_end_seat.attr.course_key,
+                'enrollment_end': None,
+                'enrollment_start': str(now() - datetime.timedelta(days=1)),
+            },
+            {
+                'key': no_enrollment_start_seat.attr.course_key,
+                'enrollment_start': None,
+                'enrollment_end': None,
+            },
+            {
+                'key': valid_seat.attr.course_key,
+                'enrollment_end': str(now() + datetime.timedelta(days=1)),
+                'enrollment_start': str(now() - datetime.timedelta(days=1)),
+            },
+            {
+                'key': expired_enrollment_seat.attr.course_key,
+                'enrollment_end': str(now() - datetime.timedelta(days=1)),
+                'enrollment_start': str(now() - datetime.timedelta(days=1)),
+            },
+            {
+                'key': expired_seat.attr.course_key,
+                'enrollment_end': None,
+                'enrollment_start': str(now() - datetime.timedelta(days=1)),
+                'end': str(now() - datetime.timedelta(days=1)),
+            },
+            {
+                'key': future_enrollment_seat.attr.course_key,
+                'enrollment_end': None,
+                'enrollment_start': str(now() + datetime.timedelta(days=1)),
+            }
+        ]
 
-        products, __, __ = VoucherViewSet().retrieve_course_objects(course_discovery_results, 'professional')
+        products, _, __ = VoucherViewSet().retrieve_course_objects(course_discovery_results, 'professional')
         self.assertIn(no_enrollment_end_seat, products)
         self.assertIn(no_enrollment_start_seat, products)
         self.assertIn(valid_seat, products)
@@ -258,6 +270,9 @@ class VoucherViewSetTests(DiscoveryMockMixin, DiscoveryTestMixin, LmsApiMockMixi
 
 @ddt.ddt
 @httpretty.activate
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryTestMixin, LmsApiMockMixin,
                                      TestCase):
     """ Tests for the VoucherViewSet offers endpoint. """
@@ -304,7 +319,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
         response = self.endpointView(request)
         self.assertEqual(response.status_code, 404)
 
-    @ddt.data((ConnectionError,), (Timeout,), (SlumberBaseException,))
+    @ddt.data((ReqConnectionError,), (Timeout,), (SlumberBaseException,))
     @ddt.unpack
     def test_voucher_offers_listing_api_exception_caught(self, exception):
         """ Verify the endpoint returns status 400 Bad Request when ConnectionError occurs """
@@ -313,9 +328,8 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
         voucher, __ = prepare_voucher(_range=new_range, benefit_value=10)
 
         with mock.patch(
-            'ecommerce.extensions.api.v2.views.vouchers.VoucherViewSet.get_offers',
-            mock.Mock(side_effect=exception)
-        ):
+                'ecommerce.extensions.api.v2.views.vouchers.VoucherViewSet.get_offers',
+                mock.Mock(side_effect=exception)):
             request = self.prepare_offers_listing_request(voucher.code)
             response = self.endpointView(request)
 
@@ -328,9 +342,8 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
         voucher, __ = prepare_voucher(_range=new_range)
 
         with mock.patch(
-            'ecommerce.extensions.api.v2.views.vouchers.VoucherViewSet.get_offers',
-            mock.Mock(side_effect=Http404)
-        ):
+                'ecommerce.extensions.api.v2.views.vouchers.VoucherViewSet.get_offers',
+                mock.Mock(side_effect=Http404)):
             request = self.prepare_offers_listing_request(voucher.code)
             response = self.endpointView(request)
 
@@ -415,7 +428,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
         self.assertEqual(len(offers), 1)
         self.assertDictEqual(first_offer, {
             'benefit': {
-                'type': benefit.type,
+                'type': get_benefit_type(benefit),
                 'value': benefit.value
             },
             'contains_verified': True,
@@ -425,7 +438,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
             'multiple_credit_providers': False,
             'organization': CourseKey.from_string(course.id).org,
             'credit_provider_price': None,
-            'seat_type': course.type,
+            'seat_type': seat.attr.certificate_type,
             'stockrecords': serializers.StockRecordSerializer(seat.stockrecords.first()).data,
             'title': course.name,
             'voucher_end_date': voucher.end_datetime,
@@ -448,7 +461,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
         self.assertEqual(len(offers), 1)
         self.assertDictEqual(first_offer, {
             'benefit': {
-                'type': benefit.type,
+                'type': get_benefit_type(benefit),
                 'value': benefit.value
             },
             'contains_verified': True,
@@ -458,7 +471,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
             'multiple_credit_providers': False,
             'organization': CourseKey.from_string(course.id).org,
             'credit_provider_price': None,
-            'seat_type': course.type,
+            'seat_type': seat.attr.certificate_type,
             'stockrecords': serializers.StockRecordSerializer(seat.stockrecords.first()).data,
             'title': course.name,
             'voucher_end_date': voucher.end_datetime,
@@ -466,7 +479,6 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
 
     def test_get_offers_for_enterprise_catalog_voucher(self):
         """ Verify that the course offers data is returned for an enterprise catalog voucher. """
-        Switch.objects.update_or_create(name=ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH, defaults={'active': False})
         self.mock_access_token_response()
         course, seat = self.create_course_and_seat()
         enterprise_catalog_id = str(uuid4())
@@ -488,7 +500,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
         self.assertEqual(len(offers), 1)
         self.assertDictEqual(first_offer, {
             'benefit': {
-                'type': benefit.type,
+                'type': get_benefit_type(benefit),
                 'value': benefit.value
             },
             'contains_verified': True,
@@ -498,15 +510,14 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
             'multiple_credit_providers': False,
             'organization': CourseKey.from_string(course.id).org,
             'credit_provider_price': None,
-            'seat_type': course.type,
+            'seat_type': seat.attr.certificate_type,
             'stockrecords': serializers.StockRecordSerializer(seat.stockrecords.first()).data,
             'title': course.name,
             'voucher_end_date': voucher.end_datetime,
         })
 
-    def test_get_offers_for_enterprise_offer_switch_on(self):
+    def test_get_offers_for_enterprise_offer(self):
         """ Verify that the course offers data is returned for an enterprise catalog voucher. """
-        Switch.objects.update_or_create(name=ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH, defaults={'active': True})
         self.mock_access_token_response()
         course, seat = self.create_course_and_seat()
         enterprise_customer_id = str(uuid4())
@@ -526,7 +537,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
         self.assertEqual(len(offers), 1)
         self.assertDictEqual(first_offer, {
             'benefit': {
-                'type': benefit.type,
+                'type': get_benefit_type(benefit),
                 'value': benefit.value
             },
             'contains_verified': True,
@@ -536,15 +547,14 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
             'multiple_credit_providers': False,
             'organization': CourseKey.from_string(course.id).org,
             'credit_provider_price': None,
-            'seat_type': course.type,
+            'seat_type': seat.attr.certificate_type,
             'stockrecords': serializers.StockRecordSerializer(seat.stockrecords.first()).data,
             'title': course.name,
             'voucher_end_date': voucher.end_datetime,
         })
 
-    def test_get_offers_for_enterprise_offer_switch_on_no_catalog(self):
+    def test_get_offers_for_enterprise_offer_no_catalog(self):
         """ Verify that the course offers data is returned for an enterprise catalog voucher. """
-        Switch.objects.update_or_create(name=ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH, defaults={'active': True})
         self.mock_access_token_response()
         enterprise_customer_id = str(uuid4())
         voucher = prepare_enterprise_voucher(
@@ -585,7 +595,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
         self.assertEqual(len(offers), 1)
         self.assertDictEqual(first_offer, {
             'benefit': {
-                'type': benefit.type,
+                'type': get_benefit_type(benefit),
                 'value': benefit.value
             },
             'contains_verified': True,
@@ -595,7 +605,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
             'multiple_credit_providers': False,
             'organization': CourseKey.from_string(course.id).org,
             'credit_provider_price': None,
-            'seat_type': course.type,
+            'seat_type': seat.attr.certificate_type,
             'stockrecords': serializers.StockRecordSerializer(seat.stockrecords.first()).data,
             'title': course.name,
             'voucher_end_date': voucher.end_datetime,
@@ -628,7 +638,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
 
         self.assertDictEqual(offer, {
             'benefit': {
-                'type': benefit.type,
+                'type': get_benefit_type(benefit),
                 'value': benefit.value
             },
             'contains_verified': True,
@@ -702,7 +712,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
             response.data['results'],
             [{
                 'benefit': {
-                    'type': benefit.type,
+                    'type': get_benefit_type(benefit),
                     'value': benefit.value
                 },
                 'contains_verified': True,
@@ -712,7 +722,7 @@ class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryT
                 'multiple_credit_providers': False,
                 'organization': CourseKey.from_string(course.id).org,
                 'credit_provider_price': None,
-                'seat_type': course.type,
+                'seat_type': seat.attr.certificate_type,
                 'stockrecords': serializers.StockRecordSerializer(seat.stockrecords.first()).data,
                 'title': course.name,
                 'voucher_end_date': voucher.end_datetime,

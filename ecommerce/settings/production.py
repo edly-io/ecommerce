@@ -1,12 +1,16 @@
 """Production settings and globals."""
+from __future__ import absolute_import
+
 import codecs
 from os import environ
-from urlparse import urljoin
 
+import six
 import yaml
+from corsheaders.defaults import default_headers as corsheaders_default_headers
 # Normally you should not import ANYTHING from Django directly
 # into your settings, but ImproperlyConfigured is an exception.
 from django.core.exceptions import ImproperlyConfigured
+from six.moves.urllib.parse import urljoin
 
 from ecommerce.settings.base import *
 
@@ -16,6 +20,9 @@ PROTOCOL = 'https'
 # Enable offline compression of CSS/JS
 COMPRESS_ENABLED = True
 COMPRESS_OFFLINE = True
+
+# Email configuration
+EMAIL_BACKEND = 'django_ses.SESBackend'
 
 # Minify CSS
 COMPRESS_CSS_FILTERS += [
@@ -43,6 +50,10 @@ ALLOWED_HOSTS = ['*']
 # the values read from disk should UPDATE the pre-configured dicts.
 DICT_UPDATE_KEYS = ('JWT_AUTH',)
 
+# Set empty defaults for the logging override settings
+LOGGING_ROOT_OVERRIDES = {}
+LOGGING_SUBSECTION_OVERRIDES = {}
+
 CONFIG_FILE = get_env_setting('ECOMMERCE_CFG')
 with codecs.open(CONFIG_FILE, encoding='utf-8') as f:
     config_from_yaml = yaml.load(f)
@@ -66,8 +77,25 @@ DB_OVERRIDES = dict(
     PORT=environ.get('DB_MIGRATION_PORT', DATABASES['default']['PORT']),
 )
 
-for override, value in DB_OVERRIDES.iteritems():
+for override, value in six.iteritems(DB_OVERRIDES):
     DATABASES['default'][override] = value
+
+for key, value in LOGGING_ROOT_OVERRIDES.items():
+    if value is None:
+        del LOGGING[key]
+    else:
+        LOGGING[key] = value
+
+for section, overrides in LOGGING_SUBSECTION_OVERRIDES.items():
+    if overrides is None:
+        del LOGGING[section]
+    else:
+        for key, value in overrides.items():
+            if value is None:
+                del LOGGING[section][key]
+            else:
+                LOGGING[section][key] = value
+
 
 # Email configuration
 EMAIL_BACKEND = config_from_yaml.get('EMAIL_BACKEND')
@@ -86,8 +114,8 @@ authorizenet_dict = {
 }
 PAYMENT_PROCESSOR_CONFIG['edx'].update({'authorizenet': authorizenet_dict})
 
-for __, configs in PAYMENT_PROCESSOR_CONFIG.iteritems():
-    for __, config in configs.iteritems():
+for __, configs in six.iteritems(PAYMENT_PROCESSOR_CONFIG):
+    for __, config in six.iteritems(configs):
         config.update({
             'receipt_path': PAYMENT_PROCESSOR_RECEIPT_PATH,
             'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
@@ -96,6 +124,15 @@ for __, configs in PAYMENT_PROCESSOR_CONFIG.iteritems():
 # END PAYMENT PROCESSOR OVERRIDES
 
 ENTERPRISE_API_URL = urljoin(ENTERPRISE_SERVICE_URL, 'api/v1/')
+
+ENTERPRISE_CATALOG_API_URL = urljoin(ENTERPRISE_CATALOG_SERVICE_URL, 'api/v1/')
+
+# List of enterprise customer uuids to exclude from transition to use of enterprise-catalog
+ENTERPRISE_CUSTOMERS_EXCLUDED_FROM_CATALOG = config_from_yaml.get('ENTERPRISE_CUSTOMERS_EXCLUDED_FROM_CATALOG', ())
+
+CORS_ALLOW_HEADERS = corsheaders_default_headers + (
+    'use-jwt-cookie',
+)
 
 # Authorizenet payment processor set a cookie for dashboard to show pending course purchased dashoard
 # notification. This cookie domain will be used to set and delete that cookie.

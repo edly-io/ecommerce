@@ -1,14 +1,17 @@
+from __future__ import absolute_import
+
+from django.apps import apps
 from django.conf.urls import include, url
 
-from ecommerce.extensions.app import application
-from ecommerce.extensions.payment.app import application as payment
+payment = apps.get_app_config('payment')
+application = apps.get_app_config('ecommerce')
 
 urlpatterns = [
-    url(r'^api/', include('ecommerce.extensions.api.urls', namespace='api')),
+    url(r'^api/', include(('ecommerce.extensions.api.urls', 'api'))),
     url(
         r'^edly_ecommerce_api/',
         include('ecommerce.extensions.edly_ecommerce_app.api.v1.urls', namespace='edly_ecommerce_api')
     ),
-    url(r'^payment/', include(payment.urls)),
-    url(r'', include(application.urls)),
+    url(r'^payment/', include(payment.urls[0])),
+    url(r'', include(application.urls[0])),
 ]

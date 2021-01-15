@@ -1,9 +1,7 @@
-from __future__ import unicode_literals
-
-import json
+from __future__ import absolute_import, unicode_literals
 
 from django.conf import settings
-from django.test import override_settings
+from django.test import modify_settings, override_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -14,6 +12,9 @@ from ecommerce.tests.testcases import TestCase
 Basket = get_model('basket', 'Basket')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class DummyProcessorWithUrl(DummyProcessor):
     """ Dummy payment processor class that has a test payment page url. """
     NAME = 'dummy_with_url'
@@ -26,6 +27,9 @@ class DummyProcessorWithUrl(DummyProcessor):
         return dummy_values
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class CheckoutViewTests(TestCase):
     """ Tests for CheckoutView API view. """
     path = reverse('api:v2:checkout:process')
@@ -52,14 +56,14 @@ class CheckoutViewTests(TestCase):
         expected_content = 'Basket [{}] not found.'.format(self.data['basket_id'])
         response = self.client.post(self.path, data=self.data)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.content, expected_content)
+        self.assertEqual(response.content.decode('utf-8'), expected_content)
 
     def test_invalid_payment_processor(self):
         """ Verify the endpoint returns HTTP 400 if payment processor not found. """
         expected_content = 'Payment processor [{}] not found.'.format(DummyProcessorWithUrl.NAME)
         response = self.client.post(self.path, data=self.data)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.content, expected_content)
+        self.assertEqual(response.content.decode('utf-8'), expected_content)
 
     @override_settings(
         PAYMENT_PROCESSORS=['ecommerce.extensions.api.v2.tests.views.test_checkout.DummyProcessorWithUrl']
@@ -72,7 +76,7 @@ class CheckoutViewTests(TestCase):
 
         basket = Basket.objects.get(id=self.basket.id)
         self.assertEqual(basket.status, Basket.FROZEN)
-        response_data = json.loads(response.content)
+        response_data = response.json()
         self.assertEqual(response_data['payment_form_data']['transaction_param'], 'test_trans_param')
         self.assertEqual(response_data['payment_page_url'], 'test_processor.edx')
         self.assertEqual(response_data['payment_processor'], 'dummy_with_url')

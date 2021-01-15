@@ -1,5 +1,6 @@
-import json
+from __future__ import absolute_import
 
+from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -9,6 +10,9 @@ from ecommerce.tests.testcases import TestCase
 Partner = get_model('partner', 'Partner')
 
 
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class PartnerViewTest(TestCase):
     def setUp(self):
         super(PartnerViewTest, self).setUp()
@@ -42,8 +46,8 @@ class PartnerViewTest(TestCase):
         expected_data.append(dummy_partner_data)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(json.loads(response.content)['results']), 2)
-        self.assertListEqual(json.loads(response.content)['results'], expected_data)
+        self.assertEqual(len(response.json()['results']), 2)
+        self.assertListEqual(response.json()['results'], expected_data)
 
     def test_get_partner_detail(self):
         """Verify the endpoint returns the details for a specific partner."""
@@ -51,7 +55,7 @@ class PartnerViewTest(TestCase):
         response = self.client.get(url)
         expected_data = self.serialize_partner(self.partner)
         self.assertEqual(response.status_code, 200)
-        self.assertDictEqual(json.loads(response.content), expected_data)
+        self.assertDictEqual(response.json(), expected_data)
 
     def test_access_partner_api(self):
         """Verify the API endpoint requires staff permissions."""
@@ -61,19 +65,3 @@ class PartnerViewTest(TestCase):
         url = reverse('api:v2:partner-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
-
-    def test_no_partner(self):
-        """Verify the endpoint returns an empty list of partners, if no
-        partners exist.
-        """
-        Partner.objects.all().delete()
-        url = reverse('api:v2:partner-list')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        expected = {
-            'count': 0,
-            'next': None,
-            'previous': None,
-            'results': []
-        }
-        self.assertDictEqual(json.loads(response.content), expected)

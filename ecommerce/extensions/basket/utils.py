@@ -1,7 +1,8 @@
+from __future__ import absolute_import
+
 import datetime
 import json
 import logging
-from urllib import unquote, urlencode
 
 import newrelic.agent
 import pytz
@@ -12,18 +13,20 @@ from django.db import transaction
 from django.utils.translation import ugettext_lazy as _
 from oscar.apps.basket.signals import voucher_addition
 from oscar.core.loading import get_class, get_model
+from six.moves.urllib.parse import unquote, urlencode
 
+from ecommerce.core.url_utils import absolute_url
 from ecommerce.courses.utils import mode_for_product
-from ecommerce.extensions.offer.constants import CUSTOM_APPLICATOR_USE_FLAG
+from ecommerce.extensions.basket.constants import PURCHASER_BEHALF_ATTRIBUTE
 from ecommerce.extensions.order.exceptions import AlreadyPlacedOrderException
 from ecommerce.extensions.order.utils import UserAlreadyPlacedOrder
+from ecommerce.extensions.payment.constants import DISABLE_MICROFRONTEND_FOR_BASKET_PAGE_FLAG_NAME
 from ecommerce.extensions.payment.utils import embargo_check
 from ecommerce.referrals.models import Referral
 from ecommerce.subscriptions.exceptions import SubscriptionNotBuyableException
 from ecommerce.subscriptions.utils import basket_add_subscription_attribute, is_subscription_buyable
 
 Applicator = get_class('offer.applicator', 'Applicator')
-CustomApplicator = get_class('offer.applicator', 'CustomApplicator')
 Basket = get_model('basket', 'Basket')
 BasketAttribute = get_model('basket', 'BasketAttribute')
 BasketAttributeType = get_model('basket', 'BasketAttributeType')
@@ -38,6 +41,31 @@ Voucher = get_model('voucher', 'Voucher')
 logger = logging.getLogger(__name__)
 
 
+def get_payment_microfrontend_or_basket_url(request):
+    url = get_payment_microfrontend_url_if_configured(request)
+    if not url:
+        url = absolute_url(request, 'basket:summary')
+    return url
+
+
+def get_payment_microfrontend_url_if_configured(request):
+    if _use_payment_microfrontend(request):
+        return request.site.siteconfiguration.payment_microfrontend_url
+
+    return None
+
+
+def _use_payment_microfrontend(request):
+    """
+    Return whether the current request should use the payment MFE.
+    """
+    return (
+        request.site.siteconfiguration.enable_microfrontend_for_basket_page and
+        request.site.siteconfiguration.payment_microfrontend_url and
+        not waffle.flag_is_active(request, DISABLE_MICROFRONTEND_FOR_BASKET_PAGE_FLAG_NAME)
+    )
+
+
 @newrelic.agent.function_trace()
 def add_utm_params_to_url(url, params):
     # utm_params is [(u'utm_content', u'course-v1:IDBx IDB20.1x 1T2017'),...
@@ -48,6 +76,14 @@ def add_utm_params_to_url(url, params):
     # (course-keys do not have url encoding)
     utm_params = unquote(utm_params)
     url = url + '?' + utm_params if utm_params else url
+    return url
+
+
+@newrelic.agent.function_trace()
+def add_invalid_code_message_to_url(url, code):
+    if code:
+        message = 'error_message=Code {code} is invalid.'.format(code=str(code))
+        url += '&' + message if '?' in url else '?' + message
     return url
 
 
@@ -93,7 +129,7 @@ def prepare_basket(request, products, voucher=None):
             )
             return basket
 
-    is_multi_product_basket = True if len(products) > 1 else False
+    is_multi_product_basket = len(products) > 1
     for product in products:
         if product.is_subscription_product and not is_subscription_buyable(product, request.user, request.site):
             unbuyable_subscriptions.append(product)
@@ -134,7 +170,9 @@ def prepare_basket(request, products, voucher=None):
         if is_valid:
             apply_voucher_on_basket_and_check_discount(voucher, request, basket)
         else:
-            logger.info(message)
+            logger.warning('[Code Redemption Failure] The voucher is not valid for this basket. '
+                           'User: %s, Basket: %s, Code: %s, Message: %s',
+                           request.user.username, request.basket.id, voucher.code, message)
 
     attribute_cookie_data(basket, request)
     return basket
@@ -262,7 +300,7 @@ def _record_utm_basket_attribution(referral, request):
       Attribute this user's basket to UTM data, if applicable.
     """
     utm_cookie_name = request.site.siteconfiguration.utm_cookie_name
-    utm_cookie = request.COOKIES.get(utm_cookie_name, "{}")
+    utm_cookie = request.COOKIES.get(utm_cookie_name, "{}") if utm_cookie_name else "{}"
     utm = json.loads(utm_cookie)
 
     for attr_name in ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']:
@@ -283,8 +321,8 @@ def _record_utm_basket_attribution(referral, request):
 @newrelic.agent.function_trace()
 def basket_add_organization_attribute(basket, request_data):
     """
-    Add organization attribute on basket, if organization value is provided
-    in basket data.
+    Adds the organization, and purchased_on_behalf attribute on basket, if organization value is provided
+    in basket data. The purchased_on_behalf is not required if there is an organization value present.
 
     Arguments:
         basket(Basket): order basket
@@ -293,6 +331,7 @@ def basket_add_organization_attribute(basket, request_data):
     """
     # Name of business client is being passed as "organization" from basket page
     business_client = request_data.get(ORGANIZATION_ATTRIBUTE_TYPE)
+    purchaser = request_data.get(PURCHASER_BEHALF_ATTRIBUTE)
 
     if business_client:
         organization_attribute, __ = BasketAttributeType.objects.get_or_create(name=ORGANIZATION_ATTRIBUTE_TYPE)
@@ -300,6 +339,14 @@ def basket_add_organization_attribute(basket, request_data):
             basket=basket,
             attribute_type=organization_attribute,
             value_text=business_client.strip()
+        )
+        # Also add the 'purchaser' attribute to the carts of all business client purchases. This way we can track
+        # how many people read/paid attention to the checkbox during purchases.
+        purchaser_attribute, __ = BasketAttributeType.objects.get_or_create(name=PURCHASER_BEHALF_ATTRIBUTE)
+        BasketAttribute.objects.get_or_create(
+            basket=basket,
+            attribute_type=purchaser_attribute,
+            value_text=purchaser
         )
 
 
@@ -389,10 +436,10 @@ def validate_voucher(voucher, user, basket, request_site):
         message = _("Coupon code '{code}' is not active.").format(code=voucher.code)
         return False, message
 
-    is_available, __ = voucher.is_available_to_user(user)
+    is_available, msg = voucher.is_available_to_user(user)
 
     if not is_available:
-        message = _("Coupon code '{code}' has already been redeemed.").format(code=voucher.code)
+        message = _("Coupon code '{code}' is not available. {msg}").format(code=voucher.code, msg=msg)
         return False, message
 
     # Do not allow coupons for one partner's site to be used on another partner's site
@@ -411,10 +458,27 @@ def validate_voucher(voucher, user, basket, request_site):
     is_voucher_valid_for_bundle = voucher_program_uuid or voucher.usage == Voucher.MULTI_USE
 
     if is_bundle_purchase and not is_voucher_valid_for_bundle:
-        message = _("Coupon code '{code}' is not valid for this basket.").format(code=voucher.code)
+        message = _("Coupon code '{code}' is not valid for this basket for a bundled purchase.").format(
+            code=voucher.code)
         return False, message
 
     return True, ''
+
+
+def apply_offers_on_basket(request, basket):
+    """
+    Applies offers on a basket.
+
+    Adapted from `apply_offer_to_basket` in Oscar's `BasketMiddleware`, as
+    trying to directly call the Middleware seems to cause issues with the new
+    Django 1.11 style middleware.
+
+    Args:
+        request (Request): Request object
+        basket (Basket): basket object on which the offers will be applied
+    """
+    if not basket.is_empty:
+        Applicator().apply(basket, request.user, request)
 
 
 @newrelic.agent.function_trace()
@@ -435,10 +499,7 @@ def apply_voucher_on_basket_and_check_discount(voucher, request, basket):
     basket.vouchers.add(voucher)
     voucher_addition.send(sender=None, basket=basket, voucher=voucher)
 
-    if waffle.flag_is_active(request, CUSTOM_APPLICATOR_USE_FLAG):  # pragma: no cover
-        CustomApplicator().apply(basket, request.user, request)
-    else:
-        Applicator().apply(basket, request.user, request)
+    Applicator().apply(basket, request.user, request)
 
     # Recalculate discounts to see if the voucher gives any
     discounts_after = basket.offer_applications
@@ -454,8 +515,8 @@ def apply_voucher_on_basket_and_check_discount(voucher, request, basket):
         logger.info('Applied Voucher [%s] to basket [%s].', voucher.code, basket.id)
         msg = _("Coupon code '{code}' added to basket.").format(code=voucher.code)
         return True, msg
-    else:
-        msg = _('Basket does not qualify for coupon code {code}.').format(code=voucher.code)
-        logger.info('Coupon Code [%s] is not valid for basket [%s]', voucher.code, basket.id)
-        basket.clear_vouchers()
-        return False, msg
+
+    msg = _('Basket does not qualify for coupon code {code}.').format(code=voucher.code)
+    logger.info('Coupon Code [%s] is not valid for basket [%s]', voucher.code, basket.id)
+    basket.clear_vouchers()
+    return False, msg

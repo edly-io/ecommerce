@@ -1,6 +1,9 @@
+from __future__ import absolute_import
+
 import csv
 import logging
 
+import six
 from django.http import HttpResponse
 from django.utils.text import slugify
 from django.utils.translation import ugettext_lazy as _
@@ -26,7 +29,7 @@ class CouponReportCSVView(StaffOrCourseCreatorOnlyMixin, View):
         Generate coupon report for vouchers associated with the coupon.
         """
         coupon = Product.objects.get(id=coupon_id)
-        filename = _("Coupon Report for {coupon_name}").format(coupon_name=unicode(coupon))
+        filename = _("Coupon Report for {coupon_name}").format(coupon_name=six.text_type(coupon))
         coupons_vouchers = CouponVouchers.objects.filter(coupon=coupon)
 
         filename = "{}.csv".format(slugify(filename))
@@ -44,9 +47,6 @@ class CouponReportCSVView(StaffOrCourseCreatorOnlyMixin, View):
         writer = csv.DictWriter(response, fieldnames=field_names)
         writer.writeheader()
         for row in rows:
-            for key, value in row.items():
-                if isinstance(row[key], unicode):
-                    row[key] = value.encode('utf-8')
             writer.writerow(row)
 
         return response

@@ -1,12 +1,14 @@
 """
 Tests for the ecommerce.extensions.checkout.mixins module.
 """
+from __future__ import absolute_import
+
 import ddt
 import mock
 from django.core import mail
 from django.test import RequestFactory
 from oscar.core.loading import get_class, get_model
-from oscar.test.factories import BasketFactory, ProductFactory, UserFactory
+from oscar.test.factories import BasketFactory, ProductFactory
 from testfixtures import LogCapture
 from waffle.models import Sample
 
@@ -19,10 +21,10 @@ from ecommerce.extensions.analytics.utils import (
     parse_tracking_context,
     translate_basket_line_for_segment
 )
-from ecommerce.extensions.basket.constants import EMAIL_OPT_IN_ATTRIBUTE
+from ecommerce.extensions.basket.constants import EMAIL_OPT_IN_ATTRIBUTE, PURCHASER_BEHALF_ATTRIBUTE
 from ecommerce.extensions.basket.utils import basket_add_organization_attribute
 from ecommerce.extensions.checkout.exceptions import BasketNotFreeError
-from ecommerce.extensions.checkout.mixins import OFFER_REDEEMED, EdxOrderPlacementMixin
+from ecommerce.extensions.checkout.mixins import OFFER_ASSIGNED, OFFER_REDEEMED, EdxOrderPlacementMixin
 from ecommerce.extensions.fulfillment.status import ORDER
 from ecommerce.extensions.payment.tests.mixins import PaymentEventsMixin
 from ecommerce.extensions.payment.tests.processors import DummyProcessor
@@ -35,9 +37,9 @@ from ecommerce.extensions.test.factories import (
     create_order
 )
 from ecommerce.invoice.models import Invoice
-from ecommerce.tests.factories import SiteConfigurationFactory
+from ecommerce.tests.factories import SiteConfigurationFactory, UserFactory
 from ecommerce.tests.mixins import BusinessIntelligenceMixin
-from ecommerce.tests.testcases import TestCase
+from ecommerce.tests.testcases import TransactionTestCase
 
 LOGGER_NAME = 'ecommerce.extensions.analytics.utils'
 Basket = get_model('basket', 'Basket')
@@ -50,19 +52,24 @@ PaymentEventType = get_model('order', 'PaymentEventType')
 SourceType = get_model('payment', 'SourceType')
 Product = get_model('catalogue', 'Product')
 VoucherApplication = get_model('voucher', 'VoucherApplication')
+Voucher = get_model('voucher', 'Voucher')
 
 
 @ddt.ddt
 @mock.patch.object(SegmentClient, 'track')
-class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin, RefundTestMixin, TestCase):
+class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin, RefundTestMixin, TransactionTestCase):
     """
     Tests validating generic behaviors of the EdxOrderPlacementMixin.
     """
 
     def setUp(self):
         super(EdxOrderPlacementMixinTests, self).setUp()
-        self.user = UserFactory()
+        self.user = UserFactory(lms_user_id=61710)
         self.order = self.create_order(status=ORDER.OPEN)
+
+        # Ensure that the basket attribute type exists for these tests
+        self.basket_attribute_type, _ = BasketAttributeType.objects.get_or_create(
+            name=EMAIL_OPT_IN_ATTRIBUTE)
 
     def test_handle_payment_logging(self, __):
         """
@@ -77,9 +84,9 @@ class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin,
         total = basket.total_incl_tax
         reference = basket.id
 
-        with LogCapture(LOGGER_NAME) as l:
+        with LogCapture(LOGGER_NAME) as logger:
             mixin.handle_payment({}, basket)
-            l.check(
+            logger.check_present(
                 (
                     LOGGER_NAME,
                     'INFO',
@@ -141,7 +148,7 @@ class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin,
         self.user.tracking_context = tracking_context
         self.user.save()
 
-        with LogCapture(LOGGER_NAME) as l:
+        with LogCapture(LOGGER_NAME) as logger:
             EdxOrderPlacementMixin().handle_successful_order(self.order)
             # ensure event is being tracked
             self.assertTrue(mock_track.called)
@@ -149,7 +156,7 @@ class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin,
             self.assert_correct_event(
                 mock_track,
                 self.order,
-                tracking_context['lms_user_id'],
+                self.user.lms_user_id,
                 tracking_context['ga_client_id'],
                 tracking_context['lms_ip'],
                 self.order.number,
@@ -158,7 +165,7 @@ class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin,
                 self.order.total_excl_tax,
                 self.order.total_excl_tax        # value for revenue field is same as total.
             )
-            l.check(
+            logger.check_present(
                 (
                     LOGGER_NAME,
                     'INFO',
@@ -188,8 +195,11 @@ class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin,
         basket = BasketFactory(owner=user, site=self.site)
         basket.add_product(enrollment_code, quantity=1)
         order = create_order(number=1, basket=basket, user=user)
-        request_data = {'organization': 'Dummy Business Client'}
-        # Manually add organization attribute on the basket for testing
+        request_data = {
+            'organization': 'Dummy Business Client',
+            PURCHASER_BEHALF_ATTRIBUTE: 'False',
+        }
+        # Manually add organization and purchaser attributes on the basket for testing
         basket_add_organization_attribute(basket, request_data)
 
         EdxOrderPlacementMixin().handle_post_order(order)
@@ -212,8 +222,11 @@ class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin,
         basket = BasketFactory(owner=user, site=self.site)
         basket.add_product(verified_product, quantity=1)
         order = create_order(number=1, basket=basket, user=user)
-        request_data = {'organization': 'Dummy Business Client'}
-        # Manually add organization attribute on the basket for testing
+        request_data = {
+            'organization': 'Dummy Business Client',
+            PURCHASER_BEHALF_ATTRIBUTE: 'False',
+        }
+        # Manually add organization and purchaser attributes on the basket for testing
         basket_add_organization_attribute(basket, request_data)
 
         EdxOrderPlacementMixin().handle_post_order(order)
@@ -234,7 +247,7 @@ class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin,
         self.assert_correct_event(
             mock_track,
             self.order,
-            ECOM_TRACKING_ID_FMT.format(self.user.id),
+            self.user.lms_user_id,
             None,
             None,
             self.order.number,
@@ -242,6 +255,33 @@ class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin,
             self.order.user.email,
             self.order.total_excl_tax,
             self.order.total_excl_tax            # value for revenue field is same as total.
+        )
+
+    def test_order_no_lms_user_id(self, mock_track):
+        """
+        Ensure that expected values are substituted when no LMS user id
+        was available.
+        """
+        tracking_context = {'ga_client_id': 'test-client-id', 'lms_user_id': 'test-user-id', 'lms_ip': '127.0.0.1'}
+        self.user.tracking_context = tracking_context
+        self.user.lms_user_id = None
+        self.user.save()
+
+        EdxOrderPlacementMixin().handle_successful_order(self.order)
+        # ensure event is being tracked
+        self.assertTrue(mock_track.called)
+        # ensure event data is correct
+        self.assert_correct_event(
+            mock_track,
+            self.order,
+            ECOM_TRACKING_ID_FMT.format(self.user.id),
+            tracking_context['ga_client_id'],
+            tracking_context['lms_ip'],
+            self.order.number,
+            self.order.currency,
+            self.order.user.email,
+            self.order.total_excl_tax,
+            self.order.total_excl_tax  # value for revenue field is same as total.
         )
 
     def test_handle_successful_order_no_segment_key(self, mock_track):
@@ -304,7 +344,7 @@ class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin,
         """
         BasketAttribute.objects.get_or_create(
             basket=self.order.basket,
-            attribute_type=BasketAttributeType.objects.get(name=EMAIL_OPT_IN_ATTRIBUTE),
+            attribute_type=self.basket_attribute_type,
             value_text=expected_opt_in,
         )
 
@@ -441,3 +481,72 @@ class EdxOrderPlacementMixinTests(BusinessIntelligenceMixin, PaymentEventsMixin,
         offer_assignment = OfferAssignment.objects.get(id=offer_assignment.id)
         assert offer_assignment.status == OFFER_REDEEMED
         assert offer_assignment.voucher_application == voucher_application
+
+    def test_create_assignments_for_multi_use_per_customer(self, __):
+        """
+        Verify the `create_assignments_for_multi_use_per_customer` works as expected for `MULTI_USE_PER_CUSTOMER`.
+        """
+        coupon_max_global_applications = 10
+        enterprise_offer = EnterpriseOfferFactory(max_global_applications=coupon_max_global_applications)
+        voucher = VoucherFactory(usage=Voucher.MULTI_USE_PER_CUSTOMER)
+        voucher.offers.add(enterprise_offer)
+        basket = create_basket(owner=self.user, site=self.site)
+        basket.vouchers.add(voucher)
+        order = create_order(user=self.user, basket=basket)
+
+        assert OfferAssignment.objects.all().count() == 0
+
+        EdxOrderPlacementMixin().create_assignments_for_multi_use_per_customer(order)
+        EdxOrderPlacementMixin().update_assigned_voucher_offer_assignment(order)
+
+        assert OfferAssignment.objects.all().count() == coupon_max_global_applications
+        assert OfferAssignment.objects.filter(
+            offer=enterprise_offer, code=voucher.code, user_email=basket.owner.email, status=OFFER_ASSIGNED
+        ).count() == 9
+        assert OfferAssignment.objects.filter(
+            offer=enterprise_offer, code=voucher.code, user_email=basket.owner.email, status=OFFER_REDEEMED
+        ).count() == 1
+
+    def test_create_offer_assignments_for_updated_max_uses(self, __):
+        """
+        Verify the `create_assignments_for_multi_use_per_customer` works as expected for
+        `MULTI_USE_PER_CUSTOMER` when `max_global_applications` is updated for existing voucher.
+        """
+        coupon_max_global_applications = 1
+        enterprise_offer = EnterpriseOfferFactory(max_global_applications=coupon_max_global_applications)
+        voucher = VoucherFactory(usage=Voucher.MULTI_USE_PER_CUSTOMER)
+        voucher.offers.add(enterprise_offer)
+        basket = create_basket(owner=self.user, site=self.site)
+        basket.vouchers.add(voucher)
+        order = create_order(user=self.user, basket=basket)
+
+        assert OfferAssignment.objects.all().count() == 0
+
+        EdxOrderPlacementMixin().create_assignments_for_multi_use_per_customer(order)
+        EdxOrderPlacementMixin().update_assigned_voucher_offer_assignment(order)
+
+        assert OfferAssignment.objects.all().count() == coupon_max_global_applications
+        assert OfferAssignment.objects.filter(
+            offer=enterprise_offer, code=voucher.code, user_email=basket.owner.email, status=OFFER_REDEEMED
+        ).count() == 1
+
+        # update max_global_applications
+        coupon_new_max_global_applications = 5
+        enterprise_offer.max_global_applications = coupon_new_max_global_applications
+        enterprise_offer.save()
+
+        assert voucher.enterprise_offer.max_global_applications == coupon_new_max_global_applications
+
+        EdxOrderPlacementMixin().create_assignments_for_multi_use_per_customer(order)
+
+        assert OfferAssignment.objects.all().count() == coupon_new_max_global_applications
+        assert OfferAssignment.objects.filter(
+            offer=enterprise_offer, code=voucher.code, user_email=basket.owner.email, status=OFFER_ASSIGNED
+        ).count() == 4
+        assert OfferAssignment.objects.filter(
+            offer=enterprise_offer, code=voucher.code, user_email=basket.owner.email, status=OFFER_REDEEMED
+        ).count() == 1
+
+        # call once again to verify nothing is created because all available slots are assigned
+        EdxOrderPlacementMixin().create_assignments_for_multi_use_per_customer(order)
+        assert OfferAssignment.objects.all().count() == coupon_new_max_global_applications

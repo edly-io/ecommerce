@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Unit tests of Cybersource payment processor implementation."""
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import copy
 from uuid import UUID
@@ -11,24 +11,34 @@ import requests
 import responses
 from django.conf import settings
 from django.test import override_settings
+from django.urls import reverse
 from freezegun import freeze_time
 from oscar.apps.payment.exceptions import GatewayError, TransactionDeclined, UserCancelled
+from oscar.core.loading import get_model
 from oscar.test import factories
 
 from ecommerce.courses.tests.factories import CourseFactory
+from ecommerce.extensions.basket.tests.test_utils import TEST_BUNDLE_ID
+from ecommerce.extensions.order.models import Order
 from ecommerce.extensions.payment.exceptions import (
+    ExcessivePaymentForOrderError,
     InvalidCybersourceDecision,
     InvalidSignatureError,
     PartialAuthorizationError,
     PCIViolation,
-    ProcessorMisconfiguredError
+    ProcessorMisconfiguredError,
+    RedundantPaymentNotificationError
 )
 from ecommerce.extensions.payment.models import PaymentProcessorResponse
 from ecommerce.extensions.payment.processors.cybersource import Cybersource
 from ecommerce.extensions.payment.tests.mixins import CybersourceMixin
 from ecommerce.extensions.payment.tests.processors.mixins import PaymentProcessorTestCaseMixin
 from ecommerce.extensions.test.factories import create_basket
+from ecommerce.tests.factories import UserFactory
 from ecommerce.tests.testcases import TestCase
+
+BasketAttribute = get_model('basket', 'BasketAttribute')
+BasketAttributeType = get_model('basket', 'BasketAttributeType')
 
 
 @ddt.ddt
@@ -90,9 +100,8 @@ class CybersourceTests(CybersourceMixin, PaymentProcessorTestCaseMixin, TestCase
 
         with override_settings(PAYMENT_PROCESSOR_CONFIG=payment_processor_config):
             with self.assertRaisesMessage(
-                AssertionError,
-                'CyberSource processor must be configured for Silent Order POST and/or Secure Acceptance'
-            ):
+                    AssertionError,
+                    'CyberSource processor must be configured for Silent Order POST and/or Secure Acceptance'):
                 self.processor_class(self.site)
 
     def test_get_transaction_parameters(self):
@@ -105,13 +114,35 @@ class CybersourceTests(CybersourceMixin, PaymentProcessorTestCaseMixin, TestCase
         with override_settings(PAYMENT_PROCESSOR_CONFIG=payment_processor_config):
             self.assert_correct_transaction_parameters(include_level_2_3_details=False)
 
+    def test_get_transaction_parameters_with_program(self):
+        """ Verify the processor returns parameters including Level 2/3 details. """
+        bundle_id = TEST_BUNDLE_ID
+        BasketAttribute.objects.update_or_create(
+            basket=self.basket,
+            attribute_type=BasketAttributeType.objects.get(name='bundle_identifier'),
+            value_text=bundle_id
+        )
+        self.assert_correct_transaction_parameters(
+            extra_parameters={
+                'merchant_defined_data1': 'program,{}'.format(bundle_id),
+                'merchant_defined_data2': 'course,a/b/c,audit'
+            }
+        )
+
     def test_get_transaction_parameters_with_level2_3_details(self):
         """ Verify the processor returns parameters including Level 2/3 details. """
-        self.assert_correct_transaction_parameters()
+        self.assert_correct_transaction_parameters(
+            extra_parameters={
+                'merchant_defined_data2': 'course,a/b/c,audit'
+            }
+        )
 
     def test_get_transaction_parameters_with_extra_parameters(self):
         """ Verify the method supports adding additional unsigned parameters. """
-        extra_parameters = {'payment_method': 'card'}
+        extra_parameters = {
+            'payment_method': 'card',
+            'merchant_defined_data2': 'course,a/b/c,audit'
+        }
         self.assert_correct_transaction_parameters(extra_parameters=extra_parameters)
 
     def test_get_transaction_parameters_with_quoted_product_title(self):
@@ -119,7 +150,7 @@ class CybersourceTests(CybersourceMixin, PaymentProcessorTestCaseMixin, TestCase
         course = CourseFactory(id='a/b/c/d', name='Course with "quotes"')
         product = course.create_or_update_seat(self.CERTIFICATE_TYPE, False, 20)
 
-        basket = create_basket(owner=factories.UserFactory(), site=self.site, empty=True)
+        basket = create_basket(owner=UserFactory(), site=self.site, empty=True)
         basket.add_product(product)
 
         response = self.processor.get_transaction_parameters(basket)
@@ -217,6 +248,27 @@ class CybersourceTests(CybersourceMixin, PaymentProcessorTestCaseMixin, TestCase
         """
         response = self.generate_notification(self.basket, auth_amount='0.00')
         self.assertRaises(PartialAuthorizationError, self.processor.handle_processor_response, response,
+                          basket=self.basket)
+
+    def test_handle_processor_response_duplicate_notification(self):
+        """
+        The handle_processor_response method should raise respective exception if there is already a
+        payment notification and order existed with same or different transaction IDs.
+        """
+        notification = self.generate_notification(self.basket, billing_address=self.make_billing_address())
+        self.client.post(reverse('cybersource:redirect'), notification)
+
+        self.assertTrue(PaymentProcessorResponse.objects.filter(basket=self.basket).exists())
+        self.assertTrue(Order.objects.filter(basket=self.basket).exists())
+
+        # handle_processor_response should raise RedundantPaymentNotificationError for same transaction ID
+        self.assertRaises(RedundantPaymentNotificationError, self.processor.handle_processor_response, notification,
+                          basket=self.basket)
+
+        notification['transaction_id'] = '394934470384'
+        notification['signature'] = self.generate_signature(self.processor.secret_key, notification)
+        # handle_processor_response should raise ExcessivePaymentForOrderError for different transaction ID
+        self.assertRaises(ExcessivePaymentForOrderError, self.processor.handle_processor_response, notification,
                           basket=self.basket)
 
     @responses.activate

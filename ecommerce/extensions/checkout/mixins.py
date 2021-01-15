@@ -1,14 +1,18 @@
 # Note: If future versions of django-oscar include new mixins, they will need to be imported here.
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import abc
 import logging
 
+import six
 import waffle
 from django.db import transaction
 from ecommerce_worker.fulfillment.v1.tasks import fulfill_order
 from oscar.apps.checkout.mixins import OrderPlacementMixin
 from oscar.core.loading import get_class, get_model
+# Pylint will stop complaining about this when https://github.com/PyCQA/pylint/pull/2824
+# is released
+from six.moves import range  # pylint: disable=ungrouped-imports
 
 from ecommerce.core.models import BusinessClient
 from ecommerce.extensions.analytics.utils import audit_log, track_segment_event
@@ -17,7 +21,7 @@ from ecommerce.extensions.basket.constants import EMAIL_OPT_IN_ATTRIBUTE
 from ecommerce.extensions.basket.utils import ORGANIZATION_ATTRIBUTE_TYPE
 from ecommerce.extensions.checkout.exceptions import BasketNotFreeError
 from ecommerce.extensions.customer.utils import Dispatcher
-from ecommerce.extensions.offer.constants import OFFER_ASSIGNMENT_REVOKED, OFFER_REDEEMED
+from ecommerce.extensions.offer.constants import OFFER_ASSIGNED, OFFER_ASSIGNMENT_REVOKED, OFFER_REDEEMED
 from ecommerce.extensions.order.constants import PaymentEventTypeName
 from ecommerce.invoice.models import Invoice
 
@@ -26,8 +30,11 @@ logger = logging.getLogger(__name__)
 Basket = get_model('basket', 'Basket')
 BasketAttribute = get_model('basket', 'BasketAttribute')
 BasketAttributeType = get_model('basket', 'BasketAttributeType')
+NoShippingRequired = get_class('shipping.methods', 'NoShippingRequired')
 OfferAssignment = get_model('offer', 'OfferAssignment')
 Order = get_model('order', 'Order')
+OrderNumberGenerator = get_class('order.utils', 'OrderNumberGenerator')
+OrderTotalCalculator = get_class('checkout.calculators', 'OrderTotalCalculator')
 post_checkout = get_class('checkout.signals', 'post_checkout')
 PaymentEvent = get_model('order', 'PaymentEvent')
 PaymentEventType = get_model('order', 'PaymentEventType')
@@ -35,7 +42,7 @@ Source = get_model('payment', 'Source')
 SourceType = get_model('payment', 'SourceType')
 
 
-class EdxOrderPlacementMixin(OrderPlacementMixin):
+class EdxOrderPlacementMixin(six.with_metaclass(abc.ABCMeta, OrderPlacementMixin)):
     """ Mixin for edX-specific order placement. """
 
     # Instance of a payment processor with which to handle payment. Subclasses should set this value.
@@ -46,7 +53,42 @@ class EdxOrderPlacementMixin(OrderPlacementMixin):
     order_placement_failure_msg = 'Order Failure: %s payment was received, but an order for basket [%d] ' \
                                   'could not be placed.'
 
-    __metaclass__ = abc.ABCMeta
+    def create_order(self, request, basket, billing_address=None):
+        # Emma: this is moved from an old OrderCreationMixin class which was only in use by
+        # CybersourceInterstitialView and CybersourceApplePayAuthorizationView. Not for Paypal.
+        # Paypal has a different codepath for creating orders.
+
+        try:
+            # Note (CCB): In the future, if we do end up shipping physical products, we will need to
+            # properly implement shipping methods. For more, see
+            # http://django-oscar.readthedocs.org/en/latest/howto/how_to_configure_shipping.html.
+            shipping_method = NoShippingRequired()
+            shipping_charge = shipping_method.calculate(basket)
+
+            # Note (CCB): This calculation assumes the payment processor has not sent a partial authorization,
+            # thus we use the amounts stored in the database rather than those received from the payment processor.
+            order_total = OrderTotalCalculator().calculate(basket, shipping_charge)
+
+            user = basket.owner
+            order_number = basket.order_number
+
+            order = self.handle_order_placement(
+                order_number=order_number,
+                user=user,
+                basket=basket,
+                shipping_address=None,
+                shipping_method=shipping_method,
+                shipping_charge=shipping_charge,
+                billing_address=billing_address,
+                order_total=order_total,
+                request=request
+            )
+
+            return order
+
+        except Exception:  # pylint: disable=broad-except
+            self.log_order_placement_exception(order_number, basket.id)
+            raise
 
     def add_payment_event(self, event):  # pylint: disable = arguments-differ
         """ Record a payment event for creation once the order is placed. """
@@ -54,7 +96,7 @@ class EdxOrderPlacementMixin(OrderPlacementMixin):
             self._payment_events = []
         self._payment_events.append(event)
 
-    def handle_payment(self, response, basket):
+    def handle_payment(self, response, basket):  # pylint: disable=arguments-differ
         """
         Handle any payment processing and record payment sources and events.
 
@@ -120,7 +162,7 @@ class EdxOrderPlacementMixin(OrderPlacementMixin):
                                billing_address,
                                order_total,
                                request=None,
-                               **kwargs):
+                               **kwargs):  # pylint: disable=arguments-differ
         """
         Place an order and mark the corresponding basket as submitted.
 
@@ -166,6 +208,9 @@ class EdxOrderPlacementMixin(OrderPlacementMixin):
             ).value_text == 'True'
         except BasketAttribute.DoesNotExist:
             email_opt_in = False
+
+        # create offer assignment for MULTI_USE_PER_CUSTOMER
+        self.create_assignments_for_multi_use_per_customer(order)
 
         # update offer assignment with voucher application
         self.update_assigned_voucher_offer_assignment(order)
@@ -227,7 +272,7 @@ class EdxOrderPlacementMixin(OrderPlacementMixin):
 
         return order
 
-    def send_confirmation_message(self, order, code, site=None, **kwargs):
+    def send_confirmation_message(self, order, code, site=None, **kwargs):  # pylint: disable=arguments-differ
         ctx = self.get_message_context(order)
         try:
             event_type = CommunicationEventType.objects.get(code=code)
@@ -266,7 +311,7 @@ class EdxOrderPlacementMixin(OrderPlacementMixin):
 
         organization_attribute = BasketAttributeType.objects.filter(name=ORGANIZATION_ATTRIBUTE_TYPE).first()
         if not organization_attribute:
-            return None
+            return
 
         business_client = BasketAttribute.objects.filter(
             basket=order.basket,
@@ -298,7 +343,7 @@ class EdxOrderPlacementMixin(OrderPlacementMixin):
         offer = voucher and voucher.enterprise_offer
         # can't entertain non enterprise offers
         if not offer:
-            return None
+            return
 
         assignment = offer.offerassignment_set.filter(code=voucher.code, user_email=basket.owner.email).exclude(
             status__in=[OFFER_REDEEMED, OFFER_ASSIGNMENT_REVOKED]
@@ -311,3 +356,29 @@ class EdxOrderPlacementMixin(OrderPlacementMixin):
             ).order_by('-date_created').first()
             assignment.status = OFFER_REDEEMED
             assignment.save()
+
+    def create_assignments_for_multi_use_per_customer(self, order):
+        """
+        Create `OfferAssignment` records for MULTI_USE_PER_CUSTOMER coupon type.
+        """
+        basket = order.basket
+        voucher = basket.vouchers.first()
+        offer = voucher and voucher.enterprise_offer
+        # can't entertain non enterprise offers
+        if not offer:
+            return
+
+        if voucher.usage == voucher.MULTI_USE_PER_CUSTOMER:
+            user_email = basket.owner.email
+
+            existing_offer_assignments = OfferAssignment.objects.filter(
+                code=voucher.code, user_email=user_email
+            ).count()
+
+            if existing_offer_assignments < offer.max_global_applications:
+                offer_assignments_available = offer.max_global_applications - existing_offer_assignments
+                assignments = [
+                    OfferAssignment(offer=offer, code=voucher.code, user_email=user_email, status=OFFER_ASSIGNED)
+                    for __ in range(offer_assignments_available)
+                ]
+                OfferAssignment.objects.bulk_create(assignments)

@@ -1,9 +1,9 @@
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import logging
 import re
 
-import waffle
+import six
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -13,15 +13,17 @@ from oscar.apps.offer.abstract_models import (
     AbstractBenefit,
     AbstractCondition,
     AbstractConditionalOffer,
-    AbstractRange
+    AbstractRange,
+    AbstractRangeProduct
 )
 from oscar.core.loading import get_model
-from requests.exceptions import ConnectionError, Timeout
+from requests.exceptions import ConnectionError as ReqConnectionError
+from requests.exceptions import Timeout
+from simple_history.models import HistoricalRecords
 from slumber.exceptions import SlumberBaseException
 from threadlocals.threadlocals import get_current_request
 
 from ecommerce.core.utils import get_cache_key, log_message_and_raise_validation_error
-from ecommerce.enterprise.constants import ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH
 from ecommerce.extensions.offer.constants import (
     OFFER_ASSIGNED,
     OFFER_ASSIGNMENT_EMAIL_BOUNCED,
@@ -32,6 +34,7 @@ from ecommerce.extensions.offer.constants import (
 
 OFFER_PRIORITY_ENTERPRISE = 10
 OFFER_PRIORITY_VOUCHER = 20
+OFFER_PRIORITY_MANUAL_ORDER = 100
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +42,9 @@ Voucher = get_model('voucher', 'Voucher')
 
 
 class Benefit(AbstractBenefit):
-    def save(self, *args, **kwargs):
+    history = HistoricalRecords()
+
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
         self.clean()
         super(Benefit, self).save(*args, **kwargs)  # pylint: disable=bad-super-call
 
@@ -129,8 +134,11 @@ class Benefit(AbstractBenefit):
                         partner=partner_code
                     )
                 except Exception as err:  # pylint: disable=bare-except
-                    logger.warning(
-                        '%s raised while attempting to contact Discovery Service for offer catalog_range data.', err
+                    logger.exception(
+                        '[Code Redemption Failure] Unable to apply benefit because we failed to query the '
+                        'Discovery Service for catalog data. '
+                        'User: %s, Offer: %s, Basket: %s, Message: %s',
+                        basket.owner.username, offer.id, basket.id, err
                     )
                     raise Exception('Failed to contact Discovery Service to retrieve offer catalog_range data.')
 
@@ -148,17 +156,31 @@ class Benefit(AbstractBenefit):
                         applicable_lines.remove(metadata['line'])
 
             return [(line.product.stockrecords.first().price_excl_tax, line) for line in applicable_lines]
-        else:
-            return super(Benefit, self).get_applicable_lines(offer, basket, range=range)  # pylint: disable=bad-super-call
+        return super(Benefit, self).get_applicable_lines(offer, basket, range=range)  # pylint: disable=bad-super-call
 
 
 class ConditionalOffer(AbstractConditionalOffer):
     UPDATABLE_OFFER_FIELDS = ['email_domains', 'max_uses']
     email_domains = models.CharField(max_length=255, blank=True, null=True)
+    sales_force_id = models.CharField(max_length=30, blank=True, null=True)
+    max_user_discount = models.DecimalField(verbose_name='Max user discount', max_digits=12, decimal_places=2,
+                                            null=True, help_text='When an offer has given more discount than this '
+                                                                 'threshold to orders of a user, then the offer '
+                                                                 'becomes unavailable for that user', blank=True
+                                            )
     site = models.ForeignKey(
-        'sites.Site', verbose_name=_('Site'), null=True, blank=True, default=None
+        'sites.Site', verbose_name=_('Site'), null=True, blank=True, default=None, on_delete=models.CASCADE
     )
-    partner = models.ForeignKey('partner.Partner', null=True, blank=True)
+    partner = models.ForeignKey('partner.Partner', null=True, blank=True, on_delete=models.CASCADE)
+
+    # Do not record the slug field in the history table because AutoSlugField is not compatible with
+    # django-simple-history.  Background: https://github.com/edx/course-discovery/pull/332
+    history = HistoricalRecords(excluded_fields=['slug'])
+    enterprise_contract_metadata = models.OneToOneField(
+        'payment.EnterpriseContractMetadata',
+        on_delete=models.CASCADE,
+        null=True,
+    )
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -172,7 +194,7 @@ class ConditionalOffer(AbstractConditionalOffer):
     def clean_email_domains(self):
 
         if self.email_domains:
-            if not isinstance(self.email_domains, basestring):
+            if not isinstance(self.email_domains, six.string_types):
                 log_message_and_raise_validation_error(
                     'Failed to create ConditionalOffer. ConditionalOffer email domains must be of type string.'
                 )
@@ -208,12 +230,13 @@ class ConditionalOffer(AbstractConditionalOffer):
                         log_message_and_raise_validation_error(error_message)
 
                     # - all encoded domain levels must match given regex expression
-                    if not re.match(r'^([a-z0-9-]+)$', domain_part.encode('idna')):
+                    if not re.match(r'^([a-z0-9-]+)$', domain_part.encode('idna').decode()):
                         log_message_and_raise_validation_error(error_message)
 
     def clean_max_global_applications(self):
-        if self.max_global_applications is not None:
-            if self.max_global_applications < 1 or not isinstance(self.max_global_applications, (int, long)):
+        # enterprise offers have their own cleanup logic
+        if self.priority != OFFER_PRIORITY_ENTERPRISE and self.max_global_applications is not None:
+            if not isinstance(self.max_global_applications, six.integer_types) or self.max_global_applications < 1:
                 log_message_and_raise_validation_error(
                     'Failed to create ConditionalOffer. max_global_applications field must be a positive number.'
                 )
@@ -265,10 +288,12 @@ class ConditionalOffer(AbstractConditionalOffer):
         a check for if basket owners email domain is within the allowed email domains.
         """
         if basket.owner and not self.is_email_valid(basket.owner.email):
+            logger.warning('[Code Redemption Failure] Unable to apply offer because the user\'s email '
+                           'does not meet the domain requirements. '
+                           'User: %s, Offer: %s, Basket: %s', basket.owner.username, self.id, basket.id)
             return False
 
-        if (self.benefit.range and self.benefit.range.enterprise_customer and
-                waffle.switch_is_active(ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH)):
+        if self.benefit.range and self.benefit.range.enterprise_customer:
             # If we are using enterprise conditional offers for enterprise coupons, the old style offer is not used.
             return False
 
@@ -276,15 +301,28 @@ class ConditionalOffer(AbstractConditionalOffer):
             # The condition is only satisfied if all basket lines are in the offer range
             num_lines = basket.all_lines().count()
             voucher = self.get_voucher()
+            code = voucher and voucher.code
+            username = basket.owner and basket.owner.username
             if voucher and num_lines > 1 and voucher.usage != Voucher.MULTI_USE:
+                logger.warning('[Code Redemption Failure] Unable to apply offer because this Voucher '
+                               'can only be used on single item baskets. '
+                               'User: %s, Offer: %s, Basket: %s, Code: %s',
+                               username, self.id, basket.id, code)
                 return False
-            return len(self.benefit.get_applicable_lines(self, basket)) == num_lines
+            is_satisfied = len(self.benefit.get_applicable_lines(self, basket)) == num_lines
+            if not is_satisfied:
+                logger.warning('[Code Redemption Failure] Unable to apply offer because this Voucher '
+                               'is not valid for all courses in basket. '
+                               'User: %s, Offer: %s, Basket: %s, Code: %s',
+                               username, self.id, basket.id, code)
+
+            return is_satisfied
 
         return super(ConditionalOffer, self).is_condition_satisfied(basket)  # pylint: disable=bad-super-call
 
 
 def validate_credit_seat_type(course_seat_types):
-    if not isinstance(course_seat_types, basestring):
+    if not isinstance(course_seat_types, six.string_types):
         log_message_and_raise_validation_error('Failed to create Range. Credit seat types must be of type string.')
 
     course_seat_types_list = course_seat_types.split(',')
@@ -299,6 +337,13 @@ def validate_credit_seat_type(course_seat_types):
             'Failed to create Range. Not allowed course seat types {}. '
             'Allowed values for course seat types are {}.'.format(course_seat_types_list, Range.ALLOWED_SEAT_TYPES)
         )
+
+
+class RangeProduct(AbstractRangeProduct):
+    """
+    Only extend to add a history table.
+    """
+    history = HistoricalRecords()
 
 
 class Range(AbstractRange):
@@ -337,7 +382,11 @@ class Range(AbstractRange):
         null=True
     )
 
-    def save(self, *args, **kwargs):
+    # Do not record the slug field in the history table because AutoSlugField is not compatible with
+    # django-simple-history.  Background: https://github.com/edx/course-discovery/pull/332
+    history = HistoricalRecords(excluded_fields=['slug'])
+
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
         self.clean()
         super(Range, self).save(*args, **kwargs)  # pylint: disable=bad-super-call
 
@@ -388,7 +437,10 @@ class Range(AbstractRange):
 
             TieredCache.set_all_tiers(cache_key, response, settings.COURSES_API_CACHE_TIMEOUT)
             return response
-        except (ConnectionError, SlumberBaseException, Timeout):
+        except (ReqConnectionError, SlumberBaseException, Timeout) as exc:
+            logger.exception('[Code Redemption Failure] Unable to connect to the Discovery Service '
+                             'for catalog contains endpoint. '
+                             'Product: %s, Message: %s, Range: %s', product.id, exc, self.id)
             raise Exception('Unable to connect to Discovery Service for catalog contains endpoint.')
 
     def contains_product(self, product):
@@ -396,20 +448,25 @@ class Range(AbstractRange):
         Assert if the range contains the product.
         """
         # course_catalog is associated with course_seat_types.
+        contains_product = super(Range, self).contains_product(product)  # pylint: disable=bad-super-call
         if self.course_catalog and self.course_seat_types:
             # Product certificate type should belongs to range seat types.
             if product.attr.certificate_type.lower() in self.course_seat_types:  # pylint: disable=unsupported-membership-test
                 response = self.catalog_contains_product(product)
                 # Range can have a catalog query and 'regular' products in it,
                 # therefor an OR is used to check for both possibilities.
-                return ((response['courses'][product.course_id]) or
-                        super(Range, self).contains_product(product))  # pylint: disable=bad-super-call
+                contains_product = ((response['courses'][product.course_id]) or contains_product)
+
         elif self.catalog:
-            return (
-                product.id in self.catalog.stock_records.values_list('product', flat=True) or
-                super(Range, self).contains_product(product)  # pylint: disable=bad-super-call
+            contains_product = (
+                product.id in self.catalog.stock_records.values_list('product', flat=True) or contains_product
             )
-        return super(Range, self).contains_product(product)  # pylint: disable=bad-super-call
+
+        if not contains_product:
+            logger.warning('[Code Redemption Failure] Course catalog for Range does not contain the Product. '
+                           'Product: %s, Range: %s', product.id, self.id)
+
+        return contains_product
 
     contains = contains_product
 
@@ -449,12 +506,7 @@ class Condition(AbstractCondition):
         blank=True,
         verbose_name=_('Program UUID')
     )
-    # TODO: journals dependency
-    journal_bundle_uuid = models.UUIDField(
-        null=True,
-        blank=True,
-        verbose_name=_('JournalBundle UUID')
-    )
+    history = HistoricalRecords()
 
 
 class OfferAssignment(TimeStampedModel):
@@ -466,7 +518,7 @@ class OfferAssignment(TimeStampedModel):
         (OFFER_ASSIGNMENT_REVOKED, _("Code has been revoked for this user.")),
     )
 
-    offer = models.ForeignKey('offer.ConditionalOffer')
+    offer = models.ForeignKey('offer.ConditionalOffer', on_delete=models.CASCADE)
     code = models.CharField(max_length=128)
     user_email = models.EmailField()
     status = models.CharField(
@@ -477,8 +529,12 @@ class OfferAssignment(TimeStampedModel):
     voucher_application = models.ForeignKey(
         'voucher.VoucherApplication',
         null=True,
-        blank=True
+        blank=True, on_delete=models.CASCADE
     )
+    history = HistoricalRecords()
+
+    def __unicode__(self):
+        return "{code}-{email}".format(code=self.code, email=self.user_email)
 
 
 class OfferAssignmentEmailAttempt(models.Model):
@@ -488,6 +544,38 @@ class OfferAssignmentEmailAttempt(models.Model):
     """
     offer_assignment = models.ForeignKey('offer.OfferAssignment', on_delete=models.CASCADE)
     send_id = models.CharField(max_length=255, unique=True)
+
+
+class OfferAssignmentEmailTemplates(TimeStampedModel):
+    ASSIGN, REMIND, REVOKE = ('assign', 'remind', 'revoke')
+    EMAIL_TEMPLATE_TYPES = (
+        (ASSIGN, _('Assign')),
+        (REMIND, _('Remind')),
+        (REVOKE, _('Revoke')),
+    )
+
+    enterprise_customer = models.UUIDField(help_text=_('UUID for an EnterpriseCustomer from the Enterprise Service.'))
+    email_type = models.CharField(max_length=32, choices=EMAIL_TEMPLATE_TYPES)
+    email_greeting = models.TextField(blank=True, null=True)
+    email_closing = models.TextField(blank=True, null=True)
+    active = models.BooleanField(
+        help_text=_('Make a particular template version active.'),
+        default=True,
+    )
+    name = models.CharField(max_length=255, default='Template')
+
+    class Meta:
+        ordering = ('enterprise_customer', '-active',)
+        indexes = [
+            models.Index(fields=['enterprise_customer', 'email_type'])
+        ]
+
+    def __unicode__(self):
+        return "{ec}-{email_type}-{active}".format(
+            ec=self.enterprise_customer,
+            email_type=self.email_type,
+            active=self.active
+        )
 
 
 from oscar.apps.offer.models import *  # noqa isort:skip pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position,wrong-import-order,ungrouped-imports

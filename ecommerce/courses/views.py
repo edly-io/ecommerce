@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import json
 import logging
 import os
@@ -8,7 +10,6 @@ from django.core.management import call_command
 from django.http import Http404, HttpResponse
 from django.views.generic import TemplateView, View
 from edx_django_utils.cache import TieredCache
-from edx_rest_api_client.client import EdxRestApiClient
 from requests import Timeout
 from slumber.exceptions import SlumberBaseException
 
@@ -47,10 +48,7 @@ class CourseAppView(StaffOrCourseCreatorOnlyMixin, TemplateView):
             return credit_providers_cache_response.value
 
         try:
-            credit_api = EdxRestApiClient(
-                get_lms_url('/api/credit/v1/'),
-                oauth_access_token=self.request.user.access_token
-            )
+            credit_api = self.request.site.siteconfiguration.credit_api_client
             credit_providers = credit_api.providers.get()
             credit_providers.sort(key=lambda provider: provider['display_name'])
 
@@ -73,7 +71,6 @@ class CourseMigrationView(View):
         course_ids = request.GET.get('course_ids')
         commit = request.GET.get('commit', False)
         commit = commit in ('1', 'true')
-        partner = get_partner_for_site(request)
 
         # Capture all output and logging
         out = StringIO()
@@ -102,8 +99,7 @@ class CourseMigrationView(View):
 
             course_ids = course_ids.split(',')
 
-            call_command('migrate_course', *course_ids, access_token=user.access_token, commit=commit,
-                         partner_short_code=partner.short_code, settings=os.environ['DJANGO_SETTINGS_MODULE'],
+            call_command('migrate_course', *course_ids, commit=commit, settings=os.environ['DJANGO_SETTINGS_MODULE'],
                          stdout=out, stderr=err)
 
             # Format the output for display
@@ -161,7 +157,7 @@ class ConvertCourseView(View):
             course_ids = course_ids.split(',')
 
             call_command(
-                'convert_course', *course_ids, access_token=user.access_token, commit=commit, partner=partner,
+                'convert_course', *course_ids, commit=commit, partner=partner,
                 settings=os.environ['DJANGO_SETTINGS_MODULE'], stdout=out, stderr=err, direction=direction
             )
 

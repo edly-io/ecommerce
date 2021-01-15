@@ -1,7 +1,7 @@
 # encoding: utf-8
 """Contains the tests for migrate enterprise conditional offers command."""
 
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import logging
 
@@ -14,6 +14,7 @@ from oscar.test.factories import (
     RangeFactory,
     VoucherFactory
 )
+from six.moves import range
 
 from ecommerce.enterprise.management.commands.migrate_enterprise_conditional_offers import Command
 from ecommerce.programs.custom import get_model
@@ -173,7 +174,9 @@ class MigrateEnterpriseConditionalOffersTests(TestCase):
         handle should create new conditional offers for all voucher objects
         that ultimately relate to a range that has an enterprise_customer
         """
-        offers = ConditionalOffer.objects.all()
+        # The dynamic conditional offer is added in a migration, so it should already
+        # be in the database.
+        offers = ConditionalOffer.objects.exclude(name='dynamic_conditional_offer')
         assert offers.count() == 7
         assert offers.filter(name__contains='ENT Offer').count() == 0
 
@@ -186,7 +189,7 @@ class MigrateEnterpriseConditionalOffersTests(TestCase):
             mock_get_ent_customer.return_value = {'name': 'Boo Radley'}
             call_command('migrate_enterprise_conditional_offers', batch_sleep=0)
 
-        offers = ConditionalOffer.objects.all()
+        offers = ConditionalOffer.objects.exclude(name='dynamic_conditional_offer')
         assert offers.count() == 11
         assert offers.filter(name__contains='ENT Offer').count() == 4
 
@@ -213,7 +216,7 @@ class MigrateEnterpriseConditionalOffersTests(TestCase):
         that ultimately relate to a range that has an enterprise_customer
         for a different subset of vouchers
         """
-        offers = ConditionalOffer.objects.all()
+        offers = ConditionalOffer.objects.exclude(name='dynamic_conditional_offer')
         assert offers.count() == 7
         assert offers.filter(name__contains='ENT Offer').count() == 0
 
@@ -231,7 +234,7 @@ class MigrateEnterpriseConditionalOffersTests(TestCase):
                 batch_offset=3,  # 3rd index is the 4th item
             )
 
-        offers = ConditionalOffer.objects.all()
+        offers = ConditionalOffer.objects.exclude(name='dynamic_conditional_offer')
         assert offers.count() == 8
         assert offers.filter(name__contains='ENT Offer').count() == 1
 

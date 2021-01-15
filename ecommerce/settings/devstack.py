@@ -1,4 +1,6 @@
 """Devstack settings"""
+from __future__ import absolute_import
+
 from corsheaders.defaults import default_headers as corsheaders_default_headers
 
 from ecommerce.settings.production import *
@@ -23,6 +25,12 @@ COMPRESS_OFFLINE = False
 COMPRESS_ENABLED = False
 
 JWT_AUTH.update({
+    'JWT_ISSUER': 'http://localhost:18000/oauth2',
+    'JWT_ISSUERS': [{
+        'AUDIENCE': 'lms-key',
+        'ISSUER': 'http://localhost:18000/oauth2',
+        'SECRET_KEY': 'lms-secret',
+    }],
     # Must match public signing key used in LMS.
     'JWT_PUBLIC_SIGNING_JWK_SET': (
         '{"keys": [{"kid": "devstack_key", "e": "AQAB", "kty": "RSA", "n": "smKFSYowG6nNUAdeqH1jQQnH1PmIHphzBmwJ5vRf1vu'
@@ -32,13 +40,19 @@ JWT_AUTH.update({
     ),
 })
 
-CORS_ORIGIN_WHITELIST = [
+CORS_ORIGIN_WHITELIST = (
     'http://localhost:1991',
-    ]
+    'http://localhost:1996',
+    'http://localhost:1998',
+    'http://localhost:8734',
+)
 CORS_ALLOW_HEADERS = corsheaders_default_headers + (
     'use-jwt-cookie',
 )
 CORS_ALLOW_CREDENTIALS = True
+
+# List of enterprise customer uuids to exclude from transition to use of enterprise-catalog
+ENTERPRISE_CUSTOMERS_EXCLUDED_FROM_CATALOG = ()
 
 # PAYMENT PROCESSING
 PAYMENT_PROCESSOR_CONFIG = {
@@ -50,8 +64,8 @@ PAYMENT_PROCESSOR_CONFIG = {
             'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
             'send_level_2_3_details': True,
             'sop_profile_id': '00D31C4B-4E8F-4E9F-A6B9-1DB8C7C86223',
-            'sop_access_key': 'a3b04486204c3032ad1bf1d7b90ab799',
-            'sop_secret_key': 'cd341f912c1a4de390d95b28ce50c04e743478a908294357bfa8eaad4ccd8d0706a6e294d2024d50881bdf986be76e9eea046968324047dd9b1e772e0a9db09caa145adbeaca4b7da7b4859a433f494cb637b488756943ccb08463914dc5ae7ec2ff1a96ce1d4663ad172414171f1001ed619076c9dd4e4297737e428c92c956',
+            'sop_access_key': '014cb974072f3edd9d5d04eb46c35fe6',
+            'sop_secret_key': '38d0c4ca3c0a49a186dbded91f523a9435ef86ddf0e8434196e5974a4ae997c40e35f6963bae468b9e34652bdc0b289fe180512fffa841ccb4ec357a1daf8cd048dec47262a64401b1c1f38e80c1cf65bf719dfd579b40bd8f7322550a270bf3c33c8aebd64f48089101cab36234426e60d0879ab7284b0dae90780bf2c4d2d9',
             'sop_payment_page_url': 'https://testsecureacceptance.cybersource.com/silent/pay',
         },
         'paypal': {
@@ -91,6 +105,8 @@ EMAIL_HOST_PASSWORD = 'PASSWORD'
 #SAILTHRU settings
 SAILTHRU_KEY = 'abc123'
 SAILTHRU_SECRET = 'top_secret'
+
+REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] + ('rest_framework.renderers.BrowsableAPIRenderer',)
 
 #####################################################################
 # Lastly, see if the developer has any local overrides.

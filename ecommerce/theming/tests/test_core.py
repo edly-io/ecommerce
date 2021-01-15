@@ -1,6 +1,9 @@
 """
 Comprehensive Theming tests for core functionality.
 """
+from __future__ import absolute_import
+
+import six
 from django.conf import settings
 from django.test import override_settings
 from path import Path
@@ -28,7 +31,7 @@ class TestCore(TestCase):
 
         enable_theming()
 
-        self.assertItemsEqual(expected_locale_paths, settings.LOCALE_PATHS)
+        six.assertCountEqual(self, expected_locale_paths, settings.LOCALE_PATHS)
 
     def test_enable_theming_red_theme(self):
         """

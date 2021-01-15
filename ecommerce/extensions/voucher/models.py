@@ -1,14 +1,18 @@
+from __future__ import absolute_import
+
 import datetime
 import logging
 
-import waffle
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from oscar.apps.voucher.abstract_models import AbstractVoucher  # pylint: disable=ungrouped-imports
+from oscar.apps.voucher.abstract_models import (  # pylint: disable=ungrouped-imports
+    AbstractVoucher,
+    AbstractVoucherApplication
+)
+from simple_history.models import HistoricalRecords
 
 from ecommerce.core.utils import log_message_and_raise_validation_error
-from ecommerce.enterprise.constants import ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH
 from ecommerce.extensions.offer.constants import OFFER_ASSIGNMENT_REVOKED, OFFER_MAX_USES_DEFAULT, OFFER_REDEEMED
 
 logger = logging.getLogger(__name__)
@@ -50,7 +54,7 @@ class Voucher(AbstractVoucher):
             applications = self.applications.filter(voucher=self).exclude(user=user)
             if applications.exists():
                 is_available = False
-                message = _('This voucher is only available to another user')  # pylint: disable=redefined-variable-type
+                message = _('This voucher is assigned to another user.')
 
         return is_available, message
 
@@ -110,10 +114,6 @@ class Voucher(AbstractVoucher):
 
     @property
     def best_offer(self):
-        # If the ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH is inactive, return offer containing a range
-        if not waffle.switch_is_active(ENTERPRISE_OFFERS_FOR_COUPONS_SWITCH):
-            return self.original_offer
-        # If the switch is enabled, return the enterprise offer if it exists.
         return self.enterprise_offer or self.original_offer
 
     @property
@@ -130,17 +130,27 @@ class Voucher(AbstractVoucher):
         # Find the number of OfferAssignments that already exist that are not redeemed or revoked.
         # Redeemed OfferAssignments are excluded in favor of using num_orders on this voucher.
         num_assignments = enterprise_offer.offerassignment_set.filter(code=self.code).exclude(
-            status__in=[OFFER_REDEEMED, OFFER_ASSIGNMENT_REVOKED]).count()
+            status__in=[OFFER_REDEEMED, OFFER_ASSIGNMENT_REVOKED]
+        ).count()
 
+        return self.calculate_available_slots(enterprise_offer.max_global_applications, num_assignments)
+
+    def calculate_available_slots(self, max_global_applications, num_assignments):
+        """
+        Calculate the number of available slots left for this voucher.
+        """
         # If this a Single use or Multi use per customer voucher,
         # it must have no orders or existing assignments to be assigned.
         if self.usage in (self.SINGLE_USE, self.MULTI_USE_PER_CUSTOMER):
             if self.num_orders or num_assignments:
                 return 0
-            return enterprise_offer.max_global_applications or 1
-        else:
-            offer_max_uses = enterprise_offer.max_global_applications or OFFER_MAX_USES_DEFAULT
-            return offer_max_uses - (self.num_orders + num_assignments)
+            return max_global_applications or 1
+        offer_max_uses = max_global_applications or OFFER_MAX_USES_DEFAULT
+        return offer_max_uses - (self.num_orders + num_assignments)
+
+
+class VoucherApplication(AbstractVoucherApplication):
+    history = HistoricalRecords()
 
 
 from oscar.apps.voucher.models import *  # noqa isort:skip pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position,wrong-import-order,ungrouped-imports

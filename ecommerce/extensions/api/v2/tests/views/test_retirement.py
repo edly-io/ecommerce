@@ -1,4 +1,7 @@
+from __future__ import absolute_import
+
 import ddt
+from django.test import modify_settings
 from rest_framework import status
 
 from ecommerce.extensions.analytics.utils import ECOM_TRACKING_ID_FMT
@@ -7,6 +10,9 @@ from ecommerce.tests.testcases import TestCase
 
 
 @ddt.ddt
+@modify_settings(MIDDLEWARE={
+    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class EcommerceIdViewTest(TestCase):
     def test_successful_get(self):
         user = self.create_user()
@@ -16,7 +22,22 @@ class EcommerceIdViewTest(TestCase):
             response.data,
             {
                 'id': user.pk,
-                'ecommerce_tracking_id': ECOM_TRACKING_ID_FMT.format(user.pk)
+                'ecommerce_tracking_id': ECOM_TRACKING_ID_FMT.format(user.pk),
+                'lms_user_id': user.lms_user_id
+            }
+        )
+        self.assertIsNotNone(user.lms_user_id)
+
+    def test_get_missing_lms_user_id(self):
+        user = self.create_user(lms_user_id=None)
+        response = EcommerceIdView().get(None, username=user.username)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertDictEqual(
+            response.data,
+            {
+                'id': user.pk,
+                'ecommerce_tracking_id': ECOM_TRACKING_ID_FMT.format(user.pk),
+                'lms_user_id': None
             }
         )
 
