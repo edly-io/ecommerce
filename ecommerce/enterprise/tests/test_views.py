@@ -4,7 +4,6 @@ import uuid
 
 import httpretty
 from django.conf import settings
-from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -18,9 +17,6 @@ Benefit = get_model('offer', 'Benefit')
 ConditionalOffer = get_model('offer', 'ConditionalOffer')
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class EnterpriseOfferListViewTests(EnterpriseServiceMockMixin, ViewTestMixin, TestCase):
 
     path = reverse('enterprise:offers:list')
@@ -79,9 +75,6 @@ class EnterpriseOfferListViewTests(EnterpriseServiceMockMixin, ViewTestMixin, Te
         self.assertEqual(list(response.context['object_list']), [partner_conditional_offer])
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class EnterpriseOfferUpdateViewTests(EnterpriseServiceMockMixin, ViewTestMixin, TestCase):
 
     def setUp(self):
@@ -123,9 +116,6 @@ class EnterpriseOfferUpdateViewTests(EnterpriseServiceMockMixin, ViewTestMixin, 
         self.assertRedirects(response, self.path)
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 @httpretty.activate
 class EnterpriseOfferCreateViewTests(EnterpriseServiceMockMixin, ViewTestMixin, TestCase):
 
@@ -180,9 +170,6 @@ class EnterpriseOfferCreateViewTests(EnterpriseServiceMockMixin, ViewTestMixin, 
         )
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class EnterpriseCouponAppViewTests(TestCase):
     path = reverse('enterprise:coupons', args=[''])
 

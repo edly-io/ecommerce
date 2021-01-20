@@ -11,7 +11,7 @@ import pytz
 import six
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
-from django.test import modify_settings, override_settings, RequestFactory
+from django.test import RequestFactory, override_settings
 from django.urls import reverse
 from oscar.core.loading import get_class, get_model
 from rest_framework import status
@@ -37,9 +37,6 @@ User = get_user_model()
 
 
 @ddt.ddt
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class OrderListViewTests(AccessTokenMixin, ThrottlingMixin, TestCase):
     def setUp(self):
         super(OrderListViewTests, self).setUp()
@@ -217,9 +214,6 @@ class OrderListViewTests(AccessTokenMixin, ThrottlingMixin, TestCase):
 
 @ddt.ddt
 @override_settings(ECOMMERCE_SERVICE_WORKER_USERNAME='test-service-user')
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class OrderFulfillViewTests(TestCase):
     def setUp(self):
         super(OrderFulfillViewTests, self).setUp()
@@ -356,9 +350,6 @@ class OrderFulfillViewTests(TestCase):
         post_checkout.send.assert_called_once_with(**send_arguments)
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class OrderDetailViewTests(OrderDetailViewTestMixin, TestCase):
     @property
     def url(self):
@@ -366,9 +357,6 @@ class OrderDetailViewTests(OrderDetailViewTestMixin, TestCase):
 
 
 @ddt.ddt
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class ManualCourseEnrollmentOrderViewSetTests(TestCase):
     """
     Test the `ManualCourseEnrollmentOrderViewSet` functionality.

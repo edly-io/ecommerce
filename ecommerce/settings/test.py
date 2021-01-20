@@ -182,3 +182,7 @@ SAILTHRU_SECRET = 'top_secret'
 
 # Cookie domain
 ECOMMERCE_COOKIE_DOMAIN = "test.edu"
+
+# Remove Edly middleware
+MIDDLEWARE = list(MIDDLEWARE)
+MIDDLEWARE.remove('ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware')

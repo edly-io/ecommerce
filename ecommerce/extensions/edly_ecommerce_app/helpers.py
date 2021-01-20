@@ -28,7 +28,7 @@ def encode_edly_user_info_cookie(cookie_data):
     Returns:
         string
     """
-    return jwt.encode(cookie_data, settings.EDLY_COOKIE_SECRET_KEY, algorithm=settings.EDLY_JWT_ALGORITHM)
+    return jwt.encode(cookie_data, settings.EDLY_COOKIE_SECRET_KEY, algorithm=settings.EDLY_JWT_ALGORITHM).decode('utf-8')
 
 
 def get_edx_org_from_edly_cookie(encoded_cookie_data):

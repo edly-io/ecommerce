@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from django.conf import settings
-from django.test import modify_settings, override_settings
+from django.test import override_settings
 from django.urls import reverse
 from edx_django_utils.cache import TieredCache
 
@@ -11,9 +11,6 @@ from ecommerce.extensions.payment.tests.processors import AnotherDummyProcessor,
 from ecommerce.tests.testcases import TestCase
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class PaymentProcessorListViewTests(TestCase):
     """ Ensures correct behavior of the payment processors list view."""
 

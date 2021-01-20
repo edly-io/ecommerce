@@ -43,7 +43,7 @@ class EdlyAppHelperMethodsTests(TestCase):
         expected_encoded_string = jwt.encode(
             self.test_edly_user_info_cookie_data, settings.EDLY_COOKIE_SECRET_KEY,
             algorithm=settings.EDLY_JWT_ALGORITHM
-        )
+        ).decode('utf-8')
         assert actual_encoded_string == expected_encoded_string
 
     def test_decode_edly_user_info_cookie(self):

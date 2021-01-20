@@ -3,7 +3,6 @@ from __future__ import absolute_import
 from decimal import Decimal
 
 import httpretty
-from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_class
 from oscar.test.factories import BasketFactory, RangeFactory
@@ -18,9 +17,6 @@ from ecommerce.tests.testcases import TestCase
 Applicator = get_class('offer.applicator', 'Applicator')
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class ProgramOfferTests(LmsApiMockMixin, ProgramTestMixin, TestCase):
     """ Verification for program offer application. """
 

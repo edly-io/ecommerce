@@ -4,7 +4,6 @@ import json
 
 import six
 from django.contrib.auth.models import Permission
-from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -19,9 +18,6 @@ Product = get_model('catalogue', 'Product')
 StockRecord = get_model('partner', 'StockRecord')
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class StockRecordViewSetTests(ProductSerializerMixin, DiscoveryTestMixin, ThrottlingMixin, TestCase):
     list_path = reverse('api:v2:stockrecords-list')
     detail_path = 'api:v2:stockrecords-detail'
