@@ -9,7 +9,6 @@ from datetime import timedelta
 import ddt
 import httpretty
 from django.conf import settings
-from django.test import modify_settings
 from django.urls import reverse
 from django.utils import timezone
 from oscar.core.loading import get_model
@@ -28,9 +27,6 @@ JSON = 'application/json'
 Benefit = get_model('offer', 'Benefit')
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 @ddt.ddt
 class CheckoutPageTest(DiscoveryTestMixin, TestCase, JwtMixin):
     """Test for Checkout page"""

@@ -68,6 +68,7 @@ class UserSessionInfo(APIView):
     """
 
     authentication_classes = (SessionAuthentication,)
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         csrf_token = csrf.get_token(request)

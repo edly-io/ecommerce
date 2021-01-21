@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib import auth
 from django.urls import reverse
 from django.test.client import Client
+from django.test import modify_settings
 
 from ecommerce.core.models import SiteConfiguration
 from ecommerce.extensions.edly_ecommerce_app.helpers import encode_edly_user_info_cookie
@@ -116,6 +117,9 @@ class SettingsOverrideMiddlewareTests(TestCase):
         self._assert_settings_values(default_settings)
 
 
+@modify_settings(MIDDLEWARE={
+    'append': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+})
 class EdlyOrganizationAccessMiddlewareTests(TestCase):
     """
     Tests Edly organization access middleware for sites.
@@ -165,7 +169,7 @@ class EdlyOrganizationAccessMiddlewareTests(TestCase):
             response = self.client.get(self.basket_url)
             self.assertRedirects(response, '/logout/', target_status_code=302)
             user = auth.get_user(self.client)
-            assert not user.is_authenticated()
+            assert not user.is_authenticated
 
             logs.check(
                 (

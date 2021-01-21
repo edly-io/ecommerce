@@ -8,7 +8,6 @@ import httpretty
 import mock
 import pytz
 from django.http import Http404
-from django.test import modify_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from opaque_keys.edx.keys import CourseKey
@@ -46,9 +45,6 @@ Voucher = get_model('voucher', 'Voucher')
 
 
 @ddt.ddt
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class VoucherViewSetTests(DiscoveryMockMixin, DiscoveryTestMixin, LmsApiMockMixin, TestCase):
     """ Tests for the VoucherViewSet view set. """
     path = reverse('api:v2:vouchers-list')
@@ -270,9 +266,6 @@ class VoucherViewSetTests(DiscoveryMockMixin, DiscoveryTestMixin, LmsApiMockMixi
 
 @ddt.ddt
 @httpretty.activate
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class VoucherViewOffersEndpointTests(DiscoveryMockMixin, CouponMixin, DiscoveryTestMixin, LmsApiMockMixin,
                                      TestCase):
     """ Tests for the VoucherViewSet offers endpoint. """

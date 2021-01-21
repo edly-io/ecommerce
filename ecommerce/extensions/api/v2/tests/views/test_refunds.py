@@ -5,7 +5,6 @@ import json
 import ddt
 import httpretty
 import mock
-from django.test import modify_settings
 from django.urls import reverse
 from oscar.core.loading import get_model
 from rest_framework import status
@@ -27,9 +26,6 @@ Option = get_model('catalogue', 'Option')
 Refund = get_model('refund', 'Refund')
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class RefundCreateViewTests(RefundTestMixin, AccessTokenMixin, JwtMixin, TestCase):
     MODEL_LOGGER_NAME = 'ecommerce.core.models'
     path = reverse('api:v2:refunds:create')
@@ -294,9 +290,6 @@ class RefundCreateViewTests(RefundTestMixin, AccessTokenMixin, JwtMixin, TestCas
 
 
 @ddt.ddt
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class RefundProcessViewTests(ThrottlingMixin, TestCase):
     def setUp(self):
         super(RefundProcessViewTests, self).setUp()

@@ -1,7 +1,6 @@
 import base64
 import json
 
-from django.test import modify_settings
 from django.urls import reverse
 from lxml import objectify
 from mock import patch
@@ -29,9 +28,6 @@ Product = get_model('catalogue', 'Product')
 NOTIFICATION_TYPE_AUTH_CAPTURE = 'net.authorize.payment.authcapture.created'
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class AuthorizeNetNotificationViewTests(PaymentEventsMixin, TestCase):
     path = reverse('authorizenet:authorizenet_notifications')
 
@@ -379,9 +375,6 @@ class AuthorizeNetNotificationViewTests(PaymentEventsMixin, TestCase):
             Order.objects.filter(number=basket.order_number, total_incl_tax=basket.total_incl_tax).exists())
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class AuthorizeNetRedirectionViewTests(TestCase):
     path = reverse('authorizenet:redirect')
 

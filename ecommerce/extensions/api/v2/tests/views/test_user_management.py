@@ -4,7 +4,6 @@ import json
 
 import ddt
 import mock
-from django.test import modify_settings
 from django.urls import reverse
 from six.moves import range
 
@@ -16,9 +15,6 @@ JSON_CONTENT_TYPE = 'application/json'
 
 @ddt.ddt
 @mock.patch('django.conf.settings.USERNAME_REPLACEMENT_WORKER', 'test_replace_username_service_worker')
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class UsernameReplacementViewTests(TestCase):
     """ Tests UsernameReplacementView """
     SERVICE_USERNAME = 'test_replace_username_service_worker'

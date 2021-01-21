@@ -12,7 +12,6 @@ import mock
 import pytz
 import six
 from django.test import RequestFactory
-from django.test import modify_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from oscar.core.loading import get_model
@@ -60,9 +59,6 @@ TEST_CATEGORIES = ['Financial Assistance', 'Partner No Rev - RAP', 'Geography Pr
 
 
 @httpretty.activate
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class CouponViewSetTest(CouponMixin, DiscoveryTestMixin, TestCase):
     def setUp(self):
         super(CouponViewSetTest, self).setUp()
@@ -224,9 +220,6 @@ class CouponViewSetTest(CouponMixin, DiscoveryTestMixin, TestCase):
 
 
 @ddt.ddt
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class CouponViewSetFunctionalTest(CouponMixin, DiscoveryTestMixin, DiscoveryMockMixin, ThrottlingMixin,
                                   TestCase):
     """Test the coupon order creation functionality."""
@@ -1300,9 +1293,6 @@ class CouponViewSetFunctionalTest(CouponMixin, DiscoveryTestMixin, DiscoveryMock
         assert coupon.attr.enterprise_contract_metadata.amount_paid == Decimal('99009900.00')
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class CouponCategoriesListViewTests(TestCase):
     """ Tests for the coupon category list view. """
     path = reverse('api:v2:coupons:coupons_categories')

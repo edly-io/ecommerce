@@ -8,7 +8,6 @@ import httpretty
 import mock
 import responses
 from django.test.client import RequestFactory
-from django.test import modify_settings
 from django.urls import reverse
 from edx_rest_api_client.exceptions import SlumberHttpBaseException
 from oscar.apps.order.exceptions import UnableToPlaceOrder
@@ -55,9 +54,6 @@ SourceType = get_model('payment', 'SourceType')
 post_checkout = get_class('checkout.signals', 'post_checkout')
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 @ddt.ddt
 class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase):
     """Test handling of users redirected by PayPal after approving payment."""
@@ -475,9 +471,6 @@ class PaypalPaymentExecutionViewTests(PaypalMixin, PaymentEventsMixin, TestCase)
     # End TODO
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 @mock.patch('ecommerce.extensions.payment.views.paypal.call_command')
 class PaypalProfileAdminViewTests(TestCase):
     path = reverse('paypal:profiles')

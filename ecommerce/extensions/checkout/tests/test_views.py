@@ -8,7 +8,6 @@ import six.moves.urllib.error  # pylint: disable=import-error
 import six.moves.urllib.parse  # pylint: disable=import-error
 import six.moves.urllib.request  # pylint: disable=import-error
 from django.conf import settings
-from django.test import modify_settings
 from django.urls import reverse
 from mock import patch
 from oscar.core.loading import get_model
@@ -31,9 +30,6 @@ BasketAttributeType = get_model('basket', 'BasketAttributeType')
 Order = get_model('order', 'Order')
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class FreeCheckoutViewTests(EnterpriseServiceMockMixin, TestCase):
     """ FreeCheckoutView view tests. """
     path = reverse('checkout:free-checkout')
@@ -113,9 +109,6 @@ class FreeCheckoutViewTests(EnterpriseServiceMockMixin, TestCase):
         self.assertRedirects(response, expected_url, fetch_redirect_response=False)
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class CancelCheckoutViewTests(TestCase):
     """ CancelCheckoutView view tests. """
 
@@ -150,9 +143,6 @@ class CancelCheckoutViewTests(TestCase):
         )
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 class CheckoutErrorViewTests(TestCase):
     """ CheckoutErrorView view tests. """
 
@@ -187,9 +177,6 @@ class CheckoutErrorViewTests(TestCase):
         )
 
 
-@modify_settings(MIDDLEWARE={
-    'remove': 'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
-})
 @ddt.ddt
 class ReceiptResponseViewTests(DiscoveryMockMixin, LmsApiMockMixin, RefundTestMixin, TestCase):
     """
