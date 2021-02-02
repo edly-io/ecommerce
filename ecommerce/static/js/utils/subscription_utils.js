@@ -37,11 +37,11 @@ define(['backbone', 'js-cookie', 'underscore'], function (
 					var coursePaymentsButton = $('[name=course-payments]');
 					if (data.course_payments)
 						coursePaymentsButton.text(
-							gettext('Disable Course Payments')
+							gettext('Disable course payments')
 						);
 					else
 						coursePaymentsButton.text(
-							gettext('Enable Course Payments')
+							gettext('Enable course payments')
 						);
 				},
 			});
