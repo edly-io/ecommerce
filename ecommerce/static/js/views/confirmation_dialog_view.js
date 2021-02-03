@@ -41,8 +41,8 @@ define([
 		onSuccess: function (data) {
 			var coursePaymentsButton = $('[name=course-payments]');
 			if (data.course_payments)
-				coursePaymentsButton.text(gettext('Disable Course Payments'));
-			else coursePaymentsButton.text(gettext('Enable Course Payments'));
+				coursePaymentsButton.text(gettext('Disable course payments'));
+			else coursePaymentsButton.text(gettext('Enable course payments'));
 			$('#coursePaymentsActionModal').modal('hide');
 		},
 
