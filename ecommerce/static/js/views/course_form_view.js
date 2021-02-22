@@ -208,6 +208,12 @@ define([
                 this.stickit();
                 this._super();
 
+                if (!window.waffle.SWITCHES['enable_non_edly_cloud_options_switch']) {
+                    const courseTypeCredit = this.$('#courseTypecredit');
+                    courseTypeCredit.attr('disabled', true);
+                    courseTypeCredit.parent().parent().addClass('hidden');
+                }
+
                 return this;
             },
 
