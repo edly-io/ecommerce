@@ -224,7 +224,7 @@ define([
                         subscription_type: 'limited-access',
                         subscription_active_status: 'active',
                     });
-                    this.$('button[type=submit]').html(gettext('Create Subscription'));
+                    this.$('button[type=submit]').html(gettext('Create plan'));
                 }
 
                 this._super();

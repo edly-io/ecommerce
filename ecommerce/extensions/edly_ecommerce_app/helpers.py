@@ -1,6 +1,8 @@
 from django.conf import settings
 
 import jwt
+from django.core.exceptions import ValidationError
+from django.utils.translation import ugettext_lazy as _
 
 from opaque_keys.edx.keys import CourseKey
 
@@ -109,3 +111,37 @@ def user_is_course_creator(request):
 
     decoded_cookie_data = decode_edly_user_info_cookie(edly_user_info_cookie)
     return decoded_cookie_data.get('is_course_creator', False)
+
+def clean_django_settings_override(django_settings_override):
+    """
+    Enforce only allowed django settings to be overridden.
+    """
+    if not django_settings_override:
+        return
+
+    django_settings_override_keys = django_settings_override.keys()
+    disallowed_override_keys = list(set(django_settings_override_keys) - set(settings.ALLOWED_DJANGO_SETTINGS_OVERRIDE))
+    updated_override_keys = list(set(django_settings_override_keys) - set(disallowed_override_keys))
+    missing_override_keys = list(set(settings.ALLOWED_DJANGO_SETTINGS_OVERRIDE) - set(updated_override_keys))
+
+    validation_errors = []
+    if disallowed_override_keys:
+        disallowed_override_keys_string = ', '.join(disallowed_override_keys)
+        validation_errors.append(
+            ValidationError(
+                _('Django settings override(s) "%(disallowed_override_keys)s" is/are not allowed to be overridden.'),
+                params={'disallowed_override_keys': disallowed_override_keys_string},
+            )
+        )
+
+    if missing_override_keys:
+        missing_override_keys_string = ', '.join(missing_override_keys)
+        validation_errors.append(
+            ValidationError(
+                _('Django settings override(s) "%(missing_override_keys)s" is/are missing.'),
+                params={'missing_override_keys': missing_override_keys_string},
+            )
+        )
+
+    if validation_errors:
+        raise ValidationError(validation_errors)

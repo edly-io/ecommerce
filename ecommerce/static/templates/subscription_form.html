@@ -1,52 +1,52 @@
 <div class="row">
     <div class="fields col-md-6">
         <div class="form-group">
-            <label class="hd-4" for="title"><%= gettext('Subscription Title') %> *</label>
-            <input id="title" type="text" class="form-control" name="title" maxlength="255" placeholder="e.g. Subscription of 5 courses for 3 months">
+            <label class="hd-4" for="title"><%= gettext('Plan title') %> *</label>
+            <input id="title" type="text" class="form-control" name="title" maxlength="255" placeholder="For example: One-year subscription">
             <p class="help-block"></p>
         </div>
 
         <div class="form-group">
-            <label class="hd-4" for="description"><%= gettext('Subscription Description') %></label>
-            <textarea id="description" class="form-control" name="description" rows="5" placeholder="e.g. A custom subscription description"></textarea>
+            <label class="hd-4" for="description"><%= gettext('Plan description') %></label>
+            <textarea id="description" class="form-control" name="description" rows="5" placeholder="For example: One-time payment for access to all courses for one year."></textarea>
             <p class="help-block"></p>
         </div>
 
         <div class="form-group">
-            <label class="hd-4" ><%= gettext('Subscription Type') %> *</label>
+            <label class="hd-4" ><%= gettext('Subscription plan type') %> *</label>
             <div class="radio">
                 <label>
                     <input type="radio" name="subscription_type" id="subscriptionTypelimitedAccess" class="non-editable" value="limited-access" checked>
                     <div class="subscription-type-display-name"><%= gettext('Limited Access') %></div>
                     <span id="subscriptionTypelimitedAccessHelpBlock" class="help-block">
-                        <%= gettext('Subscription plan for a limited number of courses for a limited amount of time.') %>
+                        <%= gettext('Access to a predefined number of courses for a custom period of time (example: course bundles with limited-time access)') %>
                     </span>
                 </label>
             </div>
             <div class="radio">
                 <label>
                     <input type="radio" name="subscription_type" id="subscriptionTypeFullAccessCourses" class="non-editable" value="full-access-courses">
-                    <div class="subscription-type-display-name"><%= gettext('Full Access (Courses)') %></div>
+                    <div class="subscription-type-display-name"><%= gettext('Limited time access to all courses') %></div>
                     <span id="subscriptionTypeFullAccessHelpBlock" class="help-block">
-                        <%= gettext('Subscription plan for an unlimited number of courses for a limited amount of time.') %>
+                        <%= gettext('One-time payment for access to all courses for a custom amount of time (for monthly and annual subscription plans)') %>
                     </span>
                 </label>
             </div>
             <div class="radio">
                 <label>
                     <input type="radio" name="subscription_type" id="subscriptionTypeFullAccessTime" class="non-editable" value="full-access-time-period">
-                    <div class="subscription-type-display-name"><%= gettext('Full Access (Time Period)') %></div>
+                    <div class="subscription-type-display-name"><%= gettext('Lifetime access to a limited number of courses') %></div>
                     <span id="subscriptionTypeFullAccessHelpBlock" class="help-block">
-                        <%= gettext('Subscription plan for a limited number of courses for an unlimited amount of time.') %>
+                        <%= gettext('Permanent access to a predefined number of courses (for lifetime access to a limited number of courses)') %>
                     </span>
                 </label>
             </div>
             <div class="radio">
                 <label>
                     <input type="radio" name="subscription_type" id="subscriptionTypeLifetimeAccess" class="non-editable" value="lifetime-access">
-                    <div class="subscription-type-display-name"><%= gettext('Lifetime Access') %></div>
+                    <div class="subscription-type-display-name"><%= gettext('Lifetime Access (All courses)') %></div>
                     <span id="subscriptionTypeLifetimeAccessHelpBlock" class="help-block">
-                        <%= gettext('Subscription plan for an unlimited number of courses for an unlimited amount of time.') %>
+                        <%= gettext('One-time payment for permanent access to all courses (for a full-site access plan)') %>
                     </span>
                 </label>
             </div>
@@ -81,23 +81,23 @@
 
         <div class="seat-price">
             <div class="form-group">
-                <label ><%= gettext('Actual Price in USD') %></label>
+                <label ><%= gettext('Price (USD)') %> *</label>
                 <div class="input-group">
                     <div class="input-group-addon">$</div>
                     <input id="actual-price" class="non-editable" type="number" step="0.01" min="0" class="form-control" name="actual_price" value="0.0">
                 </div>
-                <p class="help-block"><%= gettext('Actual price of the subscription package.') %></p>
+                <p class="help-block"><%= gettext('Price of the subscription plan.') %></p>
             </div>
         </div>
 
         <div class="seat-price">
             <div class="form-group">
-                <label ><%= gettext('Price in USD') %> *</label>
+                <label ><%= gettext('Marked down price (USD)') %></label>
                 <div class="input-group">
                     <div class="input-group-addon">$</div>
                     <input id="price" class="non-editable" type="number" step="0.01" min="0" class="form-control" name="price" value="0.0">
                 </div>
-                <p class="help-block"><%= gettext('Price that the user will pay. (Intended for marketing purposes)') %></p>
+                <p class="help-block"><%= gettext('Price after a discount (if applicable)') %></p>
             </div>
         </div>
 
@@ -106,7 +106,7 @@
             <div class="input-group">
                 <input id="display-order" type="number" step="1" class="form-control" name="display_order" min="1" >
             </div>
-            <p class="help-block"><%= gettext('Display order for the subscription in which learners will see it in the list of subscriptions. (1 being the highest order)') %></p>
+            <p class="help-block"><%= gettext('Display order for the subscription in which learners will see it in the list of subscriptions (1 being the highest order).') %></p>
         </div>
 
         <div class="form-group">
