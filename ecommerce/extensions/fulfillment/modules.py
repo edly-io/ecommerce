@@ -441,6 +441,7 @@ class EnrollmentFulfillmentModule(BaseFulfillmentModule):
                 else:
                     try:
                         data = response.json()
+                        logger.info(data)
                         reason = data.get('developer_message')
                     except Exception:  # pylint: disable=broad-except
                         reason = '(No detail provided.)'
