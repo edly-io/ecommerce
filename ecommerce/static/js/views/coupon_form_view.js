@@ -548,7 +548,10 @@ define([
                 if (catalogType === this.model.catalogTypes.single_course) {
                     this.toggleMultiCourseRelatedFields(true);
                     this.toggleCourseCatalogRelatedFields(true);
-                    this.toggleEnterpriseRelatedFields(false);
+                    if (window.waffle.SWITCHES['enable_non_edly_cloud_options_switch']) {
+                        this.toggleEnterpriseRelatedFields(false);
+                    }
+
                     this.toggleProgramRelatedFields(true);
                     this.toggleSingleCourseRealtedFields(false);
                 } else if (catalogType === this.model.catalogTypes.catalog) {
@@ -760,8 +763,22 @@ define([
                 } else {
                     this.toggleEnterpriseRelatedFields(true);
                     this.toggleCourseCatalogRelatedFields(true);
-                    this.$('.catalog-type input').attr('disabled', true);
-                    this.$('.catalog-type').parent().addClass('hidden');
+
+                    const multipleCoursesInput = this.$('#multiple-courses');
+                    multipleCoursesInput.attr('disabled', true);
+                    multipleCoursesInput.addClass('hidden');
+                    multipleCoursesInput.next().addClass('hidden');
+
+                    const catalogInput = this.$('#catalog');
+                    catalogInput.attr('disabled', true);
+                    catalogInput.addClass('hidden');
+                    catalogInput.next().addClass('hidden');
+
+                    const emailDomainInput = this.$('#email-domains');
+                    emailDomainInput.attr('disabled', true);
+                    emailDomainInput.parent().addClass('hidden');
+
+                    this.hideField('#client', '#');
                 }
 
                 this.dynamic_catalog_view.setElement(this.$('.catalog_buttons')).render();
