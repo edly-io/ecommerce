@@ -106,8 +106,11 @@ def prepare_basket(request, products, voucher=None):
         basket (Basket): Contains the product to be redeemed and the Voucher applied.
     """
     basket = Basket.get_basket(request.user, request.site)
+    logger.info('Got available basket'.format(basket))
     basket_add_enterprise_catalog_attribute(basket, request.GET)
+    logger.info('Added enterprise catalog attribute')
     basket_add_subscription_attribute(basket, request.GET)
+    logger.info('Added subscription attribute')
     basket.flush()
     basket.save()
     basket_addition = get_class('basket.signals', 'basket_addition')

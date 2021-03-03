@@ -439,6 +439,7 @@ class BasketAddItemsView(BasketLogicMixin, APIView):
             logger.info('Starting payment flow for user [%s] for products [%s].', request.user.username, skus)
 
             available_products = self._get_available_products(request, products)
+            logger.info('Got available products'.format(available_products))
 
             try:
                 basket = prepare_basket(request, available_products, voucher)
