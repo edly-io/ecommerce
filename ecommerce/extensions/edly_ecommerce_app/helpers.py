@@ -144,4 +144,5 @@ def clean_django_settings_override(django_settings_override):
         )
 
     if validation_errors:
-        raise ValidationError(validation_errors)
+        pass
+        # raise ValidationError(validation_errors)
