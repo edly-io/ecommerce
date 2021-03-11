@@ -29,6 +29,7 @@ from ecommerce.extensions.catalogue.utils import (
     get_or_create_catalog
 )
 from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
+from ecommerce.extensions.edly_ecommerce_app.constants import ENABLE_NON_EDLY_CLOUD_OPTIONS_SWITCH
 from ecommerce.extensions.edly_ecommerce_app.permissions import IsAdminOrCourseCreator
 from ecommerce.extensions.payment.processors.invoice import InvoicePayment
 from ecommerce.extensions.voucher.models import CouponVouchers
@@ -118,10 +119,15 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
                     return Response(str(error), status=status.HTTP_400_BAD_REQUEST)
 
                 basket = prepare_basket(request, [coupon_product])
+                if waffle.switch_is_active(ENABLE_NON_EDLY_CLOUD_OPTIONS_SWITCH):
+                    client_username = request.data.get('client')
+                else:
+                    client_username = request.site.siteconfiguration.partner.short_code
 
                 # Create an order now since payment is handled out of band via an invoice.
                 client, __ = BusinessClient.objects.update_or_create(
-                    name=cleaned_voucher_data['enterprise_customer_name'] or request.data.get('client'),
+                    name=cleaned_voucher_data['enterprise_customer_name'] or client_username,
+                    defaults={'enterprise_customer_uuid': cleaned_voucher_data['enterprise_customer']}
                 )
                 invoice_data = self.create_update_data_dict(data=request.data, fields=Invoice.UPDATEABLE_INVOICE_FIELDS)
                 response_data = self.create_order_for_invoice(
@@ -449,6 +455,9 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
             ProductCategory.objects.filter(product=coupon).update(category=category)
 
         client_username = request_data.get('client')
+        if not waffle.switch_is_active(ENABLE_NON_EDLY_CLOUD_OPTIONS_SWITCH):
+            client_username = self.request.site.siteconfiguration.partner.short_code
+
         enterprise_customer_data = request_data.get('enterprise_customer')
         enterprise_customer = enterprise_customer_data.get('id', None) if enterprise_customer_data else None
         enterprise_customer_name = enterprise_customer_data.get('name', None) if enterprise_customer_data else None
