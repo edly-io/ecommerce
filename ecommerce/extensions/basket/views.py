@@ -444,6 +444,8 @@ class BasketAddItemsView(BasketLogicMixin, APIView):
                 basket = prepare_basket(request, available_products, voucher)
             except AlreadyPlacedOrderException:
                 return render(request, 'edx/error.html', {'error': _('You have already purchased these products')})
+            except SubscriptionNotBuyableException:
+                return render(request, 'edx/error.html', {'error': _('This subscription is inactive or you already have an active subscription')})
 
             self._set_email_preference_on_basket(request, basket)
 
