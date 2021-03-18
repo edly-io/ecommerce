@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 import logging
 
 import six
+import waffle
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
