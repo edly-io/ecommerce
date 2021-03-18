@@ -295,6 +295,9 @@ TEMPLATES = [
 # See: https://docs.djangoproject.com/en/1.11/ref/settings/#middleware
 MIDDLEWARE = (
     'ecommerce.extensions.edly_ecommerce_app.middleware.SettingsOverrideMiddleware',
+    # Avoid issue with https://blog.heroku.com/chrome-changes-samesite-cookie
+    # Override was found here https://github.com/django/django/pull/11894
+    'django_cookies_samesite.middleware.CookiesSameSite',
     'corsheaders.middleware.CorsMiddleware',
     'edx_django_utils.cache.middleware.RequestCacheMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -907,3 +910,6 @@ ALLOWED_DJANGO_SETTINGS_OVERRIDE = [
     'OSCAR_FROM_EMAIL', 'SESSION_COOKIE_DOMAIN', 'LANGUAGE_CODE',
     'EDLY_WORDPRESS_URL', 'FRONTEND_LOGOUT_URL', 'PAYMENT_PROCESSOR_CONFIG',
 ]
+
+DCS_SESSION_COOKIE_SAMESITE = 'None'
+DCS_SESSION_COOKIE_SAMESITE_FORCE_ALL = True
