@@ -26,6 +26,7 @@ cssutils==1.0.2           # via premailer
 defusedxml==0.6.0         # via python3-openid, social-auth-core, zeep
 git+https://github.com/django-compressor/django-appconf.git@5169ce2c92d9836e0b3ab3ec645727d9d5225d1a#egg=django-appconf  # via -r requirements/base.in, django-compressor
 django-compressor==2.4    # via -r requirements/base.in, django-libsass
+django-cookies-samesite==0.5.1
 django-cors-headers==3.2.1  # via -r requirements/base.in
 django-crispy-forms==1.8.1  # via -r requirements/base.in
 django-crum==0.7.6        # via edx-rbac
