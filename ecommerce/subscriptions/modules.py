@@ -101,6 +101,7 @@ class SubscriptionFulfillmentModule(BaseFulfillmentModule):
             data = {
                 'user': order.user.username,
                 'subscription_id': subscription.id,
+                'description': subscription.description,
                 'expiration_date': subscription_expiration,
                 'subscription_type': subscription_type,
                 'max_allowed_courses': subscription_number_of_courses.value if subscription_number_of_courses else None
