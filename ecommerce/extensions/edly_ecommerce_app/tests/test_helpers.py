@@ -6,13 +6,19 @@ from factory.fuzzy import FuzzyText
 import jwt
 
 from ecommerce.courses.tests.factories import CourseFactory
+from ecommerce.extensions.edly_ecommerce_app.api.v1.constants import CLIENT_SITE_SETUP_FIELDS
 from ecommerce.extensions.edly_ecommerce_app.tests.factories import SiteFactory
 from ecommerce.extensions.edly_ecommerce_app.helpers import (
     decode_edly_user_info_cookie,
+    DEFAULT_EDLY_COPYRIGHT_TEXT,
+    DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
     encode_edly_user_info_cookie,
     get_edx_org_from_edly_cookie,
+    get_payment_processors_names,
+    get_payments_site_configuration,
     is_valid_site_course,
     user_is_course_creator,
+    validate_site_configurations,
 )
 from ecommerce.tests.factories import SiteConfigurationFactory
 from ecommerce.tests.testcases import TestCase
@@ -34,6 +40,31 @@ class EdlyAppHelperMethodsTests(TestCase):
             'edx-org': 'edx',
             'is_course_creator': False,
         }
+        self.request_data = dict(
+            lms_site='edx.devstack.lms:18000',
+            wordpress_site='edx.devstack.lms',
+            payments_site='edx.devstack.lms:18130',
+            edly_slug='edx',
+            session_cookie_domain='.devstack.lms',
+            branding=dict(logo='http://edx.devstack.lms:18000/media/logo.png'),
+            fonts=dict(base_font='Open Sans'),
+            colors=dict(primary='#00000'),
+            platform_name='Edly',
+            theme_dir_name='st-lutherx-ecommerce',
+            oauth_clients={
+                'ecom-sso': {
+                    'id': 'ecom-sso-id',
+                    'secret': 'ecom-sso-secret',
+                },
+                'ecom-backend': {
+                    'id': 'ecom-backend-id',
+                    'secret': 'ecom-backend-secret',
+                },
+            },
+            oscar_from_address='edly@example.com',
+            panel_notification_base_url='panel.backend.edly.devstack.lms:9090',
+            contact_mailing_address='edly@example.com',
+        )
 
     def _set_edly_user_info_cookie(self):
         self.request.COOKIES[settings.EDLY_USER_INFO_COOKIE_NAME] = encode_edly_user_info_cookie(self.test_edly_user_info_cookie_data)
@@ -142,3 +173,67 @@ class EdlyAppHelperMethodsTests(TestCase):
                 }
             )
             site_configuration.clean()
+
+    def test_validate_site_configurations(self):
+        """
+        Test that required site creation data is present in request data.
+        """
+        contact_mailing_address = self.request_data.pop('contact_mailing_address')
+        validation_messages = validate_site_configurations(self.request_data)
+        self.assertDictEqual(
+            validation_messages, {'contact_mailing_address': '{0} is Missing'.format('contact_mailing_address'.replace('_', ' ').title())}
+        )
+
+        self.request_data['contact_mailing_address'] = contact_mailing_address
+        validation_messages = validate_site_configurations(self.request_data)
+        self.assertEqual(len(validation_messages), 0)
+
+    def test_get_payments_site_configuration(self):
+        """
+        Test that correct payments site configuration data is returned using the request data.
+        """
+        expected_site_configuration = {
+            'COLORS': self.request_data.get('colors'),
+            'FONTS': self.request_data.get('fonts'),
+            'BRANDING': self.request_data.get('branding'),
+            'SESSION_COOKIE_DOMAIN': self.request_data.get('session_cookie_domain'),
+            'DJANGO_SETTINGS_OVERRIDE': {
+                'SESSION_COOKIE_DOMAIN': self.request_data.get('session_cookie_domain'),
+                'GTM_ID': '',
+                'OSCAR_FROM_EMAIL': self.request_data.get('oscar_from_email', ''),
+                'LANGUAGE_CODE': 'en',
+                'EDLY_WORDPRESS_URL': 'https://{0}'.format(self.request_data.get('wordpress_site')),
+                'FRONTEND_LOGOUT_URL': 'https://{0}/logout'.format(self.request_data.get('lms_site')),
+                'PAYMENT_PROCESSOR_CONFIG': {},
+                'PLATFORM_NAME': self.request_data.get('platform_name'),
+                'COLORS': self.request_data.get('colors'),
+                'EDLY_COPYRIGHT_TEXT': DEFAULT_EDLY_COPYRIGHT_TEXT,
+                'PANEL_NOTIFICATIONS_BASE_URL': self.request_data.get('panel_notification_base_url', ''),
+                'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
+                'CONTACT_MAILING_ADDRESS': self.request_data.get('contact_mailing_address', ''),
+                'DISABLE_PAID_COURSE_MODES': self.request_data.get('disable_course_modes', False),
+            }
+        }
+        payments_site_configuration = get_payments_site_configuration(self.request_data)
+        self.assertDictEqual(payments_site_configuration, expected_site_configuration)
+
+    def test_get_payment_processors_names(self):
+        """
+        Test that correct payment processors names are extracted from the payment processor configuration.
+        """
+        self.request_data['payment_processor_config'] = {}
+        payment_processors_names = get_payment_processors_names(self.request_data)
+        self.assertEqual(payment_processors_names, '')
+
+        payment_processors_config = dict(
+            edx=dict(
+                stripe=dict(
+                    mode='SET-ME-PLEASE(sandbox,live)',
+                    client_id='SET-ME-PLEASE',
+                    client_secret='SET-ME-PLEASE'
+                )
+            )
+        )
+        self.request_data['payment_processor_config'] = payment_processors_config
+        payment_processors_names = get_payment_processors_names(self.request_data)
+        self.assertEqual(payment_processors_names, 'stripe')
