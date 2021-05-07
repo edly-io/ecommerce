@@ -4,7 +4,13 @@ import jwt
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
+from ecommerce.extensions.edly_ecommerce_app.api.v1.constants import CLIENT_SITE_SETUP_FIELDS
+
 from opaque_keys.edx.keys import CourseKey
+
+
+DEFAULT_EDLY_COPYRIGHT_TEXT = _('Copy Rights. All rights reserved.')
+DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY = '900'  # value in seconds, 900 seconds = 15 minutes
 
 
 def decode_edly_user_info_cookie(encoded_cookie_data):
@@ -145,3 +151,81 @@ def clean_django_settings_override(django_settings_override):
 
     if validation_errors:
         raise ValidationError(validation_errors)
+
+def validate_site_configurations(request_data):
+    """
+    Identify missing required fields for client's site setup.
+
+    Arguments:
+        request_data (dict): Request data passed for site setup
+
+    Returns:
+        validation_messages (dict): Missing fields information
+    """
+
+    validation_messages = {}
+
+    for field in CLIENT_SITE_SETUP_FIELDS:
+        if not request_data.get(field, None):
+            validation_messages[field] = '{0} is Missing'.format(field.replace('_', ' ').title())
+
+    return validation_messages
+
+def get_payments_site_configuration(request_data):
+    """
+    Prepare Payments Site Configurations for Client based on Request Data.
+
+    Arguments:
+        request_data (dict): Request data passed for site setup
+
+    Returns:
+        (dict): Payments Site Configuration
+    """
+    protocol = request_data.get('protocol', 'https')
+    colors = request_data.get('colors', {})
+    session_cookie_domain = request_data.get('session_cookie_domain', '')
+    lms_site = request_data.get('lms_site', '')
+    wordpress_site = request_data.get('wordpress_site', '')
+
+    return {
+        'SESSION_COOKIE_DOMAIN': session_cookie_domain,
+        'COLORS': colors,
+        'FONTS': request_data.get('fonts', {}),
+        'BRANDING': request_data.get('branding', {}),
+        'DJANGO_SETTINGS_OVERRIDE': {
+            'SESSION_COOKIE_DOMAIN': session_cookie_domain,
+            'PLATFORM_NAME': request_data.get('platform_name', ''),
+            'OSCAR_FROM_EMAIL': request_data.get('oscar_from_email', ''),
+            'LANGUAGE_CODE': request_data.get('language_code', 'en'),
+            'GTM_ID': request_data.get('gtm_id', ''),
+            'COLORS': colors,
+            'EDLY_COPYRIGHT_TEXT': DEFAULT_EDLY_COPYRIGHT_TEXT,
+            'CONTACT_MAILING_ADDRESS': request_data.get('contact_mailing_address', ''),
+            'DISABLE_PAID_COURSE_MODES': request_data.get('disable_course_modes', False),
+            'PANEL_NOTIFICATIONS_BASE_URL': request_data.get('panel_notification_base_url', ''),
+            'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
+            'PAYMENT_PROCESSOR_CONFIG': request_data.get('payment_processor_config', {}),
+            'EDLY_WORDPRESS_URL': '{protocol}://{marketing_url_domain}'.format(
+                protocol=protocol,
+                marketing_url_domain=wordpress_site,
+            ),
+            'FRONTEND_LOGOUT_URL': '{protocol}://{lms_root_domain}/logout'.format(
+                protocol=protocol,
+                lms_root_domain=lms_site,
+            ),
+        }
+    }
+
+def get_payment_processors_names(request_data):
+    """
+    Returns comma-separated string of payment processor names provided in POST data.
+
+    Arguments:
+        request_data (dict): Request data passed for site setup
+
+    Returns:
+        (str): Payment Processors Comma-separated List
+    """
+    payment_processors = request_data.get('payment_processor_config', {})
+    edly_slug = request_data.get('edly_slug', '')
+    return ','.join(payment_processors.get(edly_slug, {}).keys())
