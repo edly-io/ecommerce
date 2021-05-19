@@ -115,7 +115,6 @@ class EdlySiteViewSet(APIView):
     """
     Create Default Payments Site and Site Configuration and Partner.
     """
-    authentication_classes = (SessionAuthentication,)
     permission_classes = [IsAuthenticated, CanAccessSiteCreation]
 
     def post(self, request):
