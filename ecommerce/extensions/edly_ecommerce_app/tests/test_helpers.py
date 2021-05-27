@@ -52,16 +52,16 @@ class EdlyAppHelperMethodsTests(TestCase):
             platform_name='Edly',
             theme_dir_name='st-lutherx-ecommerce',
             oauth_clients={
-                'ecom-sso': {
-                    'id': 'ecom-sso-id',
-                    'secret': 'ecom-sso-secret',
+                'payments-sso': {
+                    'id': 'payments-sso-id',
+                    'secret': 'payments-sso-secret',
                 },
-                'ecom-backend': {
-                    'id': 'ecom-backend-id',
-                    'secret': 'ecom-backend-secret',
+                'payments-backend': {
+                    'id': 'payments-backend-id',
+                    'secret': 'payments-backend-secret',
                 },
             },
-            oscar_from_address='edly@example.com',
+            oscar_from_email='edly@example.com',
             panel_notification_base_url='panel.backend.edly.devstack.lms:9090',
             contact_mailing_address='edly@example.com',
         )
