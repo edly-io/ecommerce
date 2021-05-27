@@ -21,7 +21,7 @@ CLIENT_SITE_SETUP_FIELDS = [
     'fonts',
     'colors',
     'platform_name',
-    'oscar_from_address',
+    'oscar_from_email',
     'panel_notification_base_url',
     'contact_mailing_address',
     'theme_dir_name',
