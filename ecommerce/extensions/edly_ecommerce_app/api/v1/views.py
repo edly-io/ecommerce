@@ -1,6 +1,7 @@
 """
 Views for API v1.
 """
+import json
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites.models import Site
@@ -166,7 +167,7 @@ class EdlySiteViewSet(APIView):
         """
         Returns payments SSO and backend OAuth2 values.
         """
-        oauth2_clients = self.request.data.get('oauth2_clients', {})
+        oauth2_clients = json.loads(self.request.data.get('oauth2_clients', {}))
         payments_sso_values = oauth2_clients.get('payments-sso', {})
         payments_backend_values = oauth2_clients.get('payments-backend', {})
         oauth2_values = dict(
