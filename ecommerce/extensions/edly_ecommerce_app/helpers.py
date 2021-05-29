@@ -1,6 +1,7 @@
 from django.conf import settings
 
 import jwt
+import json
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
@@ -226,6 +227,6 @@ def get_payment_processors_names(request_data):
     Returns:
         (str): Payment Processors Comma-separated List
     """
-    payment_processors = request_data.get('payment_processor_config', {})
+    payment_processors = json.loads(request_data.get('payment_processor_config', {}))
     edly_slug = request_data.get('edly_slug', '')
     return ','.join(payment_processors.get(edly_slug, {}).keys())

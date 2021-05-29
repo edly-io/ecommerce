@@ -132,7 +132,7 @@ class EdlySiteViewSet(TestCase):
             colors=dict(primary='#00000'),
             platform_name='Edly',
             theme_dir_name='st-lutherx-ecommerce',
-            oauth_clients={
+            oauth2_clients={
                 'payments-sso': {
                     'id': 'payments-sso-id',
                     'secret': 'payments-sso-secret',
