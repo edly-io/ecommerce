@@ -187,7 +187,7 @@ def get_payments_site_configuration(request_data):
         (dict): Payments Site Configuration
     """
     protocol = request_data.get('protocol', 'https')
-    colors = request_data.get('colors', {})
+    colors = json.loads(request_data.get('colors', "{}"))
     session_cookie_domain = request_data.get('session_cookie_domain', '')
     lms_site = request_data.get('lms_site', '')
     wordpress_site = request_data.get('wordpress_site', '')
@@ -202,13 +202,13 @@ def get_payments_site_configuration(request_data):
         'PANEL_NOTIFICATIONS_BASE_URL': request_data.get('panel_notification_base_url', ''),
         'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
         'COLORS': colors,
-        'FONTS': request_data.get('fonts', {}),
-        'BRANDING': request_data.get('branding', {}),
+        'FONTS': json.loads(request_data.get('fonts', "{}")),
+        'BRANDING': json.loads(request_data.get('branding', "{}")),
         'DJANGO_SETTINGS_OVERRIDE': {
             'SESSION_COOKIE_DOMAIN': session_cookie_domain,
             'OSCAR_FROM_EMAIL': request_data.get('oscar_from_email', ''),
             'LANGUAGE_CODE': request_data.get('language_code', 'en'),
-            'PAYMENT_PROCESSOR_CONFIG': request_data.get('payment_processor_config', {}),
+            'PAYMENT_PROCESSOR_CONFIG': json.loads(request_data.get('payment_processor_config', "{}")),
             'EDLY_WORDPRESS_URL': '{protocol}://{marketing_url_domain}'.format(
                 protocol=protocol,
                 marketing_url_domain=wordpress_site,
@@ -231,6 +231,6 @@ def get_payment_processors_names(request_data):
     Returns:
         (str): Payment Processors Comma-separated List
     """
-    payment_processors = json.loads(request_data.get('payment_processor_config', {}))
+    payment_processors = json.loads(request_data.get('payment_processor_config', "{}"))
     edly_slug = request_data.get('edly_slug', '')
     return ','.join(payment_processors.get(edly_slug, {}).keys())
