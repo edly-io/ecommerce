@@ -193,25 +193,24 @@ class EdlyAppHelperMethodsTests(TestCase):
         Test that correct payments site configuration data is returned using the request data.
         """
         expected_site_configuration = {
+            'SESSION_COOKIE_DOMAIN': self.request_data.get('session_cookie_domain'),
+            'PLATFORM_NAME': self.request_data.get('platform_name'),
+            'GTM_ID': '',
+            'EDLY_COPYRIGHT_TEXT': DEFAULT_EDLY_COPYRIGHT_TEXT,
+            'CONTACT_MAILING_ADDRESS': self.request_data.get('contact_mailing_address', ''),
+            'DISABLE_PAID_COURSE_MODES': self.request_data.get('disable_course_modes', False),
+            'PANEL_NOTIFICATIONS_BASE_URL': self.request_data.get('panel_notification_base_url', ''),
+            'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
             'COLORS': self.request_data.get('colors'),
             'FONTS': self.request_data.get('fonts'),
             'BRANDING': self.request_data.get('branding'),
-            'SESSION_COOKIE_DOMAIN': self.request_data.get('session_cookie_domain'),
             'DJANGO_SETTINGS_OVERRIDE': {
                 'SESSION_COOKIE_DOMAIN': self.request_data.get('session_cookie_domain'),
-                'GTM_ID': '',
                 'OSCAR_FROM_EMAIL': self.request_data.get('oscar_from_email', ''),
                 'LANGUAGE_CODE': 'en',
+                'PAYMENT_PROCESSOR_CONFIG': {},
                 'EDLY_WORDPRESS_URL': 'https://{0}'.format(self.request_data.get('wordpress_site')),
                 'FRONTEND_LOGOUT_URL': 'https://{0}/logout'.format(self.request_data.get('lms_site')),
-                'PAYMENT_PROCESSOR_CONFIG': {},
-                'PLATFORM_NAME': self.request_data.get('platform_name'),
-                'COLORS': self.request_data.get('colors'),
-                'EDLY_COPYRIGHT_TEXT': DEFAULT_EDLY_COPYRIGHT_TEXT,
-                'PANEL_NOTIFICATIONS_BASE_URL': self.request_data.get('panel_notification_base_url', ''),
-                'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
-                'CONTACT_MAILING_ADDRESS': self.request_data.get('contact_mailing_address', ''),
-                'DISABLE_PAID_COURSE_MODES': self.request_data.get('disable_course_modes', False),
             }
         }
         payments_site_configuration = get_payments_site_configuration(self.request_data)

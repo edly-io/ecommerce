@@ -9,7 +9,6 @@ from ecommerce.extensions.edly_ecommerce_app.api.v1.constants import CLIENT_SITE
 
 from opaque_keys.edx.keys import CourseKey
 
-
 DEFAULT_EDLY_COPYRIGHT_TEXT = _('Copy Rights. All rights reserved.')
 DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY = '900'  # value in seconds, 900 seconds = 15 minutes
 
@@ -81,6 +80,7 @@ def is_valid_site_course(course_id, request):
 
     return False
 
+
 def user_has_edly_organization_access(request):
     """
     Check if the requested URL site is allowed for the user.
@@ -102,6 +102,7 @@ def user_has_edly_organization_access(request):
 
     return partner_short_code == edx_org_short_name
 
+
 def user_is_course_creator(request):
     """
     Check if the logged in user is a course creator.
@@ -118,6 +119,7 @@ def user_is_course_creator(request):
 
     decoded_cookie_data = decode_edly_user_info_cookie(edly_user_info_cookie)
     return decoded_cookie_data.get('is_course_creator', False)
+
 
 def clean_django_settings_override(django_settings_override):
     """
@@ -153,6 +155,7 @@ def clean_django_settings_override(django_settings_override):
     if validation_errors:
         raise ValidationError(validation_errors)
 
+
 def validate_site_configurations(request_data):
     """
     Identify missing required fields for client's site setup.
@@ -172,6 +175,7 @@ def validate_site_configurations(request_data):
 
     return validation_messages
 
+
 def get_payments_site_configuration(request_data):
     """
     Prepare Payments Site Configurations for Client based on Request Data.
@@ -190,21 +194,20 @@ def get_payments_site_configuration(request_data):
 
     return {
         'SESSION_COOKIE_DOMAIN': session_cookie_domain,
+        'PLATFORM_NAME': request_data.get('platform_name', ''),
+        'GTM_ID': request_data.get('gtm_id', ''),
+        'EDLY_COPYRIGHT_TEXT': DEFAULT_EDLY_COPYRIGHT_TEXT,
+        'CONTACT_MAILING_ADDRESS': request_data.get('contact_mailing_address', ''),
+        'DISABLE_PAID_COURSE_MODES': request_data.get('disable_course_modes', False),
+        'PANEL_NOTIFICATIONS_BASE_URL': request_data.get('panel_notification_base_url', ''),
+        'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
         'COLORS': colors,
         'FONTS': request_data.get('fonts', {}),
         'BRANDING': request_data.get('branding', {}),
         'DJANGO_SETTINGS_OVERRIDE': {
             'SESSION_COOKIE_DOMAIN': session_cookie_domain,
-            'PLATFORM_NAME': request_data.get('platform_name', ''),
             'OSCAR_FROM_EMAIL': request_data.get('oscar_from_email', ''),
             'LANGUAGE_CODE': request_data.get('language_code', 'en'),
-            'GTM_ID': request_data.get('gtm_id', ''),
-            'COLORS': colors,
-            'EDLY_COPYRIGHT_TEXT': DEFAULT_EDLY_COPYRIGHT_TEXT,
-            'CONTACT_MAILING_ADDRESS': request_data.get('contact_mailing_address', ''),
-            'DISABLE_PAID_COURSE_MODES': request_data.get('disable_course_modes', False),
-            'PANEL_NOTIFICATIONS_BASE_URL': request_data.get('panel_notification_base_url', ''),
-            'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
             'PAYMENT_PROCESSOR_CONFIG': request_data.get('payment_processor_config', {}),
             'EDLY_WORDPRESS_URL': '{protocol}://{marketing_url_domain}'.format(
                 protocol=protocol,
@@ -216,6 +219,7 @@ def get_payments_site_configuration(request_data):
             ),
         }
     }
+
 
 def get_payment_processors_names(request_data):
     """
