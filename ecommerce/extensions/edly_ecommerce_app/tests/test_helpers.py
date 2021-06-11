@@ -1,3 +1,5 @@
+import json
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import RequestFactory
@@ -46,9 +48,9 @@ class EdlyAppHelperMethodsTests(TestCase):
             payments_site='edx.devstack.lms:18130',
             edly_slug='edx',
             session_cookie_domain='.devstack.lms',
-            branding=dict(logo='http://edx.devstack.lms:18000/media/logo.png'),
-            fonts=dict(base_font='Open Sans'),
-            colors=dict(primary='#00000'),
+            branding=json.dumps(dict(logo='http://edx.devstack.lms:18000/media/logo.png')),
+            fonts=json.dumps(dict(base_font='Open Sans')),
+            colors=json.dumps(dict(primary='#00000')),
             platform_name='Edly',
             theme_dir_name='st-lutherx-ecommerce',
             oauth2_clients={
@@ -201,14 +203,14 @@ class EdlyAppHelperMethodsTests(TestCase):
             'DISABLE_PAID_COURSE_MODES': self.request_data.get('disable_course_modes', False),
             'PANEL_NOTIFICATIONS_BASE_URL': self.request_data.get('panel_notification_base_url', ''),
             'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
-            'COLORS': self.request_data.get('colors'),
-            'FONTS': self.request_data.get('fonts'),
-            'BRANDING': self.request_data.get('branding'),
+            'COLORS': json.loads(self.request_data.get('colors', "{}")),
+            'FONTS': json.loads(self.request_data.get('fonts', "{}")),
+            'BRANDING': json.loads(self.request_data.get('branding', "{}")),
             'DJANGO_SETTINGS_OVERRIDE': {
                 'SESSION_COOKIE_DOMAIN': self.request_data.get('session_cookie_domain'),
                 'OSCAR_FROM_EMAIL': self.request_data.get('oscar_from_email', ''),
                 'LANGUAGE_CODE': 'en',
-                'PAYMENT_PROCESSOR_CONFIG': {},
+                'PAYMENT_PROCESSOR_CONFIG': json.loads("{}"),
                 'EDLY_WORDPRESS_URL': 'https://{0}'.format(self.request_data.get('wordpress_site')),
                 'FRONTEND_LOGOUT_URL': 'https://{0}/logout'.format(self.request_data.get('lms_site')),
             }
@@ -220,16 +222,18 @@ class EdlyAppHelperMethodsTests(TestCase):
         """
         Test that correct payment processors names are extracted from the payment processor configuration.
         """
-        self.request_data['payment_processor_config'] = {}
+        self.request_data['payment_processor_config'] = json.dumps({})
         payment_processors_names = get_payment_processors_names(self.request_data)
         self.assertEqual(payment_processors_names, '')
 
-        payment_processors_config = dict(
-            edx=dict(
-                stripe=dict(
-                    mode='SET-ME-PLEASE(sandbox,live)',
-                    client_id='SET-ME-PLEASE',
-                    client_secret='SET-ME-PLEASE'
+        payment_processors_config = json.dumps(
+            dict(
+                edx=dict(
+                    stripe=dict(
+                        mode='SET-ME-PLEASE(sandbox,live)',
+                        client_id='SET-ME-PLEASE',
+                        client_secret='SET-ME-PLEASE'
+                    )
                 )
             )
         )
