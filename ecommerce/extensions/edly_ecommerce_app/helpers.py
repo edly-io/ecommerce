@@ -206,6 +206,8 @@ def get_payments_site_configuration(request_data):
         'BRANDING': json.loads(request_data.get('branding', "{}")),
         'DJANGO_SETTINGS_OVERRIDE': {
             'SESSION_COOKIE_DOMAIN': session_cookie_domain,
+            'CSRF_TRUSTED_ORIGINS': request_data.get('csrf_trusted_origins', []),
+            'CORS_ORIGIN_WHITELIST': request_data.get('csrf_origin_whitelist', []),
             'OSCAR_FROM_EMAIL': request_data.get('oscar_from_email', ''),
             'LANGUAGE_CODE': request_data.get('language_code', 'en'),
             'PAYMENT_PROCESSOR_CONFIG': json.loads(request_data.get('payment_processor_config', "{}")),

@@ -127,12 +127,12 @@ class EdlySiteViewSet(TestCase):
             payments_site='edx.devstack.lms:18130',
             edly_slug='edly',
             session_cookie_domain='.devstack.lms',
-            branding=dict(logo='http://edx.devstack.lms:18000/media/logo.png'),
-            fonts=dict(base_font='Open Sans'),
-            colors=dict(primary='#00000'),
+            branding=json.dumps(dict(logo='http://edx.devstack.lms:18000/media/logo.png')),
+            fonts=json.dumps(dict(base_font='Open Sans')),
+            colors=json.dumps(dict(primary='#00000')),
             platform_name='Edly',
             theme_dir_name='st-lutherx-ecommerce',
-            oauth2_clients={
+            oauth2_clients=json.dumps({
                 'payments-sso': {
                     'id': 'payments-sso-id',
                     'secret': 'payments-sso-secret',
@@ -141,10 +141,12 @@ class EdlySiteViewSet(TestCase):
                     'id': 'payments-backend-id',
                     'secret': 'payments-backend-secret',
                 },
-            },
+            }),
             oscar_from_email='edly@example.com',
             panel_notification_base_url='panel.backend.edly.devstack.lms:9090',
             contact_mailing_address='edly@example.com',
+            csrf_trusted_origins=['.edx.devstack.lms:18000'],
+            csrf_origin_whitelist=['.edx.devstack.lms:18000'],
         )
 
     def test_without_authentication(self):

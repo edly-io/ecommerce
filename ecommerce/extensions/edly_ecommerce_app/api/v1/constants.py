@@ -25,7 +25,9 @@ CLIENT_SITE_SETUP_FIELDS = [
     'panel_notification_base_url',
     'contact_mailing_address',
     'theme_dir_name',
-    'oauth2_clients'
+    'oauth2_clients',
+    'csrf_trusted_origins',
+    'csrf_origin_whitelist',
 ]
 
 EDLY_PANEL_WORKER_USER = 'edly_panel_worker'
