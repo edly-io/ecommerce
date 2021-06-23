@@ -53,7 +53,7 @@ class EdlyAppHelperMethodsTests(TestCase):
             colors=json.dumps(dict(primary='#00000')),
             platform_name='Edly',
             theme_dir_name='st-lutherx-ecommerce',
-            oauth2_clients={
+            oauth2_clients=json.dumps({
                 'payments-sso': {
                     'id': 'payments-sso-id',
                     'secret': 'payments-sso-secret',
@@ -62,9 +62,11 @@ class EdlyAppHelperMethodsTests(TestCase):
                     'id': 'payments-backend-id',
                     'secret': 'payments-backend-secret',
                 },
-            },
+            }),
             oscar_from_email='edly@example.com',
             panel_notification_base_url='panel.backend.edly.devstack.lms:9090',
+            csrf_trusted_origins=['.edx.devstack.lms:18000'],
+            csrf_origin_whitelist=['.edx.devstack.lms:18000'],
             contact_mailing_address='edly@example.com',
         )
 
@@ -208,6 +210,8 @@ class EdlyAppHelperMethodsTests(TestCase):
             'BRANDING': json.loads(self.request_data.get('branding', "{}")),
             'DJANGO_SETTINGS_OVERRIDE': {
                 'SESSION_COOKIE_DOMAIN': self.request_data.get('session_cookie_domain'),
+                'CSRF_TRUSTED_ORIGINS': self.request_data.get('csrf_trusted_origins', []),
+                'CORS_ORIGIN_WHITELIST': self.request_data.get('csrf_origin_whitelist', []),
                 'OSCAR_FROM_EMAIL': self.request_data.get('oscar_from_email', ''),
                 'LANGUAGE_CODE': 'en',
                 'PAYMENT_PROCESSOR_CONFIG': json.loads("{}"),

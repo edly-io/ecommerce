@@ -14,6 +14,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 import waffle
+import json
 
 from ecommerce.core.constants import ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH
 from ecommerce.core.models import SiteConfiguration
@@ -149,7 +150,7 @@ class EdlySiteViewSet(APIView):
             lms_url_root=self.request.data.get('lms_site', '')
         )
         payments_site, __ = Site.objects.update_or_create(domain=payments_base, defaults=dict(name=payments_base))
-        payments_partner, __ = Partner.objects.update_or_create(short_code=edly_slug, default_site=payments_site)
+        payments_partner, __ = Partner.objects.update_or_create(short_code=edly_slug, default_site=payments_site, defaults=dict(name=edly_slug))
         payments_site_config, __ = SiteConfiguration.objects.update_or_create(
             site=payments_site,
             partner=payments_partner,
@@ -166,7 +167,7 @@ class EdlySiteViewSet(APIView):
         """
         Returns payments SSO and backend OAuth2 values.
         """
-        oauth2_clients = self.request.data.get('oauth2_clients', {})
+        oauth2_clients = json.loads(self.request.data.get('oauth2_clients', {}))
         payments_sso_values = oauth2_clients.get('payments-sso', {})
         payments_backend_values = oauth2_clients.get('payments-backend', {})
         oauth2_values = dict(
