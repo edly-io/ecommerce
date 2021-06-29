@@ -178,10 +178,20 @@ class EdlySiteViewSet(APIView):
         oauth2_clients = json.loads(self.request.data.get('oauth2_clients', {}))
         payments_sso_values = oauth2_clients.get('payments-sso', {})
         payments_backend_values = oauth2_clients.get('payments-backend', {})
+        lms_url_root = '{protocol}://{lms_url_root}'.format(
+            protocol=self.request.data.get('protocol', 'https'),
+            lms_url_root=self.request.data.get('lms_site', '')
+        )
+
         oauth2_values = dict(
+            SOCIAL_AUTH_EDX_OAUTH2_ISSUER=lms_url_root,
+            SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT=lms_url_root,
+            SOCIAL_AUTH_EDX_OAUTH2_PUBLIC_URL_ROOT=lms_url_root,
+            SOCIAL_AUTH_EDX_OAUTH2_LOGOUT_URL='{lms_url_root}/logout'.format(lms_url_root=lms_url_root),
+            BACKEND_SERVICE_EDX_OAUTH2_PROVIDER_URL= '{lms_url_root}/oauth2'.format(lms_url_root=lms_url_root),
             SOCIAL_AUTH_EDX_OAUTH2_KEY=payments_sso_values.get('id', ''),
             SOCIAL_AUTH_EDX_OAUTH2_SECRET=payments_sso_values.get('secret', ''),
             BACKEND_SERVICE_EDX_OAUTH2_KEY=payments_backend_values.get('id', ''),
-            BACKEND_SERVICE_EDX_OAUTH2_SECRET=payments_backend_values.get('secret', '')
+            BACKEND_SERVICE_EDX_OAUTH2_SECRET=payments_backend_values.get('secret', ''),
         )
         return oauth2_values
