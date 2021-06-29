@@ -15,6 +15,7 @@ CLIENT_SITE_SETUP_FIELDS = [
     'lms_site',
     'wordpress_site',
     'payments_site',
+    'discovery_site',
     'edly_slug',
     'session_cookie_domain',
     'branding',

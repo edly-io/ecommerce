@@ -199,7 +199,10 @@ def get_payments_site_configuration(request_data):
         'EDLY_COPYRIGHT_TEXT': DEFAULT_EDLY_COPYRIGHT_TEXT,
         'CONTACT_MAILING_ADDRESS': request_data.get('contact_mailing_address', ''),
         'DISABLE_PAID_COURSE_MODES': request_data.get('disable_course_modes', False),
-        'PANEL_NOTIFICATIONS_BASE_URL': request_data.get('panel_notification_base_url', ''),
+        'PANEL_NOTIFICATIONS_BASE_URL': '{protocol}://{panel_base_domain}'.format(
+            protocol=protocol,
+            panel_base_domain=request_data.get('panel_notification_base_url', ''),
+        ),
         'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
         'COLORS': colors,
         'FONTS': json.loads(request_data.get('fonts', "{}")),
