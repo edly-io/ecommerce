@@ -203,7 +203,9 @@ class EdlyAppHelperMethodsTests(TestCase):
             'EDLY_COPYRIGHT_TEXT': DEFAULT_EDLY_COPYRIGHT_TEXT,
             'CONTACT_MAILING_ADDRESS': self.request_data.get('contact_mailing_address', ''),
             'DISABLE_PAID_COURSE_MODES': self.request_data.get('disable_course_modes', False),
-            'PANEL_NOTIFICATIONS_BASE_URL': self.request_data.get('panel_notification_base_url', ''),
+            'PANEL_NOTIFICATIONS_BASE_URL': 'https://{panel_base_domain}'.format(
+                panel_base_domain=self.request_data.get('panel_notification_base_url', ''),
+            ),
             'SERVICES_NOTIFICATIONS_COOKIE_EXPIRY': DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY,
             'COLORS': json.loads(self.request_data.get('colors', "{}")),
             'FONTS': json.loads(self.request_data.get('fonts', "{}")),
