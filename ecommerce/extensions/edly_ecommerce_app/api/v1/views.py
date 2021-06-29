@@ -142,11 +142,14 @@ class EdlySiteViewSet(APIView):
         """
         Process client sites setup and update configurations.
         """
+        protocol = self.request.data.get('protocol', 'https')
         edly_slug = self.request.data.get('edly_slug', '')
         payments_base = self.request.data.get('payments_site', '')
+        base_cookie_domain = self.request.data.get('session_cookie_domain', '')
+        discovery_site = self.request.data.get('discovery_site', '')
         theme_dir_name = self.request.data.get('theme_dir_name', 'st-lutherx-ecommerce')
         lms_url_root = '{protocol}://{lms_url_root}'.format(
-            protocol=self.request.data.get('protocol', 'https'),
+            protocol=protocol,
             lms_url_root=self.request.data.get('lms_site', '')
         )
         payments_site, __ = Site.objects.update_or_create(domain=payments_base, defaults=dict(name=payments_base))
@@ -156,6 +159,11 @@ class EdlySiteViewSet(APIView):
             partner=payments_partner,
             defaults=dict(
                 lms_url_root=lms_url_root,
+                base_cookie_domain=base_cookie_domain,
+                discovery_api_url='{protocol}://{discovery_root}/api/v1/'.format(
+                    protocol=protocol,
+                    discovery_root=discovery_site
+                ),
                 payment_processors=get_payment_processors_names(self.request.data),
                 oauth_settings=self.get_oauth2_credentials(),
                 edly_client_theme_branding_settings=get_payments_site_configuration(self.request.data)
