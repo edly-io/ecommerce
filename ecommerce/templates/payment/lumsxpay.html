@@ -1,0 +1,46 @@
+{% load compress %}
+{% load static %}
+
+<div id="lumsxpay" class="placeholder">
+    <div class="col-md-12" style="margin-bottom: 30px;">
+        <div class="col-md-12">
+            <div style="margin: 40px;">
+                <a type="button" class="btn btn-primary" target="_blank" href="{{ client_side_payment_processor.url_for_online_payment }}">Pay
+                    Voucher Online</a>
+                <a type="button" class="btn btn-primary required" target="_blank"
+                   href="{{ client_side_payment_processor.url_for_download_voucher }}">Download
+                    Challan Voucher</a>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <p>
+                <span class="required"></span>
+                Download the Challan Voucher for payments through, Cash, Pay Order, Bank Drafts, ATM machines,
+                Internet banking portals at selected banks in Pakistan
+            </p>
+        </div>
+    </div>
+
+    <div class="col-md-12" style="margin-top: 80px;">
+        <h3><strong>Next Steps</strong></h3>
+        <h5>
+            A confirmation email will be sent to you when you have made the payment and been enrolled in the course.
+            Please follow the steps in this email to access the course. </br></br>
+            Alternatively, after making the payment you go to your Dashboard to view the course. Please note that it
+            may take up to {{ client_side_payment_processor.CRON_DELAY_TIME }} minutes for your course to be made available to you. Kindly contact
+            <a>{{ client_side_payment_processor.support_email }}</a> for further queries
+        </h5>
+    </div>
+    <div class="col-md-12">
+        <a type="button" class="btn btn-primary" href="{{ client_side_payment_processor.lms_dashboard_url }}">View my courses</a>
+    </div>
+</div>
+
+<script>
+    //$('#paymentForm').remove();
+    $('#card-holder-information').remove();
+    $('#payment-information .form-input-elements').remove();
+    //$('.basket-client-side .container').append($('#lumsxpay'));
+    $('#payment-information').append($('#lumsxpay'));
+    $('.order-details-region p').replaceWith("<p>Payment clearance to the course might take upto {{ client_side_payment_processor.CRON_DELAY_TIME }} minutes.</p>");
+</script>
