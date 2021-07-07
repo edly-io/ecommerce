@@ -377,6 +377,7 @@ DJANGO_APPS = [
     'rest_framework_swagger',
     'django_sites_extensions',
     'corsheaders',
+    'allowedsites',
 ]
 
 # Apps specific to this project go here.

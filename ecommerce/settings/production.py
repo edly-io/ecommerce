@@ -106,3 +106,12 @@ EDLY_WORDPRESS_URL = config_from_yaml.get('EDLY_WORDPRESS_URL', EDLY_WORDPRESS_U
 
 # Edly configuration
 EDLY_COOKIE_SECRET_KEY = config_from_yaml.get('EDLY_COOKIE_SECRET_KEY', EDLY_COOKIE_SECRET_KEY)
+
+from allowedsites import AllowedSites
+ALLOWED_HOSTS = AllowedSites(defaults=(
+        'panel.edly.io',
+        'panel.backend.edly.io',
+        '.edly.io',
+        'ecommerce.healthcheck.local'
+    )
+)
