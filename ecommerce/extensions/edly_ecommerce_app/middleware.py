@@ -33,8 +33,11 @@ class SettingsOverrideMiddleware(MiddlewareMixin):
             if django_settings_override_values:
                 for config_key, config_value in django_settings_override_values.items():
                     current_value = getattr(settings, config_key, None)
-                    if _should_extend_config(current_value, config_value):
-                        current_value.extend(config_value)
+                    if isinstance(current_value, list) and isinstance(config_value, list):
+                        current_value = current_value.extend(config_value)
+                        setattr(settings, config_key, current_value)
+                    elif isinstance(current_value, tuple) and isinstance(config_value, tuple):
+                        current_value = current_value + config_value
                         setattr(settings, config_key, current_value)
                     else:
                         setattr(settings, config_key, config_value)
