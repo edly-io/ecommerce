@@ -111,6 +111,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     subscription_number_of_courses = serializers.SerializerMethodField()
     subscription_duration_value = serializers.SerializerMethodField()
     subscription_duration_unit = serializers.SerializerMethodField()
+    subscription_display_order = serializers.SerializerMethodField()
 
     def get_subscription_type(self, product):
         """
@@ -164,6 +165,12 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             return product.attribute_values.get(attribute__code='subscription_duration_unit').value.option
 
         return None
+
+    def get_subscription_display_order(self, product):
+        """
+        Get subscription display order.
+        """
+        return product.attr.subscription_display_order
 
     def to_internal_value(self, obj):
         """
@@ -336,5 +343,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'title', 'description', 'date_created', 'date_updated',
             'subscription_type', 'subscription_status', 'subscription_actual_price', 'subscription_price',
-            'subscription_number_of_courses', 'subscription_duration_value', 'subscription_duration_unit'
+            'subscription_number_of_courses', 'subscription_duration_value', 'subscription_duration_unit',
+            'subscription_display_order'
         )
