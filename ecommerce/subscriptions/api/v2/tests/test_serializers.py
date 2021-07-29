@@ -104,6 +104,7 @@ class SubscriptionSerializerTests(SubscriptionProductMixin, TestCase):
             'subscription_actual_price': subscription.attr.subscription_actual_price,
             'subscription_price': subscription.attr.subscription_price,
             'subscription_status': subscription.attr.subscription_status,
+            'subscription_display_order': subscription.attr.subscription_display_order,
         }
         expected_data.update(conditional_attribute_values[subscription_type](subscription))
 
