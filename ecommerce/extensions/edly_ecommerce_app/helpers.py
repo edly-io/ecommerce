@@ -39,7 +39,7 @@ def encode_edly_user_info_cookie(cookie_data):
     return jwt.encode(cookie_data, settings.EDLY_COOKIE_SECRET_KEY, algorithm=settings.EDLY_JWT_ALGORITHM).decode('utf-8')
 
 
-def get_edx_org_from_edly_cookie(encoded_cookie_data):
+def get_edx_orgs_from_edly_cookie(encoded_cookie_data):
     """
     Returns "edx-org" value from the "edly-user-info" cookie.
 
@@ -54,7 +54,7 @@ def get_edx_org_from_edly_cookie(encoded_cookie_data):
         return ''
 
     decoded_cookie_data = decode_edly_user_info_cookie(encoded_cookie_data)
-    return decoded_cookie_data.get('edx-org', None)
+    return decoded_cookie_data.get('edx-orgs', None)
 
 
 def is_valid_site_course(course_id, request):
@@ -68,14 +68,13 @@ def is_valid_site_course(course_id, request):
     Returns:
         boolean
     """
-    partner_short_code = request.site.partner.short_code
     course_key = CourseKey.from_string(course_id)
-    edx_org_short_name = get_edx_org_from_edly_cookie(
+    edx_orgs_short_names = get_edx_orgs_from_edly_cookie(
         request.COOKIES.get(settings.EDLY_USER_INFO_COOKIE_NAME, None)
     )
     # We assume that the "short_code" value of ECOM site partner will always
     # be the same as "short_name" value of its related edx organization in LMS
-    if edx_org_short_name and course_key.org == edx_org_short_name and course_key.org == partner_short_code:
+    if edx_orgs_short_names and course_key.org in edx_orgs_short_names:
         return True
 
     return False
@@ -98,9 +97,9 @@ def user_has_edly_organization_access(request):
     """
     partner_short_code = request.site.partner.short_code
     edly_user_info_cookie = request.COOKIES.get(settings.EDLY_USER_INFO_COOKIE_NAME, None)
-    edx_org_short_name = get_edx_org_from_edly_cookie(edly_user_info_cookie)
+    edx_orgs_short_names = get_edx_orgs_from_edly_cookie(edly_user_info_cookie)
 
-    return partner_short_code == edx_org_short_name
+    return partner_short_code in edx_orgs_short_names
 
 
 def user_is_course_creator(request):
