@@ -41,7 +41,7 @@ def encode_edly_user_info_cookie(cookie_data):
 
 def get_edx_orgs_from_edly_cookie(encoded_cookie_data):
     """
-    Returns "edx-org" value from the "edly-user-info" cookie.
+    Returns "edx-orgs" value from the "edly-user-info" cookie.
 
     Arguments:
         encoded_cookie_data (dict): Edly user info cookie JWT encoded string.
