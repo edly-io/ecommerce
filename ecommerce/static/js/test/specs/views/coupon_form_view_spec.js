@@ -237,7 +237,7 @@ define([
                     view.$('[name=code_type]').val('enrollment').trigger('change');
                     expect(view.$('.benefit-addon').html()).toBe('%');
                     view.$('[name=benefit_type]').val('Absolute').trigger('change');
-                    expect(view.$('.benefit-addon').html()).toBe('$');
+                    expect(view.$('.benefit-addon').html()).toBe('£');
                 });
 
                 it('should toggle limit on the benefit value input', function() {
