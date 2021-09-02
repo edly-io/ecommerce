@@ -246,12 +246,12 @@ define([
                     disclaimerPrefix;
 
                 // when the price value has a USD prefix, replace it with a $
-                price = price.replace('USD', '$');
+                price = price.replace('GBP', '£');
                 disclaimerPrefix = '* This total contains an approximate conversion. You will be charged ';
 
                 if (BasketPage.isValidLocalCurrencyCookie(countryData) && countryData.countryCode !== 'USA') {
                     $('<span>').attr('class', 'price-disclaimer')
-                        .text(gettext(disclaimerPrefix) + price + ' USD.')
+                        .text(gettext(disclaimerPrefix) + price + ' GBP.')
                         .appendTo('div[aria-labelledby="order-details-region"]');
                 }
             },
@@ -274,7 +274,7 @@ define([
             generateLocalPriceText: function(usdPriceText) {
                 // Assumes price value is prefixed by $ or USD with optional sign followed by optional string
                 var localPriceText = usdPriceText,
-                    prefixMatch = localPriceText.match(/(\$|USD)?(([1-9][0-9]{0,2}(,[0-9]{3})*)|[0-9]+)?\.[0-9]{1,2}/),
+                    prefixMatch = localPriceText.match(/(\£|GBP)?(([1-9][0-9]{0,2}(,[0-9]{3})*)|[0-9]+)?\.[0-9]{1,2}/),
                     entireMatch,
                     groupMatch,
                     startIndex,
