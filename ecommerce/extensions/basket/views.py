@@ -11,6 +11,7 @@ import dateutil.parser
 import newrelic.agent
 import six
 import waffle
+from django.conf import settings
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -659,7 +660,7 @@ class PaymentApiLogicMixin(BasketLogicMixin):
         See https://github.com/django-oscar/django-oscar/blob/1.5.4/src/oscar/apps/basket/views.py#L92-L132
         for reference in how this is calculated by django-oscar.
         """
-        shipping_charge = Price('USD', excl_tax=Decimal(0), tax=Decimal(0))
+        shipping_charge = Price(settings.OSCAR_DEFAULT_CURRENCY, excl_tax=Decimal(0), tax=Decimal(0))
         return OrderTotalCalculator().calculate(self.request.basket, shipping_charge)
 
     def _serialize_context(self, context, lines_data):
