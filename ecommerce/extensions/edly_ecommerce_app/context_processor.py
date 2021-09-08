@@ -1,4 +1,5 @@
 from math import floor
+from django.conf import settings
 
 DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY = 180  # value in seconds
 DEFAULT_THEME_BRANDING_DICT = {
@@ -88,6 +89,25 @@ def edly_app_context(request):  # pylint: disable=unused-argument
             'payment_support_email': site_configuration.payment_support_email,
         }
     )
+
+    edly_context.update(
+        {
+            'currency': site_configuration.get_edly_configuration_value(
+                'OSCAR_DEFAULT_CURRENCY',
+                settings.OSCAR_DEFAULT_CURRENCY
+            )
+        }
+    )
+
+    edly_context.update(
+        {
+            'currency_symbol': site_configuration.get_edly_configuration_value(
+                'OSCAR_DEFAULT_CURRENCY_SYMBOL',
+                settings.OSCAR_DEFAULT_CURRENCY_SYMBOL
+            )
+        }
+    )
+
     return edly_context
 
 

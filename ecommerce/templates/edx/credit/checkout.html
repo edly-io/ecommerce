@@ -49,7 +49,7 @@
                                 {% if code %}
                                 <div class="col-sm-2 col-sm-offset-10 price text-left">
                                     <span>{% trans "Price:" as tmsg %}{{ tmsg | force_escape }}</span>
-                                    <span class="pull-right">$<span class="price"></span></span>
+                                    <span class="pull-right"><%= currency_symbol %><span class="price"></span></span>
                                 </div>
                                 <div class="col-sm-2 col-sm-offset-10 discount text-left">
                                     <span>{% trans "Discount:" as tmsg %}{{ tmsg | force_escape }} </span>
@@ -58,7 +58,7 @@
                                 {% endif %}
                                 <div class="col-sm-2 col-sm-offset-10  total-price text-left">
                                     <span>{% trans "Total:" as tmsg %}{{ tmsg | force_escape }} <span>
-                                    <span class="pull-right">$<span class="total-price"></span></span>
+                                    <span class="pull-right"><%= currency_symbol %><span class="total-price"></span></span>
                                 </div>
                             </div>
                         </div>

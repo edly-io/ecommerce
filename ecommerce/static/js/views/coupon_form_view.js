@@ -391,7 +391,7 @@ define([
                 if (val === 'Percentage') {
                     icon = '%';
                 } else if (val === 'Absolute') {
-                    icon = '$';
+                    icon = currency_symbol;
                 }
                 return icon;
             },
