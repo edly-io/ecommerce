@@ -14,7 +14,7 @@
 
             <p>
                 <strong>{% trans "Credits: " as tmsg %}{{ tmsg | force_escape }}</strong> {{ provider.credit_hours }}<br>
-                <strong>{% trans "Price: " as tmsg %}{{ tmsg | force_escape }}</strong> ${{ provider.price }}
+                <strong>{% trans "Price: " as tmsg %}{{ tmsg | force_escape }}</strong> <%= currency_symbol %>{{ provider.price }}
             </p>
 
             <p>
