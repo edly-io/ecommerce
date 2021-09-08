@@ -92,7 +92,7 @@ def edly_app_context(request):  # pylint: disable=unused-argument
 
     edly_context.update(
         {
-            'default_currency': site_configuration.get_edly_configuration_value(
+            'currency': site_configuration.get_edly_configuration_value(
                 'OSCAR_DEFAULT_CURRENCY',
                 settings.OSCAR_DEFAULT_CURRENCY
             )
@@ -101,7 +101,7 @@ def edly_app_context(request):  # pylint: disable=unused-argument
 
     edly_context.update(
         {
-            'default_currency_symbol': site_configuration.get_edly_configuration_value(
+            'currency_symbol': site_configuration.get_edly_configuration_value(
                 'OSCAR_DEFAULT_CURRENCY_SYMBOL',
                 settings.OSCAR_DEFAULT_CURRENCY_SYMBOL
             )
