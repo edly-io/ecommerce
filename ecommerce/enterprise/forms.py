@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import decimal
 
 from django import forms
+from django.conf import settings
 from django.db.models import Count, Max, Sum
 from django.forms.utils import ErrorList
 from django.utils.translation import ugettext_lazy as _
@@ -54,9 +55,9 @@ class EnterpriseOfferForm(forms.ModelForm):
         help_texts = {
             'end_datetime': '',
             'max_global_applications': _('The maximum number of enrollments that can redeem this offer.'),
-            'max_discount': _('The maximum USD dollar amount that can be redeemed by this offer.'),
+            'max_discount': _('The maximum {currency} amount that can be redeemed by this offer.'.format(currency=settings.OSCAR_DEFAULT_CURRENCY)),
             'max_user_applications': _('The maximum number of enrollments, by a user, that can redeem this offer.'),
-            'max_user_discount': _('The maximum USD dollar amount that can be redeemed using this offer by a user.'),
+            'max_user_discount': _('The maximum {currency} amount that can be redeemed using this offer by a user.'.format(currency=settings.OSCAR_DEFAULT_CURRENCY)),
         }
         labels = {
             'start_datetime': _('Start Date'),
