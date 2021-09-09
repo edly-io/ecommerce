@@ -41,7 +41,7 @@ define([
                     price = null;
 
                 if (this.model.get('price') !== '0.00') {
-                    price = _s.sprintf('$%s', this.model.get('price'));
+                    price = _s.sprintf(currency_symbol+'%s', this.model.get('price'));
                 }
 
                 templateData = {
