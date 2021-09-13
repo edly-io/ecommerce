@@ -37,7 +37,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         build renew subscription url for a given subscription.
         """
         return '{root_url}?subscription_id={subscription_id}'.format(
-            root_url=reverse('api:v2:subscriptions-renew-subscription-list'),
+            root_url=reverse('api:v2:subscriptions-renew-subscription'),
             subscription_id=subscription_id
         )
 
@@ -47,8 +47,9 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         """
         self.create_subscription(stockrecords__partner=self.site.partner)
         expected_keys = [
-            'id', 'title', 'description', 'date_created', 'subscription_type', 'subscription_actual_price', 'subscription_price',
-            'subscription_status', 'display_order', 'partner_sku', 'is_course_payments_enabled'
+            'id', 'title', 'description', 'date_created', 'subscription_type', 'subscription_actual_price',
+            'subscription_price', 'subscription_status', 'display_order', 'partner_sku', 'is_course_payments_enabled',
+            'subscription_currency', 'subscription_currency_code'
         ]
         request_url = reverse('api:v2:subscriptions-list')
         response = self.client.get(request_url)
@@ -90,6 +91,8 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
             'subscription_type': LIMITED_ACCESS,
             'subscription_actual_price': 100.00,
             'subscription_price': 50.00,
+            'subscription_currency': 'USD',
+            'subscription_currency_code': '$',
             'subscription_active_status': 'true',
             'subscription_number_of_courses': 4,
             'subscription_duration_value': 4,
@@ -115,6 +118,8 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
             'subscription_type': LIMITED_ACCESS,
             'subscription_actual_price': 100.00,
             'subscription_price': 50.00,
+            'subscription_currency': 'USD',
+            'subscription_currency_code': '$',
             'subscription_active_status': 'inactive',
             'subscription_number_of_courses': 4,
             'subscription_duration_value': 4,
@@ -134,7 +139,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         """
         Verify that subscriptions API does not toggle course payments flag without authentication.
         """
-        request_url = reverse('api:v2:subscriptions-toggle-course-payments-list')
+        request_url = reverse('api:v2:subscriptions-toggle-course-payments')
         response = self.client.post(request_url)
         self.assertEqual(response.status_code, 401)
 
@@ -143,7 +148,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         Verify that subscriptions API correctly toggles course payments flag with authentication.
         """
         self._login_as_user(is_staff=True)
-        request_url = reverse('api:v2:subscriptions-toggle-course-payments-list')
+        request_url = reverse('api:v2:subscriptions-toggle-course-payments')
         expected_data = {
             'course_payments': not self.site.siteconfiguration.enable_course_payments
         }
@@ -169,7 +174,7 @@ class SubscriptionViewSetTests(SubscriptionProductMixin, TestCase):
         Verify that subscriptions API returns correct response on missing subscription id.
         """
         self._login_as_user(is_staff=True)
-        request_url = reverse('api:v2:subscriptions-renew-subscription-list')
+        request_url = reverse('api:v2:subscriptions-renew-subscription')
 
         expected_data = dict(error='Subscription ID not provided.')
         response = self.client.get(request_url)
