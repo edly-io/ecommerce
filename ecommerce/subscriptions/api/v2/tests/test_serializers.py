@@ -3,6 +3,7 @@ Unit tests for subscription API serializers.
 """
 import ddt
 from django.conf import settings
+
 from ecommerce.subscriptions.api.v2.serializers import (
     SubscriptionListSerializer,
     SubscriptionSerializer,
@@ -12,7 +13,6 @@ from ecommerce.subscriptions.api.v2.tests.constants import (
     FULL_ACCESS_TIME_PERIOD,
     LIFETIME_ACCESS,
     LIMITED_ACCESS,
-    SUBSCRIPTION_TYPES,
 )
 from ecommerce.subscriptions.api.v2.tests.mixins import SubscriptionProductMixin
 from ecommerce.tests.testcases import TestCase
