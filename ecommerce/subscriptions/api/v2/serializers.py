@@ -41,6 +41,8 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
     subscription_type = serializers.SerializerMethodField()
     subscription_actual_price = serializers.SerializerMethodField()
     subscription_price = serializers.SerializerMethodField()
+    subscription_currency = serializers.SerializerMethodField()
+    subscription_currency_code = serializers.SerializerMethodField()
     subscription_status = serializers.SerializerMethodField()
     partner_sku = serializers.SerializerMethodField()
     display_order = serializers.SerializerMethodField()
@@ -69,6 +71,18 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
         Get subscription price for a subscription.
         """
         return product.attr.subscription_price
+
+    def get_subscription_currency(self, product):
+        """
+        Get subscription currency.
+        """
+        return settings.OSCAR_DEFAULT_CURRENCY
+
+    def get_subscription_currency_code(self, product):
+        """
+        Get subscription currency code.
+        """
+        return settings.OSCAR_DEFAULT_CURRENCY_SYMBOL
 
     def get_subscription_status(self, product):
         """
@@ -99,7 +113,8 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'title', 'description', 'date_created', 'subscription_type', 'subscription_actual_price', 'subscription_price',
-            'subscription_status', 'display_order', 'partner_sku', 'is_course_payments_enabled'
+            'subscription_status', 'display_order', 'partner_sku', 'is_course_payments_enabled',
+            'subscription_currency', 'subscription_currency_code',
         ]
 
 
@@ -107,6 +122,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     subscription_type = serializers.SerializerMethodField()
     subscription_actual_price = serializers.SerializerMethodField()
     subscription_price = serializers.SerializerMethodField()
+    subscription_currency = serializers.SerializerMethodField()
+    subscription_currency_code = serializers.SerializerMethodField()
     subscription_status = serializers.SerializerMethodField()
     subscription_number_of_courses = serializers.SerializerMethodField()
     subscription_duration_value = serializers.SerializerMethodField()
@@ -130,6 +147,18 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         Get subscription price.
         """
         return product.attr.subscription_price
+
+    def get_subscription_currency(self, product):
+        """
+        Get subscription currency.
+        """
+        return settings.OSCAR_DEFAULT_CURRENCY
+
+    def get_subscription_currency_code(self, product):
+        """
+        Get subscription currency code.
+        """
+        return settings.OSCAR_DEFAULT_CURRENCY_SYMBOL
 
     def get_subscription_status(self, product):
         """
@@ -344,5 +373,5 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'date_created', 'date_updated',
             'subscription_type', 'subscription_status', 'subscription_actual_price', 'subscription_price',
             'subscription_number_of_courses', 'subscription_duration_value', 'subscription_duration_unit',
-            'subscription_display_order'
+            'subscription_display_order', 'subscription_currency', 'subscription_currency_code',
         )

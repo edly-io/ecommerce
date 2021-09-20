@@ -2,6 +2,7 @@
 Unit tests for subscription API serializers.
 """
 import ddt
+from django.conf import settings
 
 from ecommerce.subscriptions.api.v2.serializers import (
     SubscriptionListSerializer,
@@ -12,7 +13,6 @@ from ecommerce.subscriptions.api.v2.tests.constants import (
     FULL_ACCESS_TIME_PERIOD,
     LIFETIME_ACCESS,
     LIMITED_ACCESS,
-    SUBSCRIPTION_TYPES,
 )
 from ecommerce.subscriptions.api.v2.tests.mixins import SubscriptionProductMixin
 from ecommerce.tests.testcases import TestCase
@@ -41,6 +41,8 @@ class SubscriptionListSerializerTests(SubscriptionProductMixin, TestCase):
             'subscription_type': subscription.attr.subscription_type.option,
             'subscription_actual_price': subscription.attr.subscription_actual_price,
             'subscription_price': subscription.attr.subscription_price,
+            'subscription_currency': settings.OSCAR_DEFAULT_CURRENCY,
+            'subscription_currency_code': settings.OSCAR_DEFAULT_CURRENCY_SYMBOL,
             'subscription_status': subscription.attr.subscription_status,
             'display_order': subscription.attr.subscription_display_order,
             'partner_sku': subscription.stockrecords.first().partner_sku,
@@ -103,6 +105,8 @@ class SubscriptionSerializerTests(SubscriptionProductMixin, TestCase):
             'subscription_type': subscription_type,
             'subscription_actual_price': subscription.attr.subscription_actual_price,
             'subscription_price': subscription.attr.subscription_price,
+            'subscription_currency': settings.OSCAR_DEFAULT_CURRENCY,
+            'subscription_currency_code': settings.OSCAR_DEFAULT_CURRENCY_SYMBOL,
             'subscription_status': subscription.attr.subscription_status,
             'subscription_display_order': subscription.attr.subscription_display_order,
         }
