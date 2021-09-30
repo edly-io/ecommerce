@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from decimal import Decimal
 
+from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -11,6 +12,7 @@ from jsonfield import JSONField
 from oscar.apps.payment.abstract_models import AbstractSource
 from solo.models import SingletonModel
 
+from ecommerce.core.models import User
 from ecommerce.extensions.payment.constants import CARD_TYPE_CHOICES
 
 
@@ -120,6 +122,17 @@ class EnterpriseContractMetadata(TimeStampedModel):
             raise ValidationError(_(
                 "Percentage greater than 100 not allowed."
             ))
+
+
+class CowpayPaymentRecord(TimeStampedModel):
+    """
+    Payment record to get basket and details from faywry or credit card payments in receipt.
+    """
+    payment_gateway_reference_id = models.CharField(primary_key=True, max_length=255)
+    merchant_reference_id = models.CharField(max_length=512)
+    basket = models.ForeignKey('basket.Basket', on_delete=models.CASCADE)
+    site = models.ForeignKey(Site, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
 # noinspection PyUnresolvedReferences

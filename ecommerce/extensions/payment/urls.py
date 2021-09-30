@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from django.conf.urls import include, url
 
-from ecommerce.extensions.payment.views import PaymentFailedView, SDNFailure, authorizenet, cybersource, paypal, stripe
+from ecommerce.extensions.payment.views import PaymentFailedView, SDNFailure, authorizenet, cybersource, paypal, stripe, cowpay
 
 CYBERSOURCE_APPLE_PAY_URLS = [
     url(r'^authorize/$', cybersource.CybersourceApplePayAuthorizationView.as_view(), name='authorize'),
@@ -33,6 +33,12 @@ AUTHORIZENET_URLS = [
     url(r'^redirect/$', authorizenet.handle_redirection, name='redirect'),
 ]
 
+COWPAY_URLS = [
+    url(r'^submit/$', cowpay.CowpayFawrySubmitView.as_view(), name='submit'),
+    url(r'^receipt/$', cowpay.CowpayFawryReceiptView.as_view(), name='receipt'),
+    url(r'^execute/$', cowpay.CowpayExecutionView.as_view(), name='execute'),
+]
+
 urlpatterns = [
     url(r'^cybersource/', include((CYBERSOURCE_URLS, 'cybersource'))),
     url(r'^error/$', PaymentFailedView.as_view(), name='payment_error'),
@@ -40,4 +46,5 @@ urlpatterns = [
     url(r'^sdn/', include((SDN_URLS, 'sdn'))),
     url(r'^stripe/', include((STRIPE_URLS, 'stripe'))),
     url(r'^authorizenet/', include((AUTHORIZENET_URLS, 'authorizenet'))),
+    url(r'^cowpay/', include((COWPAY_URLS, 'cowpay'))),
 ]

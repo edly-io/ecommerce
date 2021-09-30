@@ -232,3 +232,90 @@ class StripeSubmitForm(forms.Form):
             Applicator().apply(basket, self.request.user, self.request)
 
         return basket
+
+
+class CowpayFawryPaymentForm(forms.Form):
+    """
+    Payment form with billing details.
+
+    This form captures the data necessary to complete a payment transaction. The current field constraints pertain
+    to CyberSource Silent Order POST, but should work nicely with other payment providers.
+    """
+
+    def __init__(self, user, request, *args, **kwargs):
+        super(CowpayFawryPaymentForm, self).__init__(*args, **kwargs)
+        self.request = request
+        self.basket_has_enrollment_code_product = any(
+            line.product.is_enrollment_code_product for line in self.request.basket.all_lines()
+        )
+        update_basket_queryset_filter(self, user)
+
+        self.helper = FormHelper(self)
+        self.helper.layout = Layout(
+            Div('basket'),
+            Div(
+                Div('customer_name'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-12'
+            ),
+            Div(
+                Div('customer_mobile'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-12'
+            ),
+            Div(
+                Div('customer_email'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-12'
+            ),
+        )
+        for bound_field in list(self):
+            if hasattr(bound_field, 'field') and bound_field.field.required:
+                self.fields[bound_field.name].label = _('{label} (required)').format(label=bound_field.label)
+                bound_field.field.widget.attrs['required'] = 'required'
+
+                if self.basket_has_enrollment_code_product and 'organization' not in self.fields:
+                    self.fields['organization'] = forms.CharField(max_length=60, label=_('Organization (required)'))
+                    organization_div = Div(
+                        Div(
+                            Div('organization'),
+                            HTML('<p class="help-block"></p>'),
+                            css_class='form-item col-md-6'
+                        ),
+                        css_class='row'
+                    )
+                    self.helper.layout.fields.insert(list(self.fields.keys()).index('last_name') + 1, organization_div)
+                    self.fields[PURCHASER_BEHALF_ATTRIBUTE] = forms.BooleanField(
+                        required=False,
+                        label=_('I am purchasing on behalf of my employer or other professional organization')
+                    )
+                    purchaser_div = Div(
+                        Div(
+                            Div(PURCHASER_BEHALF_ATTRIBUTE),
+                            HTML('<p class="help-block"></p>'),
+                            css_class='form-item col-md-12'
+                        ),
+                        css_class='row'
+                    )
+                    self.helper.layout.fields.insert(list(self.fields.keys()).index('organization') + 1, purchaser_div)
+
+    basket = forms.ModelChoiceField(
+        queryset=Basket.objects.all(),
+        widget=forms.HiddenInput(),
+        required=False,
+        error_messages={
+            'invalid_choice': _('There was a problem retrieving your basket. Refresh the page to try again.'),
+        }
+    )
+    customer_name = forms.CharField(max_length=60, label=_('Customer Name'))
+    customer_email = forms.CharField(max_length=60, label=_('Customer Email'))
+    customer_mobile = forms.CharField(max_length=60, label=_('Customer Mobile No.'))
+
+    def clean_basket(self):
+        basket = self.cleaned_data['basket']
+
+        if basket:
+            basket.strategy = self.request.strategy
+            Applicator().apply(basket, self.request.user, self.request)
+
+        return basket
