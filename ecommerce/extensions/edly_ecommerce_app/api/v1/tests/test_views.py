@@ -193,7 +193,7 @@ class EdlySiteViewSet(TestCase):
         """
         Test that the values are only update not created on multiple API calls.
         """
-        response = self.client.post(self.edly_sites_url, data=self.request_data)
+        response = self.client.post(self.edly_sites_url, data=self.request_data, format='json')
 
         assert response.status_code == status.HTTP_200_OK
         payments_site = Site.objects.get(domain=self.request_data.get('payments_site', ''))
@@ -201,7 +201,14 @@ class EdlySiteViewSet(TestCase):
 
         sites_count = Site.objects.all().count()
         partners_count = Partner.objects.all().count()
-        response = self.client.post(self.edly_sites_url, data=self.request_data)
+        old_domain = self.request_data.get('payments_site')
+        self.request_data['payments_site'] = 'new.edx.devstack.lms:18130'
+        self.request_data['old_domain_values'] = dict(payments_site=old_domain)
+        response = self.client.post(
+            self.edly_sites_url,
+            data=json.dumps(self.request_data),
+            content_type='application/json',
+        )
 
         assert response.status_code == status.HTTP_200_OK
         assert Site.objects.all().count() == sites_count
