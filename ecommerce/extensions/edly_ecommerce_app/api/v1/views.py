@@ -72,9 +72,9 @@ class SiteThemesActions(APIView):
             )
 
 
-class UserSessionInfo(APIView):
+class CSRFTokenInfo(APIView):
     """
-    Get User Session Info
+    Get User CSRF Token Info
     """
 
     authentication_classes = (SessionAuthentication,)

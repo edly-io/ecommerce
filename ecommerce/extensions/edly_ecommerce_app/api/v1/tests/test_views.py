@@ -73,21 +73,21 @@ class SiteThemesActionsView(TestCase):
         assert response.json()[0]['theme_dir_name'] == edly_theme_data['theme_dir_name']
 
 
-class UserSessionInfoView(TestCase):
+class CSRFTokenInfoView(TestCase):
     """
-    Unit test for user session.
+    Unit test for user csrf token.
     """
 
     def setUp(self):
         """
         Prepare environment for tests.
         """
-        super(UserSessionInfoView, self).setUp()
+        super(CSRFTokenInfoView, self).setUp()
         user = self.create_user()
         self.site_theme = SiteThemeFactory()
         self.client = Client()
         self.client.login(username=user.username, password=self.password)
-        self.session_url = reverse('edly_ecommerce_api:get_user_session_info')
+        self.session_url = reverse('edly_ecommerce_api:get_csrf_token')
 
     def test_without_authentication(self):
         """
@@ -97,7 +97,7 @@ class UserSessionInfoView(TestCase):
         response = self.client.get(self.session_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_get_user_session_info(self):
+    def test_get_csrf_token(self):
         """
         Verify response on list view.
         """
@@ -125,6 +125,7 @@ class EdlySiteViewSet(TestCase):
             lms_site='edx.devstack.lms:18000',
             wordpress_site='edx.devstack.lms',
             payments_site='edx.devstack.lms:18130',
+            discovery_site='edx.devstack.lms:18381',
             edly_slug='edly',
             session_cookie_domain='.devstack.lms',
             branding=json.dumps(dict(logo='http://edx.devstack.lms:18000/media/logo.png')),
