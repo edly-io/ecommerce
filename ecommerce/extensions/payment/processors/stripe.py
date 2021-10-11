@@ -56,12 +56,18 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
         currency = basket.currency
 
         # NOTE: In the future we may want to get/create a Customer. See https://stripe.com/docs/api#customers.
+        product = basket.all_lines().first().product
+        description = '{order_number} - {organization}: {title}'.format(
+            order_number=order_number,
+            organization = basket.site.partner.name,
+            title=product.title
+        )
         try:
             charge = stripe.Charge.create(
                 amount=self._get_basket_amount(basket),
                 currency=currency,
                 source=token,
-                description=order_number,
+                description=description,
                 metadata={'order_number': order_number}
             )
             transaction_id = charge.id
