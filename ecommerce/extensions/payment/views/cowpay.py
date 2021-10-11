@@ -3,6 +3,7 @@ Views for interacting with the cowpay fawry payment processor.
 """
 from __future__ import absolute_import, unicode_literals
 from datetime import date
+import json
 import logging
 from urllib.parse import urlencode
 
@@ -19,6 +20,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 from django.urls import reverse
 
+from ecommerce.core.models import User
 from ecommerce.extensions.basket.utils import basket_add_organization_attribute
 from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
 from ecommerce.extensions.checkout.utils import get_receipt_page_url
@@ -165,26 +167,38 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         This view will be called by Cowpay to handle order placement and fulfillment.
         """
         data = request.POST.dict()
+        if not data:
+            data = json.loads(request.body.decode('utf8').replace("'", '"'))
+
+        if not data['payment_gateway_reference_id']:
+            logger.warning('No execution step can be carried out until payment is successful')
+            return JsonResponse({'message': 'Payment has not been completed yet.'}, status=200)
+
+        user = request.user if request.user.is_authenticated else User.objects.get(id=data['customer_merchant_profile_id'])
+        data['user'] = user.id
+
         try:
             payment_record = CowpayPaymentRecord.objects.get(payment_gateway_reference_id=data['payment_gateway_reference_id'])
             basket = payment_record.basket
         except CowpayPaymentRecord.DoesNotExist:
-            basket = self.request.basket
+            basket = user.baskets.filter(site=request.site, lines__isnull=False).last()
 
         basket.strategy = request.strategy
         Applicator().apply(basket, request.user, request)
+        logger.info('Basket to be used:%s with amount:%s and number of lines:%d', basket.id, basket.total_incl_tax, basket.num_lines)
 
         try:
-            data['user'] = request.user.id
             self.handle_payment(data, basket)
+            logger.info('Successfully handled cowpay payment for basket [%d]', basket.id)
         except (PaymentError, Exception) as ex:
             logger.exception('An error occurred while processing the Cowpay payment for basket [%d]. The exception was %s', basket.id, ex)
             return JsonResponse({}, status=400)
 
         try:
             order = self.create_order(request, basket)
+            logger.info('Successfully handled cowpay order placement for basket [%d]', basket.id)
         except Exception as ex:                     # pylint: disable=broad-except
-            logger.exception('An error occurred while processing the Cowpay payment for basket [%d]. The exception was %s', basket.id, ex)
+            logger.exception('An error occurred while processing the Cowpay order creation for basket [%d]. The exception was %s', basket.id, ex)
             return JsonResponse({}, status=400)
 
         self.handle_post_order(order)
