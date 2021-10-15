@@ -180,7 +180,7 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         Applicator().apply(basket, request.user, request)
 
         try:
-            data['user'] = request.user.id
+            data['user'] = request.user.id if request.user.is_authenticated else data['customer_merchant_profile_id']
             self.handle_payment(data, basket)
         except (PaymentError, Exception) as ex:
             logger.exception('An error occurred while processing the Cowpay payment for basket [%d]. The exception was %s', basket.id, ex)
