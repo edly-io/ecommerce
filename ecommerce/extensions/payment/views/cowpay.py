@@ -3,6 +3,7 @@ Views for interacting with the cowpay fawry payment processor.
 """
 from __future__ import absolute_import, unicode_literals
 from datetime import date
+import json
 import logging
 from urllib.parse import urlencode
 
@@ -165,6 +166,8 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         This view will be called by Cowpay to handle order placement and fulfillment.
         """
         data = request.POST.dict()
+        if not data:
+            data = json.loads(request.body)
         try:
             payment_record = CowpayPaymentRecord.objects.get(payment_gateway_reference_id=data['payment_gateway_reference_id'])
             basket = payment_record.basket
