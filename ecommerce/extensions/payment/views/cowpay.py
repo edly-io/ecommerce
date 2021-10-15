@@ -170,7 +170,7 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         if not data:
             data = json.loads(request.body.decode('utf8').replace("'", '"'))
 
-        user = request.user if request.user.is_authenticated else User.objects.get(id='customer_merchant_profile_id')
+        user = request.user if request.user.is_authenticated else User.objects.get(id=data['customer_merchant_profile_id]')
         data['user'] = user.id
 
         try:
