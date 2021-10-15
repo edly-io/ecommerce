@@ -167,7 +167,8 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         """
         data = request.POST.dict()
         if not data:
-            data = json.loads(request.body)
+            data = json.loads(request.body.decode('utf8').replace("'", '"'))
+
         try:
             payment_record = CowpayPaymentRecord.objects.get(payment_gateway_reference_id=data['payment_gateway_reference_id'])
             basket = payment_record.basket
