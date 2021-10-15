@@ -171,28 +171,32 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
             data = json.loads(request.body.decode('utf8').replace("'", '"'))
 
         if not data['payment_gateway_reference_id']:
+            logger.warning('No execution step can be carried out until payment is successful')
             return JsonResponse({'message': 'Payment has not been completed yet.'}, status=200)
 
-        user = request.user if request.user.is_authenticated else User.objects.get(id=data['customer_merchant_profile_id]'])
+        user = request.user if request.user.is_authenticated else User.objects.get(id=data['customer_merchant_profile_id'])
         data['user'] = user.id
 
         try:
             payment_record = CowpayPaymentRecord.objects.get(payment_gateway_reference_id=data['payment_gateway_reference_id'])
             basket = payment_record.basket
         except CowpayPaymentRecord.DoesNotExist:
-            basket = user.baskets.last()
+            basket = user.baskets.filter(site=request.site, lines__isnull=True).last()
 
+        logger.info('Basket to be used:%s with amount:%s and number of lines:%d', basket.id, basket.total_incl_tax, basket.num_lines)
         basket.strategy = request.strategy
         Applicator().apply(basket, request.user, request)
 
         try:
             self.handle_payment(data, basket)
+            logger.info('Successfully handled cowpay payment')
         except (PaymentError, Exception) as ex:
             logger.exception('An error occurred while processing the Cowpay payment for basket [%d]. The exception was %s', basket.id, ex)
             return JsonResponse({}, status=400)
 
         try:
             order = self.create_order(request, basket)
+            logger.info('Successfully handled cowpay order placement')
         except Exception as ex:                     # pylint: disable=broad-except
             logger.exception('An error occurred while processing the Cowpay order creation for basket [%d]. The exception was %s', basket.id, ex)
             return JsonResponse({}, status=400)
