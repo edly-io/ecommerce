@@ -3,7 +3,6 @@ Views for interacting with the cowpay fawry payment processor.
 """
 from __future__ import absolute_import, unicode_literals
 from datetime import date
-from ecommerce.ecommerce.core.models import User
 import json
 import logging
 from urllib.parse import urlencode
@@ -21,6 +20,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 from django.urls import reverse
 
+from ecommerce.core.models import User
 from ecommerce.extensions.basket.utils import basket_add_organization_attribute
 from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
 from ecommerce.extensions.checkout.utils import get_receipt_page_url
