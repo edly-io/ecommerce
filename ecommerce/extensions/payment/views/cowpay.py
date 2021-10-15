@@ -175,6 +175,7 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         except CowpayPaymentRecord.DoesNotExist:
             basket = self.request.basket
 
+        basket.freeze()
         basket.strategy = request.strategy
         Applicator().apply(basket, request.user, request)
 
@@ -188,7 +189,7 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         try:
             order = self.create_order(request, basket)
         except Exception as ex:                     # pylint: disable=broad-except
-            logger.exception('An error occurred while processing the Cowpay payment for basket [%d]. The exception was %s', basket.id, ex)
+            logger.exception('An error occurred while processing the Cowpay order creation for basket [%d]. The exception was %s', basket.id, ex)
             return JsonResponse({}, status=400)
 
         self.handle_post_order(order)
