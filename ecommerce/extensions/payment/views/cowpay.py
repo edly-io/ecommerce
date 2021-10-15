@@ -170,6 +170,9 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         if not data:
             data = json.loads(request.body.decode('utf8').replace("'", '"'))
 
+        if not data['payment_gateway_reference_id']:
+            return JsonResponse({'message': 'Payment has not been completed yet.'}, status=200)
+
         user = request.user if request.user.is_authenticated else User.objects.get(id=data['customer_merchant_profile_id]'])
         data['user'] = user.id
 
@@ -177,10 +180,8 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
             payment_record = CowpayPaymentRecord.objects.get(payment_gateway_reference_id=data['payment_gateway_reference_id'])
             basket = payment_record.basket
         except CowpayPaymentRecord.DoesNotExist:
-            basket = self.request.basket
+            basket = user.baskets.last()
 
-        basket.owner = user
-        basket.freeze()
         basket.strategy = request.strategy
         Applicator().apply(basket, request.user, request)
 
