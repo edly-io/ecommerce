@@ -3,6 +3,7 @@ Views for interacting with the cowpay fawry payment processor.
 """
 from __future__ import absolute_import, unicode_literals
 from datetime import date
+from ecommerce.ecommerce.core.models import User
 import json
 import logging
 from urllib.parse import urlencode
@@ -169,18 +170,21 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         if not data:
             data = json.loads(request.body.decode('utf8').replace("'", '"'))
 
+        user = request.user if request.user.is_authenticated else User.objects.get('customer_merchant_profile_id')
+        data['user'] = user.id
+
         try:
             payment_record = CowpayPaymentRecord.objects.get(payment_gateway_reference_id=data['payment_gateway_reference_id'])
             basket = payment_record.basket
         except CowpayPaymentRecord.DoesNotExist:
             basket = self.request.basket
 
+        basket.owner = user
         basket.freeze()
         basket.strategy = request.strategy
         Applicator().apply(basket, request.user, request)
 
         try:
-            data['user'] = request.user.id if request.user.is_authenticated else data['customer_merchant_profile_id']
             self.handle_payment(data, basket)
         except (PaymentError, Exception) as ex:
             logger.exception('An error occurred while processing the Cowpay payment for basket [%d]. The exception was %s', basket.id, ex)
