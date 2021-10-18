@@ -181,11 +181,11 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
             payment_record = CowpayPaymentRecord.objects.get(payment_gateway_reference_id=data['payment_gateway_reference_id'])
             basket = payment_record.basket
         except CowpayPaymentRecord.DoesNotExist:
-            basket = user.baskets.filter(site=request.site, lines__isnull=True).last()
+            basket = user.baskets.filter(site=request.site, lines__isnull=False).last()
 
-        logger.info('Basket to be used:%s with amount:%s and number of lines:%d', basket.id, basket.total_incl_tax, basket.num_lines)
         basket.strategy = request.strategy
         Applicator().apply(basket, request.user, request)
+        logger.info('Basket to be used:%s with amount:%s and number of lines:%d', basket.id, basket.total_incl_tax, basket.num_lines)
 
         try:
             self.handle_payment(data, basket)
