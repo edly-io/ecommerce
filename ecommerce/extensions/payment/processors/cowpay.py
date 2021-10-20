@@ -8,6 +8,7 @@ from six.moves.urllib.parse import urljoin
 
 from oscar.apps.payment.exceptions import GatewayError
 
+from ecommerce.extensions.checkout.utils import get_receipt_page_url
 from ecommerce.extensions.payment.forms import CowpayFawryPaymentForm
 from ecommerce.extensions.payment.models import CowpayPaymentRecord
 from ecommerce.extensions.payment.processors import BaseClientSidePaymentProcessor, HandledProcessorResponse
@@ -95,6 +96,12 @@ class Cowpay(BaseClientSidePaymentProcessor):
             logger.exception('Unable to retrieve cowpay iframe token because %s', response.get('errors'))
 
         return response.get('token')
+
+    @property
+    def receipt_page_url(self):
+        site = self.request.site
+        basket = self.request.user.baskets.filter(site=site, lines__isnull=False).last()
+        return get_receipt_page_url(site.siteconfiguration, order_number=basket.order_number)
 
     def get_transaction_parameters(self, basket, request=None, **kwargs):
         cowpay_url = urljoin(self.base_url, '/api/v1/charge/fawry')
