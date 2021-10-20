@@ -12,6 +12,10 @@ define([
                 $cowpayButton = $('#payment-button-cowpay');
             this.postUrl = config.postUrl;
             $paymentForm.attr('action', config.postUrl);
+            const params = (new URL(window.location)).searchParams;
+            if (params.get('message_source') === 'cowpay' && params.get('payment_status') === 'PAID') {
+                window.location.href = config.receiptUrl;
+            }
 
             window.onmessage = function (e) {
                 console.log(e);
