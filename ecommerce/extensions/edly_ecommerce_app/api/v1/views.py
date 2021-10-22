@@ -145,6 +145,7 @@ class EdlySiteViewSet(APIView):
         protocol = self.request.data.get('protocol', 'https')
         edly_slug = self.request.data.get('edly_slug', '')
         payments_base = self.request.data.get('payments_site', '')
+        old_payments_base = self.request.data.get('old_domain_values', {}).get('payments_site', None)
         base_cookie_domain = self.request.data.get('session_cookie_domain', '')
         discovery_site = self.request.data.get('discovery_site', '')
         theme_dir_name = self.request.data.get('theme_dir_name', 'st-lutherx-ecommerce')
@@ -152,12 +153,16 @@ class EdlySiteViewSet(APIView):
             protocol=protocol,
             lms_url_root=self.request.data.get('lms_site', '')
         )
-        payments_site, __ = Site.objects.update_or_create(domain=payments_base, defaults=dict(name=payments_base))
-        payments_partner, __ = Partner.objects.update_or_create(short_code=edly_slug, default_site=payments_site, defaults=dict(name=edly_slug))
+        payments_site, __ = Site.objects.update_or_create(
+            domain=old_payments_base,
+            name=old_payments_base,
+            defaults={'domain': payments_base, 'name': payments_base},
+        )
+        payments_partner, __ = Partner.objects.update_or_create(short_code=edly_slug, defaults=dict(name=edly_slug, default_site=payments_site))
         payments_site_config, __ = SiteConfiguration.objects.update_or_create(
-            site=payments_site,
             partner=payments_partner,
             defaults=dict(
+                site=payments_site,
                 lms_url_root=lms_url_root,
                 base_cookie_domain=base_cookie_domain,
                 discovery_api_url='{protocol}://{discovery_root}/api/v1/'.format(
