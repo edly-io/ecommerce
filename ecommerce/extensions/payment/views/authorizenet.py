@@ -161,7 +161,10 @@ class AuthorizeNetNotificationView(EdxOrderPlacementMixin, APIView):
             This view will be called by AuthorizeNet to handle notifications and order placement.
             It should return 200 (to Authorizenet) after receiving a notification so they'll know
             that notification has been received at our end otherwise they will send it again and
-            again after the particular interval.
+            again after the particular interval. Only the Authenticated request from Authorizent
+            are accepted by this post request. Authentication process is done using X-Anet-Signature
+            is request header, body of the request and the client signature key. Don't forgot to 
+            set client signature key in settings
         """
 
         if request.headers.get('X-Anet-Signature'):
@@ -261,7 +264,7 @@ def handle_redirection(request):
         alert to the user.
     """
     domain = settings.ECOMMERCE_COOKIE_DOMAIN
-    lms_dashboard = 'http://localhost:18000/dashboard'  # get_lms_dashboard_url()'
+    lms_dashboard = get_lms_dashboard_url()
     response = redirect(lms_dashboard)
     basket_id = request.GET.get('basket')
     course_id_hash = None
@@ -272,13 +275,6 @@ def handle_redirection(request):
     except Basket.DoesNotExist:
         logger.error('Basket with ID: %d not found, cannot generete GA event.', basket_id)
     else:
-        # try:
-        #     ga_event = _get_ga_event(request, basket)
-        # except Exception as ex:  # pylint: disable=broad-except
-        #     logger.exception('Error while trying to get GA event data: %s', str(ex))
-        # else:
-        #     add_to_ga_events_cookie(request, response, 'purchase', ga_event, domain=domain)
-        # print(basket)
         course_id = _get_course_id_from_basket(basket)
         course_id_hash = base64.b64encode(course_id.encode("utf-8")) if course_id else ''
 
@@ -286,48 +282,6 @@ def handle_redirection(request):
         response.set_cookie('pendingTransactionCourse', course_id_hash, domain=domain)
 
     return response
-
-
-def _get_ga_event(request, basket):
-    """
-    Generates dict containing data for Google Analytics "purchase" event
-    Arguments:
-        request: Request object
-        basket: Basket object
-    Returns:
-        A dict cotaining data for Google Analytics event
-    """
-    basket.strategy = strategy.Default()
-
-    ga_event = {
-        'transaction_id': basket.order_number,
-        'affiliation': request.site.name,
-        'currency': basket.currency,
-        'tax': float(basket.total_tax),
-        'shipping': 0,
-        'items': []
-    }
-
-    total_price = 0
-
-    for basket_line_item in basket.all_lines():  # pylint: disable=protected-access
-        price = float(basket_line_item.line_price_incl_tax_incl_discounts)
-        total_price += price
-        item = {
-            'id': basket_line_item.product.stockrecords.all()[0].partner_sku,
-            'name': basket_line_item.product.course.name,
-            'brand': basket_line_item.product.course.partner.__str__(),
-            'category': '',
-            'variant': '',
-            'quantity': basket_line_item.quantity,
-            'price': price
-        }
-        ga_event['items'].append(item)
-
-    ga_event['value'] = total_price
-
-    return ga_event
-
 
 def _get_course_id_from_basket(basket):
     """

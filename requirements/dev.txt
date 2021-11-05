@@ -12,6 +12,7 @@ argparse==1.4.0           # via -r requirements/test.txt, unittest2
 asn1crypto==1.4.0         # via -r requirements/test.txt, cybersource-rest-client-python
 astroid==2.3.3            # via -r requirements/test.txt, pylint
 attrs==20.3.0             # via -r requirements/test.txt, jsonschema, pytest, zeep
+authorizenet==1.1.4
 babel==2.9.0              # via -r requirements/docs.txt, -r requirements/test.txt, django-oscar, django-phonenumber-field, sphinx
 bcrypt==3.2.0             # via -r requirements/test.txt, cybersource-rest-client-python, paramiko
 beautifulsoup4==4.9.3     # via -r requirements/test.txt, webtest

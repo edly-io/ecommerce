@@ -26,7 +26,7 @@ class MissingProcessorResponseCardInfo(RefundError):
     """
     pass
 
-class UnSettledTransaction(Exception):
+class UnSettledTransaction(PaymentError):
     """
         The referenced transaction does not meet the criteria for issuing a credit. It may be unsettled.
         Reference: https://developer.authorize.net/api/reference/responseCodes.html?code=54
