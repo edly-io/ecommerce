@@ -57,9 +57,13 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
 
         # NOTE: In the future we may want to get/create a Customer. See https://stripe.com/docs/api#customers.
         product = basket.all_lines().first().product
+        course_org = ''
+        if product.course:
+            course_org = product.course.id.split(':')[1].split('+')[0]
+
         description = '{order_number} - {organization}: {title}'.format(
             order_number=order_number,
-            organization = basket.site.partner.name,
+            organization = course_org if course_org else basket.site.partner.name,
             title=product.title
         )
         try:
