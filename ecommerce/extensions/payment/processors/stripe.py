@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import logging
+import re
 
 import stripe
 from oscar.apps.payment.exceptions import GatewayError, TransactionDeclined
@@ -54,12 +55,17 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
         token = response
         order_number = basket.order_number
         currency = basket.currency
+        regex = '\\:(.*?)\\+'
 
         # NOTE: In the future we may want to get/create a Customer. See https://stripe.com/docs/api#customers.
         product = basket.all_lines().first().product
+        course_org = ''
+        if product.course:
+            course_org = re.findall(regex, product.course.id)[0]
+
         description = '{order_number} - {organization}: {title}'.format(
             order_number=order_number,
-            organization = basket.site.partner.name,
+            organization = course_org if course_org else basket.site.partner.name,
             title=product.title
         )
         try:
