@@ -588,7 +588,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'ecommerce.extensions.api.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_THROTTLE_CLASSES': (
-        'rest_framework.throttling.UserRateThrottle',
+        'ecommerce.extensions.api.throttles.ServiceUserThrottle',
     ),
     'DEFAULT_THROTTLE_RATES': {
         'user': '75/minute',
