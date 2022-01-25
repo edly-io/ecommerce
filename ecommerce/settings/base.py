@@ -545,6 +545,9 @@ JWT_AUTH = {
 # Service user for worker processes.
 ECOMMERCE_SERVICE_WORKER_USERNAME = 'ecommerce_worker'
 
+# Service user for Discovery worker processes.
+DISCOVERY_SERVICE_WORKER_USERNAME = 'discovery_worker'
+
 # Worker user used by prospectus to query ecommerce
 PROSPECTUS_WORKER_USERNAME = 'prospectus_worker'
 
@@ -588,7 +591,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'ecommerce.extensions.api.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_THROTTLE_CLASSES': (
-        'rest_framework.throttling.UserRateThrottle',
+        'ecommerce.extensions.api.throttles.ServiceUserThrottle',
     ),
     'DEFAULT_THROTTLE_RATES': {
         'user': '75/minute',
