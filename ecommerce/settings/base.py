@@ -545,6 +545,9 @@ JWT_AUTH = {
 # Service user for worker processes.
 ECOMMERCE_SERVICE_WORKER_USERNAME = 'ecommerce_worker'
 
+# Service user for Discovery worker processes.
+DISCOVERY_SERVICE_WORKER_USERNAME = 'discovery_worker'
+
 # Worker user used by prospectus to query ecommerce
 PROSPECTUS_WORKER_USERNAME = 'prospectus_worker'
 
