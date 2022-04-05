@@ -45,6 +45,10 @@
             exclude: ['js/common']
         },
         {
+            name: 'js/apps/elavon_receipt_app',
+            exclude: ['js/common']
+        },
+        {
             name: 'js/pages/offer_list_page',
             exclude: ['js/common']
         },
@@ -62,6 +66,10 @@
         },
         {
             name: 'js/views/cowpay',
+            exclude: ['js/common']
+        },
+        {
+            name: 'js/views/elavon',
             exclude: ['js/common']
         }
     ]

@@ -135,5 +135,16 @@ class CowpayPaymentRecord(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
+class ElavonPaymentRecord(TimeStampedModel):
+    """
+    Payment record to get basket and details from faywry or credit card payments in receipt.
+    """
+    payment_reference_id = models.CharField(primary_key=True, max_length=255)
+    merchant_reference_id = models.CharField(max_length=512)
+    basket = models.ForeignKey('basket.Basket', on_delete=models.CASCADE)
+    site = models.ForeignKey(Site, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+
 # noinspection PyUnresolvedReferences
 from oscar.apps.payment.models import *  # noqa isort:skip pylint: disable=ungrouped-imports, wildcard-import,unused-wildcard-import,wrong-import-position,wrong-import-order

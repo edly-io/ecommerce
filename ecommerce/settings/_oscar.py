@@ -134,6 +134,7 @@ PAYMENT_PROCESSORS = (
     'ecommerce.extensions.payment.processors.stripe.Stripe',
     'ecommerce.extensions.payment.processors.authorizenet.AuthorizeNet',
     'ecommerce.extensions.payment.processors.cowpay.Cowpay',
+    'ecommerce.extensions.payment.processors.elavon.Elavon',
 )
 
 PAYMENT_PROCESSOR_RECEIPT_PATH = '/checkout/receipt/'

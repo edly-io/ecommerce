@@ -1,0 +1,12 @@
+{% load static %}
+
+
+<script type="text/javascript">
+    window.ElavonConfig = {
+        postUrl: "{% url 'elavon:submit' %}",
+        elavonExecutionUrl: "{% url 'elavon:execute' %}",
+        receiptUrl: "{{ client_side_payment_processor.receipt_page_url }}",
+        elavonToken: "{{ client_side_payment_processor.elavon_token }}",
+    }
+</script>
+<script src="{% static 'js/views/elavon.js' %}"></script>
