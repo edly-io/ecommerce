@@ -335,11 +335,6 @@ class ElavonPaymentForm(forms.Form):
         self.helper = FormHelper(self)
         self.helper.layout = Layout(
             Div('basket'),
-            Div(
-                Div('Pay with Elavon'),
-                HTML('<button> Pay with Elavon</button'),
-                css_class='form-item col-md-6'
-            )
         )
         for bound_field in list(self):
             if hasattr(bound_field, 'field') and bound_field.field.required:

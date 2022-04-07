@@ -10,6 +10,7 @@ from oscar.apps.payment.exceptions import GatewayError
 
 from ecommerce.extensions.checkout.utils import get_receipt_page_url
 from ecommerce.extensions.payment.models import ElavonPaymentRecord
+from ecommerce.extensions.payment.forms import ElavonPaymentForm
 from ecommerce.extensions.payment.processors import BaseClientSidePaymentProcessor, HandledProcessorResponse
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ class Elavon(BaseClientSidePaymentProcessor):
         merchant_reference_id = '{order_number}{current_timestamp}'.format(
             order_number=basket.order_number, current_timestamp=int(datetime.now().timestamp())
         )
+        logging.info('basket %s %s', basket.order_number, basket.total_incl_tax)
         return {
             'ssl_merchant_id': self.merchant_id,
             'ssl_user_id': self.merchant_user_id,
@@ -67,23 +69,25 @@ class Elavon(BaseClientSidePaymentProcessor):
         basket = self.request.user.baskets.filter(site=site, lines__isnull=False).last()
         return get_receipt_page_url(site.siteconfiguration, order_number=basket.order_number)
 
+    @property
+    def elavon_form(self):
+        return ElavonPaymentForm(
+            user=self.request.user,
+            request=self.request,
+            initial={'basket': self.request.basket},
+            label_suffix=''
+        )
+
     def get_transaction_parameters(self, basket, request=None, **kwargs):
-        cowpay_url = urljoin(self.base_url, '/api/v1/charge/fawry')
-
-        data = kwargs.get('form_data')
-        if data:
-            payload = self._get_request_payload(
-                basket, data['customer_name'], data['customer_mobile'], data['customer_email']
-            )
-            response = requests.request('POST', cowpay_url, headers=headers, data=payload)
-            response = response.json()
-            if response.get('success'):
-                return response
-            else:
-                raise GatewayError('Cowpay API call failed due to %s', response.get('errors'))
-
+        elavon_url = self.base_url
+        basket = self.request.basket
+        payload = self._get_request_payload(basket)
+        response = requests.post(elavon_url, params=payload)
+        if response.status_code == 200:
+            logger.info('elavon token %s', urllib.parse.quote(response.text.encode('utf-8')))
+            return urllib.parse.quote(response.text.encode('utf-8'))
         else:
-            raise GatewayError('Form data not available',)
+            raise GatewayError('Elavon API call failed due to %s', response.text)
 
     def handle_processor_response(self, response, basket=None):
         currency = basket.currency
