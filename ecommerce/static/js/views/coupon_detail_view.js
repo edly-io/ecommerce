@@ -41,7 +41,7 @@ define([
             },
 
             formatLastEditedData: function(lastEdited) {
-                return _s.sprintf('%s - %s', lastEdited[0], this.formatDateTime(lastEdited[1]));
+                return _s.sprintf('%s', this.formatDateTime(lastEdited[1]));
             },
 
             discountValue: function() {
