@@ -56,6 +56,9 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
         order_number = basket.order_number
         currency = basket.currency
         regex = '\\:(.*?)\\+'
+        receipt_email = ''
+        if basket.owner:
+            receipt_email = basket.owner.email
 
         # NOTE: In the future we may want to get/create a Customer. See https://stripe.com/docs/api#customers.
         product = basket.all_lines().first().product
@@ -74,7 +77,8 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
                 currency=currency,
                 source=token,
                 description=description,
-                metadata={'order_number': order_number}
+                metadata={'order_number': order_number},
+                receipt_email=receipt_email,
             )
             transaction_id = charge.id
 
