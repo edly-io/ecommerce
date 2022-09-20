@@ -1,5 +1,6 @@
 
 import abc
+import logging
 from collections import namedtuple
 
 import six
@@ -12,6 +13,8 @@ PaymentProcessorResponse = get_model('payment', 'PaymentProcessorResponse')
 
 HandledProcessorResponse = namedtuple('HandledProcessorResponse',
                                       ['transaction_id', 'total', 'currency', 'card_number', 'card_type'])
+
+logger = logging.getLogger(__name__)
 
 
 class BasePaymentProcessor(metaclass=abc.ABCMeta):  # pragma: no cover

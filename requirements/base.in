@@ -50,7 +50,7 @@ requests
 rules
 sailthru-client==2.2.3
 sorl-thumbnail
-stripe==1.70.0
+stripe
 unicodecsv
 xss-utils
 zeep
