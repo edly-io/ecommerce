@@ -627,6 +627,13 @@ class User(AbstractUser):
         """
         if not self.lms_user_id:
             # Check for the LMS user id in social auth
+            logger.info(called_from)
+            logger.info('-------------------------------- user ---------------------')
+            try:
+                logger.info(self.social_auth.__dict__)
+            except:
+                pass
+
             lms_user_id_social_auth, social_auth_id = self._get_lms_user_id_from_social_auth()
             if lms_user_id_social_auth:
                 self.lms_user_id = lms_user_id_social_auth

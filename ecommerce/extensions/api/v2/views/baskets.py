@@ -458,6 +458,13 @@ class BasketCalculateView(generics.GenericAPIView):
 
         basket_owner = request.user
 
+        logger.info('-------------------------------- basket owner/request.user ---------------------')
+        logger.info(request.user)
+        try:
+            logger.info(basket_owner.social_auth.__dict__)
+        except:
+            pass
+
         requested_username = request.GET.get('username', default='')
         is_anonymous = request.GET.get('is_anonymous', 'false').lower() == 'true'
 
