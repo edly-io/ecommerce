@@ -627,10 +627,10 @@ class User(AbstractUser):
         """
         if not self.lms_user_id:
             # Check for the LMS user id in social auth
-            logger.info(called_from)
-            logger.info('-------------------------------- user ---------------------')
+            log.info(called_from)
+            log.info('-------------------------------- user ---------------------')
             try:
-                logger.info(self.social_auth.__dict__)
+                log.info(self.social_auth.__dict__)
             except:
                 pass
 
