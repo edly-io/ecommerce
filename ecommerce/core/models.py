@@ -627,13 +627,6 @@ class User(AbstractUser):
         """
         if not self.lms_user_id:
             # Check for the LMS user id in social auth
-            log.info(called_from)
-            log.info('-------------------------------- user ---------------------')
-            try:
-                log.info(self.social_auth.__dict__)
-            except:
-                pass
-
             lms_user_id_social_auth, social_auth_id = self._get_lms_user_id_from_social_auth()
             if lms_user_id_social_auth:
                 self.lms_user_id = lms_user_id_social_auth
@@ -669,9 +662,21 @@ class User(AbstractUser):
                 where the LMS user id was found. Returns None, None if the LMS user id was not found.
         """
         try:
+            log.info('----------- lms user id ------------')
             auth_entries = self.social_auth.order_by('-id')
+            try:
+                log.info(auth_entries)
+                log.info(auth_entries.__dict__)
+            except:
+                pass
             if auth_entries:
                 for auth_entry in auth_entries:
+                    try:
+                        log.info(auth_entry)
+                        log.info(auth_entry.__dict__)
+                    except:
+                        pass
+
                     lms_user_id_social_auth = auth_entry.extra_data.get(u'user_id')
                     if lms_user_id_social_auth:
                         return lms_user_id_social_auth, auth_entry.id
