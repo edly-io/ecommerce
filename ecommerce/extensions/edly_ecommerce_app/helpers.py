@@ -238,3 +238,23 @@ def get_payment_processors_names(request_data):
     payment_processors = json.loads(request_data.get('payment_processor_config', "{}"))
     edly_slug = request_data.get('edly_slug', '')
     return ','.join(payment_processors.get(edly_slug, {}).keys())
+
+
+def validate_django_settings_overrides(request_data):
+    """
+    Validates allowed django settings override for ecommerce.
+
+    Arguments:
+        request_data (dict): Request data passed for site config.
+
+    Returns:
+        validation_messages (list): Invalid fields information.
+    """
+
+    validation_messages = []
+
+    for field in request_data.keys():
+        if not field in getattr(settings, 'ALLOWED_DJANGO_SETTINGS_OVERRIDE', []):
+            validation_messages.append(dict(field='{} is not allowed in lms django overrides'.format(field)))
+
+    return validation_messages
