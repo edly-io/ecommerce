@@ -221,6 +221,8 @@ def get_payments_site_configuration(request_data):
                 protocol=protocol,
                 lms_root_domain=lms_site,
             ),
+            'OSCAR_DEFAULT_CURRENCY_SYMBOL': '$',
+            'OSCAR_DEFAULT_CURRENCY': 'USD',
         }
     }
 
