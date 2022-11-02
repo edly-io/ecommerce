@@ -24,6 +24,7 @@ from ecommerce.extensions.edly_ecommerce_app.helpers import (
     validate_site_configurations,
     get_payment_processors_names,
     get_payments_site_configuration,
+    validate_django_settings_overrides,
 )
 from ecommerce.extensions.edly_ecommerce_app.permissions import CanAccessSiteCreation
 from ecommerce.extensions.partner.models import Partner
@@ -200,3 +201,56 @@ class EdlySiteViewSet(APIView):
             BACKEND_SERVICE_EDX_OAUTH2_SECRET=payments_backend_values.get('secret', ''),
         )
         return oauth2_values
+
+
+class EdlySiteConfigViewset(APIView):
+    """
+    Update site configurations for the site.
+    """
+    permission_classes = [IsAuthenticated, CanAccessSiteCreation]
+
+    def post(self, request):
+        """
+        POST /api/edly_ecommerce_api/v1/edly_site_config/
+        """
+        ecom_data = request.data.get('ecommerce', {})
+        if not ecom_data:
+            return Response('Invalid payload.', status=status.HTTP_400_BAD_REQUEST)
+
+        validations_messages = validate_django_settings_overrides(ecom_data)
+        if validations_messages:
+            return Response(validations_messages, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            self._process_site_config(ecom_data)
+            return Response(
+                {
+                    'success': ERROR_MESSAGES.get('DJANGO_SETTINGS_UPDATE_SUCCESS'),
+                },
+                status=status.HTTP_200_OK
+            )
+        except Exception as exp:
+            return Response(
+                {'error': ERROR_MESSAGES.get('DJANGO_SETTINGS_UPDATE_FAILURE')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def _process_site_config(self, request_data):
+        """
+        Update django settings override for request site.
+        """
+        site = self.request.site
+        self._update_django_settings_override_for_site(site, request_data)
+
+    def _update_django_settings_override_for_site(self, site, request_data):
+        """
+        Updates django settings override key-values for provided site.
+        """
+        edly_client_theme_branding = site.siteconfiguration.edly_client_theme_branding_settings
+        django_settings_override = edly_client_theme_branding.pop('DJANGO_SETTINGS_OVERRIDE', {})
+        for field in request_data.keys():
+            django_settings_override[field] = request_data[field]
+
+        edly_client_theme_branding['DJANGO_SETTINGS_OVERRIDE'] = django_settings_override
+        site.siteconfiguration.edly_client_theme_branding_settings = edly_client_theme_branding
+        site.siteconfiguration.save()

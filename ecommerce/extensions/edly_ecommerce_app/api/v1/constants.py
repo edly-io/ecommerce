@@ -9,6 +9,8 @@ ERROR_MESSAGES = {
     'SITE_THEME_UPDATE_FAILURE': _('Site theme update failed.'),
     'CLIENT_SITES_SETUP_SUCCESS': _('Client sites setup successful.'),
     'CLIENT_SITES_SETUP_FAILURE': _('Client sites setup failed.'),
+    'DJANGO_SETTINGS_UPDATE_SUCCESS': _('Django settings updated successfully.'),
+    'DJANGO_SETTINGS_UPDATE_FAILURE': _('Django settings update failed.'),
 }
 
 CLIENT_SITE_SETUP_FIELDS = [
