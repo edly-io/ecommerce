@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils.deprecation import MiddlewareMixin
 
 from ecommerce.core.models import SiteConfiguration
+from ecommerce.extensions.edly_ecommerce_app.constants import TRIAL_EXPIRED
 from ecommerce.extensions.edly_ecommerce_app.helpers import user_has_edly_organization_access
 
 logger = getLogger(__name__)
@@ -54,6 +55,18 @@ class EdlyOrganizationAccessMiddleware(MiddlewareMixin):
         if request.user.is_superuser or request.user.is_staff:
             return
 
+        current_site = get_current_site(request)
+        try:
+            current_site_configuration = current_site.siteconfiguration
+        except SiteConfiguration.DoesNotExist:
+            current_site_configuration = None
+
+        if current_site_configuration:
+            django_override_settings = current_site_configuration.get_edly_configuration_value('DJANGO_SETTINGS_OVERRIDE', {})
+            if django_override_settings.get('CURRENT_PLAN') == TRIAL_EXPIRED and not _is_logged_in_path(request.path):
+                redirect_url = getattr(settings, 'EXPIRE_REDIRECT_URL')
+                return HttpResponseRedirect(redirect_url)
+
         if request.user.is_authenticated and not user_has_edly_organization_access(request):
             logger.exception('Edly user %s has no access for site %s.' % (request.user.email, request.site))
             if 'logout' not in request.path:
@@ -65,3 +78,7 @@ def _should_extend_config(current_value, new_value):
     Check if middleware should extend config value or update it.
     """
     return isinstance(current_value, (list, tuple)) and isinstance(new_value, (list, tuple))
+
+
+def _is_logged_in_path(path):
+    return '/login' in path
