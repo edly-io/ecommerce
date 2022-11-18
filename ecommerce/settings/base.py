@@ -921,3 +921,6 @@ ALLOWED_DJANGO_SETTINGS_OVERRIDE = [
 
 DCS_SESSION_COOKIE_SAMESITE = 'None'
 DCS_SESSION_COOKIE_SAMESITE_FORCE_ALL = True
+
+# Redirect URL for expired sites
+EXPIRE_REDIRECT_URL = 'http://wordpress.edx.devstack.lms/pricing-and-plans/'
