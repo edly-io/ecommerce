@@ -31,6 +31,7 @@ CLIENT_SITE_SETUP_FIELDS = [
     'oauth2_clients',
     'csrf_trusted_origins',
     'csrf_origin_whitelist',
+    'current_plan',
 ]
 
 EDLY_PANEL_WORKER_USER = 'edly_panel_worker'

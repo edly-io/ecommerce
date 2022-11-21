@@ -223,6 +223,7 @@ def get_payments_site_configuration(request_data):
             ),
             'OSCAR_DEFAULT_CURRENCY_SYMBOL': '$',
             'OSCAR_DEFAULT_CURRENCY': 'USD',
+            'CURRENT_PLAN': request_data.get('current_plan', 'essentials'),
         }
     }
 
