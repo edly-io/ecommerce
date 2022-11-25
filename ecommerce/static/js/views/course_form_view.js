@@ -218,9 +218,11 @@ define([
                 this._super();
 
                 if (!window.waffle.SWITCHES['enable_non_edly_cloud_options_switch']) {
-                    const courseTypeCredit = this.$('#courseTypecredit');
-                    courseTypeCredit.attr('disabled', true);
-                    courseTypeCredit.parent().parent().addClass('hidden');
+                    const courseTypes = [this.$('#courseTypecredit'), this.$('#courseTypeprofessional')];
+                    courseTypes.forEach(function (courseType, index) {
+                        courseType.attr('disabled', true);
+                        courseType.parent().parent().addClass('hidden');
+                    });
                 }
 
                 return this;
