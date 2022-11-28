@@ -193,8 +193,11 @@ class EnrollmentFulfillmentModule(BaseFulfillmentModule):
             messages if the LMS user id cannot be found.
     """
 
-    def _post_to_enrollment_api(self, data, user, usage):
+    def _post_to_enrollment_api(self, data, user, usage, site=None):
         enrollment_api_url = get_lms_enrollment_api_url()
+        if site:
+            enrollment_api_url = '{}/api/enrollment/v1/enrollment'.format(site.siteconfiguration.lms_url_root)
+            
         timeout = settings.ENROLLMENT_FULFILLMENT_TIMEOUT
         headers = {
             'Content-Type': 'application/json',
@@ -423,7 +426,7 @@ class EnrollmentFulfillmentModule(BaseFulfillmentModule):
 
                 # Post to the Enrollment API. The LMS will take care of posting a new EnterpriseCourseEnrollment to
                 # the Enterprise service if the user+course has a corresponding EnterpriseCustomerUser.
-                response = self._post_to_enrollment_api(data, user=order.user, usage='fulfill enrollment')
+                response = self._post_to_enrollment_api(data, user=order.user, usage='fulfill enrollment', site=order.site)
 
                 if response.status_code == status.HTTP_200_OK:
                     line.set_status(LINE.COMPLETE)
