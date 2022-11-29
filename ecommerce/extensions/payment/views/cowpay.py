@@ -177,6 +177,11 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         user = request.user if request.user.is_authenticated else User.objects.get(id=data['customer_merchant_profile_id'])
         data['user'] = user.id
         logger.info('Data received: %s', data)
+
+        if not data['order_status'] == 'PAID':
+            logger.warning('No execution step can be carried out until order status is PAID')
+            return JsonResponse({'message': 'Payment has been cancelled.'}, status=200)
+
         try:
             payment_record = CowpayPaymentRecord.objects.get(payment_gateway_reference_id=data['payment_gateway_reference_id'])
             basket = payment_record.basket
