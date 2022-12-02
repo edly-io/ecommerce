@@ -429,7 +429,7 @@ class EnrollmentFulfillmentModule(BaseFulfillmentModule):
                 import time
                 logger.info('5065-about to enter api method at time: {}'.format(time.time()))
                 response = self._post_to_enrollment_api(data, user=order.user, usage='fulfill enrollment', site=order.site)
-                logger.info('5065-enrollment_api_response: {} --- received after: {}'.format(response,time.time()))
+                logger.info('5065-enrollment_api_response: {} --- received after: {}'.format(response.text,time.time()))
                 if response.status_code == status.HTTP_200_OK:
                     line.set_status(LINE.COMPLETE)
 
