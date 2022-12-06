@@ -226,6 +226,7 @@ class EdxOrderPlacementMixin(six.with_metaclass(abc.ABCMeta, OrderPlacementMixin
                 email_opt_in=email_opt_in
             )
         else:
+            logger.info('5065- about to call post_checkout send in mixins.py')
             post_checkout.send(sender=self, order=order, request=request, email_opt_in=email_opt_in)
 
         return order

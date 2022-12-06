@@ -207,7 +207,6 @@ class FulfillFrozenBaskets(EdxOrderPlacementMixin):
             line_quantities = [line.quantity for line in order_lines]
 
             shipping_event, __ = ShippingEventType.objects.get_or_create(name=SHIPPING_EVENT_NAME)
-            logger.info('5065- about to call EventHandler().handle_shipping_event in utils.py')
             EventHandler().handle_shipping_event(order, shipping_event, order_lines, line_quantities)
 
             if order.is_fulfillable:
