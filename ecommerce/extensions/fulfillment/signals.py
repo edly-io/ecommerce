@@ -15,4 +15,7 @@ def post_checkout_callback(sender, order=None, **kwargs):  # pylint: disable=unu
     line_quantities = [line.quantity for line in order_lines]
 
     shipping_event, __ = ShippingEventType.objects.get_or_create(name=SHIPPING_EVENT_NAME)
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info('5065- about to call EventHandler().handle_shipping_event in signals.py')
     EventHandler().handle_shipping_event(order, shipping_event, order_lines, line_quantities, **kwargs)

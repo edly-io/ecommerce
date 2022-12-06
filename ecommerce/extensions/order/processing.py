@@ -10,9 +10,12 @@ from __future__ import absolute_import
 
 from oscar.apps.order import exceptions, processing
 from six.moves import zip
+import logging
 
 from ecommerce.extensions.fulfillment import api as fulfillment_api
 from ecommerce.extensions.fulfillment.status import LINE
+
+logger = logging.getLogger(__name__)
 
 
 class EventHandler(processing.EventHandler):
@@ -23,6 +26,7 @@ class EventHandler(processing.EventHandler):
     """
 
     def handle_shipping_event(self, order, event_type, lines, line_quantities, **kwargs):
+        logger.info('5065-entered handle_shipping_event in processing.py')
         self.validate_shipping_event(order, event_type, lines, line_quantities, **kwargs)
 
         email_opt_in = kwargs.get('email_opt_in', False)
