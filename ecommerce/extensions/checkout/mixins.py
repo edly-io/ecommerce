@@ -170,6 +170,7 @@ class EdxOrderPlacementMixin(six.with_metaclass(abc.ABCMeta, OrderPlacementMixin
         and basket submission in a transaction. Should be used only in
         the context of an exception handler.
         """
+        logger.info('5065- entered handle_order_placement mixins.py')
         with transaction.atomic():
             order = self.place_order(
                 order_number=order_number,
