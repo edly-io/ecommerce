@@ -127,6 +127,7 @@ class AuthorizeNetNotificationView(EdxOrderPlacementMixin, APIView):
         """
             Handle order placement for approved transactions.
         """
+        logger.info('5065- entered call_handle_order_placement in authorizenet.py')
         try:
             shipping_method = NoShippingRequired()
             shipping_charge = shipping_method.calculate(basket)
@@ -161,6 +162,7 @@ class AuthorizeNetNotificationView(EdxOrderPlacementMixin, APIView):
             that notification has been received at our end otherwise they will send it again and
             again after the particular interval.
         """
+        logger.info('5065- entered post in authorizenet.py')
         notification = request.data
         if notification.get("eventType") != NOTIFICATION_TYPE_AUTH_CAPTURE_CREATED:
             error_meassage = (
