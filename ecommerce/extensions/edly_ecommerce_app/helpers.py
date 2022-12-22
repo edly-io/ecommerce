@@ -72,6 +72,9 @@ def is_valid_site_course(course_id, request):
     edx_orgs_short_names = get_edx_orgs_from_edly_cookie(
         request.COOKIES.get(settings.EDLY_USER_INFO_COOKIE_NAME, None)
     )
+    if not edx_orgs_short_names:
+        edx_orgs_short_names = request.site.partner.short_code
+
     # We assume that the "short_code" value of ECOM site partner will always
     # be the same as "short_name" value of its related edx organization in LMS
     if edx_orgs_short_names and course_key.org in edx_orgs_short_names:
