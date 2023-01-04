@@ -218,7 +218,7 @@ define([
                 this._super();
 
                 if (!window.waffle.SWITCHES['enable_non_edly_cloud_options_switch']) {
-                    const courseTypes = [this.$('#courseTypecredit'), this.$('#courseTypeprofessional')];
+                    const courseTypes = [this.$('#courseTypecredit')];
                     courseTypes.forEach(function (courseType, index) {
                         courseType.attr('disabled', true);
                         courseType.parent().parent().addClass('hidden');
