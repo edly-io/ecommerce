@@ -156,8 +156,7 @@ class EdlySiteViewSet(APIView):
         )
         payments_site, __ = Site.objects.update_or_create(
             domain=old_payments_base,
-            name=old_payments_base,
-            defaults={'domain': payments_base, 'name': payments_base},
+            defaults={'domain': payments_base, 'name': payments_base[:50]},
         )
         payments_partner, __ = Partner.objects.update_or_create(short_code=edly_slug, defaults=dict(name=edly_slug, default_site=payments_site))
         payments_site_config, __ = SiteConfiguration.objects.update_or_create(
