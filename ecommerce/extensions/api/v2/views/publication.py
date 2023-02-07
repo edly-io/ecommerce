@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ecommerce.extensions.api import serializers
+from ecommerce.extensions.edly_ecommerce_app.helpers import trigger_dataloader
 from ecommerce.extensions.edly_ecommerce_app.permissions import IsAdminOrCourseCreator
 from ecommerce.extensions.partner.shortcuts import get_partner_for_site
 
@@ -46,4 +47,8 @@ class AtomicPublicationView(generics.CreateAPIView, generics.UpdateAPIView):
 
         content = serializer.data
         content['message'] = message if message else None
+        trigger_dataloader(
+            self.request.site.partner.short_code,
+            data['id'],
+        )
         return Response(content, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)

@@ -1,16 +1,21 @@
-from django.conf import settings
+import json
+import logging
+from urllib.parse import urlparse
 
 import jwt
-import json
+from crum import get_current_request
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
+from edx_rest_api_client.client import EdxRestApiClient
+from edx_rest_api_client.exceptions import SlumberBaseException
+from opaque_keys.edx.keys import CourseKey
 
 from ecommerce.extensions.edly_ecommerce_app.api.v1.constants import CLIENT_SITE_SETUP_FIELDS
 
-from opaque_keys.edx.keys import CourseKey
-
 DEFAULT_EDLY_COPYRIGHT_TEXT = _('Copy Rights. All rights reserved.')
 DEFAULT_SERVICES_NOTIFICATIONS_COOKIE_EXPIRY = '900'  # value in seconds, 900 seconds = 15 minutes
+LOGGER = logging.getLogger(__name__)
 
 
 def decode_edly_user_info_cookie(encoded_cookie_data):
@@ -264,3 +269,30 @@ def validate_django_settings_overrides(request_data):
             validation_messages.append(dict(field='{} is not allowed in lms django overrides'.format(field)))
 
     return validation_messages
+
+
+def trigger_dataloader(partner, course_id):
+    """
+    Run Dataloader for specific course to sync ecommerce data.
+
+    Arguments:
+        partner (str): Partner is organization short code.
+        course_id (str): Course which needs to be sync'd.
+    """
+    request = get_current_request()
+    site_config = request.site.siteconfiguration
+    discovery_api_url = site_config.discovery_api_url
+    url_parse = urlparse(discovery_api_url)
+    discovery_api_url = '{}://{}'.format(url_parse.scheme, url_parse.netloc)
+    discovery_client = EdxRestApiClient(discovery_api_url, jwt=site_config.access_token)
+    try:
+        res = discovery_client.edly_api.v1.dataloader.post(
+            {
+                'partner': partner,
+                'course_id': course_id,
+                'service': 'ecommerce',
+            }
+        )
+        LOGGER.info(res)
+    except SlumberBaseException as exp:
+        LOGGER.error(str(exp))
