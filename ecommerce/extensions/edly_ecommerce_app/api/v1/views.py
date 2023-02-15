@@ -25,6 +25,7 @@ from ecommerce.extensions.edly_ecommerce_app.helpers import (
     get_payment_processors_names,
     get_payments_site_configuration,
     validate_django_settings_overrides,
+    validate_site_theme,
 )
 from ecommerce.extensions.edly_ecommerce_app.permissions import CanAccessSiteCreation
 from ecommerce.extensions.partner.models import Partner
@@ -211,29 +212,60 @@ class EdlySiteConfigViewset(APIView):
     def post(self, request):
         """
         POST /api/edly_ecommerce_api/v1/edly_site_config/
+
+        request.data expected in the format:
+        {
+            'ecommerce': {
+                'BRANDING': {},
+                'COLORS': {},
+                'DJANGO_SETTINGS_OVERRIDE': {
+                    'PLATFORM_NAME': 'test_name',
+                }
+
+            },
+            'site_theme': 'st-lutherx'
+        }
         """
         ecom_data = request.data.get('ecommerce', {})
-        if not ecom_data:
+        site_theme = request.data.get('site_theme', '')
+
+        if not ecom_data and not site_theme:
             return Response('Invalid payload.', status=status.HTTP_400_BAD_REQUEST)
 
         validations_messages = validate_django_settings_overrides(ecom_data)
+        validations_messages += validate_site_theme(site_theme)
+
         if validations_messages:
             return Response(validations_messages, status=status.HTTP_400_BAD_REQUEST)
-
+        import pdb
+        pdb.set_trace()
         try:
-            self._process_site_config(ecom_data)
+            if ecom_data:
+                self._process_site_config(ecom_data)
+            if site_theme:
+                self._process_site_theme(site_theme)
+            
             return Response(
                 {
-                    'success': ERROR_MESSAGES.get('DJANGO_SETTINGS_UPDATE_SUCCESS'),
+                    'success': ERROR_MESSAGES.get('SITE_CONFIGURATIONS_UPDATE_SUCCESS'),
                 },
                 status=status.HTTP_200_OK
             )
         except Exception as exp:
             return Response(
-                {'error': ERROR_MESSAGES.get('DJANGO_SETTINGS_UPDATE_FAILURE')},
+                {'error': ERROR_MESSAGES.get('SITE_CONFIGURATIONS_UPDATE_FAILURE')},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+    def _process_site_theme(self,request_data):
+        """
+        Update site theme for the requested lms and cms site.
+        """
+        ecommerce_theme = self.request.site.themes.first()
+        ecommerce_theme.theme_dir_name = request_data
+
+        ecommerce_theme.save()
+    
     def _process_site_config(self, request_data):
         """
         Update django settings override for request site.
@@ -241,15 +273,25 @@ class EdlySiteConfigViewset(APIView):
         site = self.request.site
         self._update_django_settings_override_for_site(site, request_data)
 
-    def _update_django_settings_override_for_site(self, site, request_data):
+    def _update_site_configurations_for_site(self, site, request_data):
         """
-        Updates django settings override key-values for provided site.
+        Updates site configurations key-values for provided site.
         """
-        edly_client_theme_branding = site.siteconfiguration.edly_client_theme_branding_settings
-        django_settings_override = edly_client_theme_branding.pop('DJANGO_SETTINGS_OVERRIDE', {})
+        site_configurations = site.siteconfiguration.edly_client_theme_branding_settings
+        for field in request_data.keys():
+            if field == 'DJANGO_SETTINGS_OVERRIDE':
+                site_configurations[field] = self._update_django_settings_override_for_site(site_configurations.get('DJANGO_SETTINGS_OVERRIDE', {}), request_data.get('DJANGO_SETTINGS_OVERRIDE', {}))
+            else:
+                site_configurations[field] = request_data[field]
+
+        site.siteconfiguration.edly_client_theme_branding_settings = site_configurations
+        site.siteconfiguration.save()
+    
+    def _update_django_settings_override_for_site(self, django_settings_override, request_data):
+        """
+        Updates django settings override key-values for provided site request_data.
+        """
         for field in request_data.keys():
             django_settings_override[field] = request_data[field]
-
-        edly_client_theme_branding['DJANGO_SETTINGS_OVERRIDE'] = django_settings_override
-        site.siteconfiguration.edly_client_theme_branding_settings = edly_client_theme_branding
-        site.siteconfiguration.save()
+        
+        return django_settings_override

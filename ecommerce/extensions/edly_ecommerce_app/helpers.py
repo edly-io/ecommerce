@@ -271,6 +271,46 @@ def validate_django_settings_overrides(request_data):
     return validation_messages
 
 
+def validate_site_configurations(request_data):
+    """
+    Validates the allowed Site COnfigurations.
+
+    Arguments:
+        request_data (dict): Request data passed for site config.
+
+    Returns:
+        validation_messages (list): Invalid fields information.
+    
+    """
+    validation_messages = []
+
+    for field in request_data.keys():
+        if not field in getattr(settings, 'ALLOWED_SITE_CONFIGURATIONS_OVERRIDE', []):
+            validation_messages.append(dict(field='{} is not allowed in Site Configurations'.format(field)))
+        if field == 'DJANGO_SETTINGS_OVERRIDE':
+            validation_messages += validate_django_settings_overrides(request_data.get('DJANGO_SETTINGS_OVERRIDE'))
+
+    return validation_messages
+
+
+def validate_site_theme(site_theme):
+    """
+    Validates the Site-theme passed to be in Allowed site themes.
+
+    Arguments:
+        site_theme (str): Site theme directory.
+
+    Returns:
+        validation_messages (list): Invalid fields information.
+    
+    """
+    validation_messages = []
+    if site_theme and site_theme not in getattr(settings, 'ALLOWED_SITE_THEMES', []):
+        validation_messages.append(dict(field='{} is not allowed in Site Themes'.format(site_theme)))
+    
+    return validation_messages
+
+
 def trigger_dataloader(partner, course_id):
     """
     Run Dataloader for specific course to sync ecommerce data.
