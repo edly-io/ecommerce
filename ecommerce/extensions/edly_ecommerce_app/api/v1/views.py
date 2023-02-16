@@ -24,7 +24,7 @@ from ecommerce.extensions.edly_ecommerce_app.helpers import (
     validate_site_configurations,
     get_payment_processors_names,
     get_payments_site_configuration,
-    validate_django_settings_overrides,
+    validate_site_configurations,
     validate_site_theme,
 )
 from ecommerce.extensions.edly_ecommerce_app.permissions import CanAccessSiteCreation
@@ -232,13 +232,11 @@ class EdlySiteConfigViewset(APIView):
         if not ecom_data and not site_theme:
             return Response('Invalid payload.', status=status.HTTP_400_BAD_REQUEST)
 
-        validations_messages = validate_django_settings_overrides(ecom_data)
+        validations_messages = validate_site_configurations(ecom_data)
         validations_messages += validate_site_theme(site_theme)
 
         if validations_messages:
             return Response(validations_messages, status=status.HTTP_400_BAD_REQUEST)
-        import pdb
-        pdb.set_trace()
         try:
             if ecom_data:
                 self._process_site_config(ecom_data)
@@ -271,7 +269,7 @@ class EdlySiteConfigViewset(APIView):
         Update django settings override for request site.
         """
         site = self.request.site
-        self._update_django_settings_override_for_site(site, request_data)
+        self._update_site_configurations_for_site(site, request_data)
 
     def _update_site_configurations_for_site(self, site, request_data):
         """

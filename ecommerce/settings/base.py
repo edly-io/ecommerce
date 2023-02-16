@@ -925,7 +925,7 @@ ALLOWED_SITE_CONFIGURATIONS_OVERRIDE = [
 ]
 
 ALLOWED_SITE_THEMES = [
-    'adroit', 'gestalt', 'st-lutherx', 'st-normanx',
+    'adroit-ecommerce', 'gestalt-ecommerce', 'st-lutherx-ecommerce', 'st-normanx-ecommerce',
 ]
 
 DCS_SESSION_COOKIE_SAMESITE = 'None'
