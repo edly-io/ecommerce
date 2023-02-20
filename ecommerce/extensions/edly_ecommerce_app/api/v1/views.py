@@ -278,7 +278,10 @@ class EdlySiteConfigViewset(APIView):
         site_configurations = site.siteconfiguration.edly_client_theme_branding_settings
         for field in request_data.keys():
             if field == 'DJANGO_SETTINGS_OVERRIDE':
-                site_configurations[field] = self._update_django_settings_override_for_site(site_configurations.get('DJANGO_SETTINGS_OVERRIDE', {}), request_data.get('DJANGO_SETTINGS_OVERRIDE', {}))
+                site_configurations[field] = self._update_django_settings_override_for_site(
+                    site_configurations.get('DJANGO_SETTINGS_OVERRIDE', {}),
+                    request_data.get('DJANGO_SETTINGS_OVERRIDE', {})
+                )
             else:
                 site_configurations[field] = request_data[field]
 
