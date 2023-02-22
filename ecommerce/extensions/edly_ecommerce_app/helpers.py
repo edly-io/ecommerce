@@ -271,16 +271,16 @@ def validate_django_settings_overrides(request_data):
     return validation_messages
 
 
-def validate_site_configurations(request_data):
+def validate_site_configurations_for_self_service_api(request_data):
     """
-    Validates the allowed Site COnfigurations.
+    Validates the allowed Site Configurations.
 
     Arguments:
         request_data (dict): Request data passed for site config.
 
     Returns:
         validation_messages (list): Invalid fields information.
-    
+
     """
     validation_messages = []
 
@@ -302,12 +302,12 @@ def validate_site_theme(site_theme):
 
     Returns:
         validation_messages (list): Invalid fields information.
-    
+
     """
     validation_messages = []
     if site_theme and site_theme not in getattr(settings, 'ALLOWED_SITE_THEMES', []):
         validation_messages.append(dict(field='{} is not allowed in Site Themes'.format(site_theme)))
-    
+
     return validation_messages
 
 
