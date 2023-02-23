@@ -24,7 +24,7 @@ from ecommerce.extensions.edly_ecommerce_app.helpers import (
     validate_site_configurations,
     get_payment_processors_names,
     get_payments_site_configuration,
-    validate_site_configurations,
+    validate_site_configurations_for_self_service_api,
     validate_site_theme,
 )
 from ecommerce.extensions.edly_ecommerce_app.permissions import CanAccessSiteCreation
@@ -232,7 +232,7 @@ class EdlySiteConfigViewset(APIView):
         if not ecom_data and not site_theme:
             return Response('Invalid payload.', status=status.HTTP_400_BAD_REQUEST)
 
-        validations_messages = validate_site_configurations(ecom_data)
+        validations_messages = validate_site_configurations_for_self_service_api(ecom_data)
         validations_messages += validate_site_theme(site_theme)
 
         if validations_messages:
