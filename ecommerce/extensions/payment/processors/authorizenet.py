@@ -1,7 +1,7 @@
 """ AuthorizeNet payment processor. """
 from __future__ import absolute_import, unicode_literals
 
-import base64
+from urllib.parse import quote
 import json
 import logging
 
@@ -62,12 +62,12 @@ class AuthorizeNet(BaseClientSidePaymentProcessor):
             Visit https://developer.authorize.net/api/reference/features/accept_hosted.html for more detail.
         """
         course_id = basket.all_lines()[0].product.course_id
-        course_id_hash = base64.b64encode(course_id.encode())
+        course_id_url_encoded = quote(course_id)
 
         redirect_url = reverse('authorizenet:redirect')
         ecommerce_base_url = get_ecommerce_url()
 
-        return_url = '{}{}?course={}'.format(ecommerce_base_url, redirect_url, course_id_hash)
+        return_url = '{}{}?course={}'.format(ecommerce_base_url, redirect_url, course_id_url_encoded)
 
         # Create Authorizenet Settings object
         payment_button_setting = apicontractsv1.settingType()
