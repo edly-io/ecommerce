@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 
 import base64
 import logging
-from urllib.parse import unquote
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -247,9 +246,8 @@ def handle_redirection(request):
     lms_dashboard = get_lms_dashboard_url()
     response = redirect(lms_dashboard)
 
-    course_id_encoded = request.GET.get('course')
-    if course_id_encoded:
-        course_id = unquote(course_id)
+    course_id = request.GET.get('course')
+    if course_id:
         course_id_hash = base64.b64encode(course_id.encode())
         logger.info('redirect %s', course_id_hash)
         response.set_cookie('pendingTransactionCourse', course_id_hash, domain=domain)
