@@ -1,6 +1,6 @@
 -c pins.txt
 
-authorizenet==1.1.3
+authorizenet==1.1.4
 analytics-python
 bleach
 coreapi
