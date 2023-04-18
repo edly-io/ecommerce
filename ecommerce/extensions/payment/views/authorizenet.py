@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+import base64
 import logging
 
 from django.conf import settings
@@ -245,8 +246,9 @@ def handle_redirection(request):
     lms_dashboard = get_lms_dashboard_url()
     response = redirect(lms_dashboard)
 
-    course_id_hash = request.GET.get('course')
-    if course_id_hash:
+    course_id = request.GET.get('course')
+    if course_id:
+        course_id_hash = base64.b64encode(course_id.encode())
         response.set_cookie('pendingTransactionCourse', course_id_hash, domain=domain)
 
     return response
