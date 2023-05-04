@@ -11,6 +11,7 @@ from authorizenet.apicontrollers import (
     getHostedPaymentPageController,
     getTransactionDetailsController
 )
+from authorizenet.constants import constants
 from django.urls import reverse
 from oscar.apps.payment.exceptions import GatewayError
 from oscar.core.loading import get_model
@@ -50,6 +51,7 @@ class AuthorizeNet(BaseClientSidePaymentProcessor):
         self.merchant_auth_name = configuration['merchant_auth_name']
         self.transaction_key = configuration['transaction_key']
         self.autorizenet_redirect_url = configuration['redirect_url']
+        self.authorizenet_production_mode = configuration['production_mode']
 
     @property
     def cancel_url(self):
@@ -123,6 +125,9 @@ class AuthorizeNet(BaseClientSidePaymentProcessor):
         transaction_details_request.transId = transaction_id
 
         transaction_details_controller = getTransactionDetailsController(transaction_details_request)
+        if self.authorizenet_production_mode:
+            transaction_details_controller.setenvironment(constants.PRODUCTION)
+
         transaction_details_controller.execute()
 
         transaction_details_response = transaction_details_controller.getresponse()
@@ -189,6 +194,9 @@ class AuthorizeNet(BaseClientSidePaymentProcessor):
         transaction_request.lineItems = line_items_list
 
         payment_page_controller = getHostedPaymentPageController(payment_page_request)
+        if self.authorizenet_production_mode:
+            payment_page_controller.setenvironment(constants.PRODUCTION)
+
         payment_page_controller.execute()
 
         payment_page_response = payment_page_controller.getresponse()
@@ -310,6 +318,9 @@ class AuthorizeNet(BaseClientSidePaymentProcessor):
 
         create_transaction_request.transactionRequest = transaction_request
         create_transaction_controller = createTransactionController(create_transaction_request)
+        if self.authorizenet_production_mode:
+            create_transaction_controller.setenvironment(constants.PRODUCTION)
+
         create_transaction_controller.execute()
 
         response = create_transaction_controller.getresponse()
