@@ -108,6 +108,19 @@ SAILTHRU_SECRET = 'top_secret'
 
 REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] + ('rest_framework.renderers.BrowsableAPIRenderer',)
 
+# Content Security Policy
+CSP_DEFAULT_SRC = (
+    "'self'", "'unsafe-inline'", "'unsafe-eval'",
+    "https://ajax.googleapis.com",
+    "https://edly-cloud-static-assets.s3.amazonaws.com",
+    "https://edly-edx-theme-files.s3.amazonaws.com",
+    'https://fonts.googleapis.com',
+    'https://fonts.gstatic.com',
+    "https://www.googletagmanager.com",
+    "*.devstack.lms",
+    "*.devstack.lms:9999",
+)
+
 #####################################################################
 # Lastly, see if the developer has any local overrides.
 if os.path.isfile(join(dirname(abspath(__file__)), 'private.py')):

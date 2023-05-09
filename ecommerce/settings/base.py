@@ -294,6 +294,9 @@ TEMPLATES = [
 # MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/1.11/ref/settings/#middleware
 MIDDLEWARE = (
+    # CSP middleware
+    'csp.middleware.CSPMiddleware',
+
     'ecommerce.extensions.edly_ecommerce_app.middleware.SettingsOverrideMiddleware',
     # Avoid issue with https://blog.heroku.com/chrome-changes-samesite-cookie
     # Override was found here https://github.com/django/django/pull/11894
@@ -328,6 +331,18 @@ MIDDLEWARE = (
     'crum.CurrentRequestUserMiddleware',
 )
 # END MIDDLEWARE CONFIGURATION
+
+# Content Security Policy
+CSP_DEFAULT_SRC = (
+    "'self'", "'unsafe-inline'", "'unsafe-eval'",
+    "https://ajax.googleapis.com",
+    "https://edly-cloud-static-assets.s3.amazonaws.com",
+    "https://edly-edx-theme-files.s3.amazonaws.com",
+    'https://fonts.googleapis.com',
+    'https://fonts.gstatic.com',
+    "https://www.googletagmanager.com",
+    "*.edly.io",
+)
 
 
 # URL CONFIGURATION
