@@ -84,7 +84,7 @@ class Cowpay(BaseClientSidePaymentProcessor):
 
     @property
     def iframe_token(self):
-        cowpay_url = urljoin(self.base_url, '/api/v1/iframe/token')
+        cowpay_url = urljoin(self.base_url, '/api/v2/iframe/token')
         headers = self._get_request_header()
         basket = self.request.basket
         payload = self._get_request_payload(
