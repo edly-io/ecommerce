@@ -57,9 +57,9 @@ class Command(BaseCommand):
             discovery_api_url='http://edx.devstack.lms:18381/api/v1/',
             edly_client_theme_branding_settings={
                 "BRANDING": {
-                    "logo": "https://edly-cloud-static-assets.s3.amazonaws.com/red-theme/logo.png",
-                    "logo-white": "https://edly-cloud-static-assets.s3.amazonaws.com/red-theme/logo-white.png",
-                    "favicon": "https://edly-cloud-static-assets.s3.amazonaws.com/red-theme/favicon.png"
+                    "logo": "https://edly-cloud-static-assets.s3.amazonaws.com/edly-theme/logo.png",
+                    "logo-white": "https://edly-cloud-static-assets.s3.amazonaws.com/edly-theme/logo-white.png",
+                    "favicon": "https://edly-cloud-static-assets.s3.amazonaws.com/edly-theme/favicon.png"
                 },
                 "FONTS": {
                     "heading-font": "Open Sans, sans-serif",
@@ -82,7 +82,7 @@ class Command(BaseCommand):
                     "EDLY_WORDPRESS_URL": "http://wordpress.edx.devstack.lms/",
                     "FRONTEND_LOGOUT_URL": "http://edx.devstack.lms:18000/logout",
                     "PAYMENT_PROCESSOR_CONFIG": {
-                        "red": {
+                        "edly": {
                             "paypal": {
                                 "mode": "SET-ME-PLEASE(sandbox,live)",
                                 "client_id": "SET-ME-PLEASE",
@@ -93,7 +93,7 @@ class Command(BaseCommand):
                             },
                             "authorizenet": {
                                 "mode": "SET-ME-PLEASE(sandbox,live)",
-                                "redirect_url": "SET-ME-PLEASE",
+                                "edlyirect_url": "SET-ME-PLEASE",
                                 "cancel_checkout_path": "/checkout/cancel-checkout/",
                                 "merchant_auth_name": "SET-ME-PLEASE",
                                 "transaction_key": "SET-ME-PLEASE"
@@ -106,11 +106,11 @@ class Command(BaseCommand):
                     "primary": "#dd1f25",
                     "secondary": "#dd1f25"
                 },
-                "EDLY_COPYRIGHT_TEXT": "Edly Copy Rights. All rights reserved for red site.",
+                "EDLY_COPYRIGHT_TEXT": "Edly Copy Rights. All rights reserved for edly site.",
                 "PANEL_NOTIFICATIONS_BASE_URL": "http://panel.edx.devstack.lms:9999/",
                 "CONTACT_MAILING_ADDRESS": "Edly 25 Mohlanwal Road, Westwood Colony Lahore, Punjab 54000",
                 "SERVICES_NOTIFICATIONS_COOKIE_EXPIRY": "900",
-                "GTM_ID": "GTM-M69F9BL",
+                "GTM_ID": "GTM-XXXXXXX",
                 "DISABLE_PAID_COURSE_MODES": False
             }
         )
