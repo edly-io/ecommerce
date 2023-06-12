@@ -1,7 +1,7 @@
 {% load static %}
 
 <script src="{{ client_side_payment_processor.base_url }}/js/plugins/CCIframePlugin.js"></script>
-<script src="{{ client_side_payment_processor.base_url }}/js/plugins/OTPPaymentPlugin.js"></script>
+<script src="{{ client_side_payment_processor.base_url }}/js/plugins/CardPlugin.js"></script>
 <script type="text/javascript">
     window.CowpayConfig = {
         postUrl: "{% url 'cowpay:submit' %}",
