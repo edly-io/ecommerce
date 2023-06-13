@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # Hoà Lê Thanh <hoa.lethanh@gmail.com>, 2017
 # Nguyen Nhat Quang <technicalmanager@gmail.com>, 2016
 msgid ""

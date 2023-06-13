@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # Bogdan Mateescu, 2018
 # Irina Maria Curuia, 2015
 # Mihaela Caraulasu <mihaela@accelerole.com>, 2017

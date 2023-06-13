@@ -1,5 +1,4 @@
 """ This command creates Sites, SiteThemes, SiteConfigurations and partners."""
-from __future__ import absolute_import, unicode_literals
 
 import datetime
 import fnmatch

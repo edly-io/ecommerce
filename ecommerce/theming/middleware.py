@@ -5,6 +5,7 @@ Note:
     This middleware depends on "django_sites_extensions.middleware.CurrentSiteWithDefaultMiddleware" middleware
     So it must be added after this middleware in django settings files.
 """
+from django.utils.deprecation import MiddlewareMixin
 
 from __future__ import absolute_import
 

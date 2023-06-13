@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 import factory
 from django.contrib.sites.models import Site

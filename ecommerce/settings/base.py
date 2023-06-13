@@ -1,5 +1,4 @@
 """Common settings and globals."""
-from __future__ import absolute_import
 
 import datetime
 import os
@@ -408,7 +407,6 @@ LOCAL_APPS = [
     'ecommerce.sailthru',
     'ecommerce.enterprise',
     'ecommerce.management',
-    'ecommerce.journals',  # TODO: journals dependency
 ]
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -663,6 +661,8 @@ CELERY_ROUTES = {
     'ecommerce_worker.sailthru.v1.tasks.send_course_refund_email': {'queue': 'ecommerce.email_marketing'},
     'ecommerce_worker.sailthru.v1.tasks.send_offer_assignment_email': {'queue': 'ecommerce.email_marketing'},
     'ecommerce_worker.sailthru.v1.tasks.send_offer_update_email': {'queue': 'ecommerce.email_marketing'},
+    'ecommerce_worker.sailthru.v1.tasks.send_offer_usage_email': {'queue': 'ecommerce.email_marketing'},
+    'ecommerce_worker.sailthru.v1.tasks.send_code_assignment_nudge_email': {'queue': 'ecommerce.email_marketing'},
 }
 
 # Prevent Celery from removing handlers on the root logger. Allows setting custom logging handlers.
@@ -672,6 +672,12 @@ CELERYD_HIJACK_ROOT_LOGGER = False
 # Execute tasks locally (synchronously) instead of sending them to the queue.
 # See http://celery.readthedocs.io/en/latest/userguide/configuration.html#task-always-eager.
 CELERY_ALWAYS_EAGER = False
+
+# Specify allowed serializers that are consistent with Celery 3 defaults
+CELERY_TASK_SERIALIZER = 'pickle'
+CELERY_RESULT_SERIALIZER = 'pickle'
+CELERY_EVENT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json', 'pickle', 'yaml']
 # END CELERY
 
 
@@ -864,7 +870,33 @@ ECOMMERCE_PAYMENT_PROCESSOR_CONFIG = {
             'sop_payment_page_url': 'https://testsecureacceptance.cybersource.com/silent/pay',
             'sop_profile_id': 'SET-ME-PLEASE',
             'sop_secret_key': 'SET-ME-PLEASE',
-            'transaction_key': 'SET-ME-PLEASE'
+            'transaction_key': 'SET-ME-PLEASE',
+            'flex_shared_secret_key_id': 'SET-ME-PLEASE',
+            'flex_shared_secret_key': 'SET-ME-PLEASE',
+        },
+        'cybersource-rest': {
+            'access_key': 'SET-ME-PLEASE',
+            'apple_pay_country_code': 'US',
+            'apple_pay_merchant_id_certificate_path': '/edx/etc/ssl/apple_pay_merchant.pem',
+            'apple_pay_merchant_id_domain_association': 'This value should also be in private configuration. '
+                                                        'It, too,\nwill span multiple lines.',
+            'apple_pay_merchant_identifier': 'merchant.com.example',
+            'cancel_page_url': '/checkout/cancel-checkout/',
+            'merchant_id': 'SET-ME-PLEASE',
+            'payment_page_url': 'https://testsecureacceptance.cybersource.com/pay',
+            'profile_id': 'SET-ME-PLEASE',
+            'receipt_page_url': '/checkout/receipt/',
+            'secret_key':  'SET-ME-PLEASE',
+            'send_level_2_3_details': True,
+            'soap_api_url': 'https://ics2wstest.ic3.com/commerce/1.x/transactionProcessor/'
+                            'CyberSourceTransaction_1.140.wsdl',
+            'sop_access_key': 'SET-ME-PLEASE',
+            'sop_payment_page_url': 'https://testsecureacceptance.cybersource.com/silent/pay',
+            'sop_profile_id': 'SET-ME-PLEASE',
+            'sop_secret_key': 'SET-ME-PLEASE',
+            'transaction_key': 'SET-ME-PLEASE',
+            'flex_shared_secret_key_id': 'SET-ME-PLEASE',
+            'flex_shared_secret_key': 'SET-ME-PLEASE',
         },
         'paypal': {
             'cancel_checkout_path': '/checkout/cancel-checkout/',

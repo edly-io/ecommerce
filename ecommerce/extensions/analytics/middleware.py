@@ -7,6 +7,11 @@ import logging
 
 from django.utils.deprecation import MiddlewareMixin
 
+
+import logging
+
+from django.utils.deprecation import MiddlewareMixin
+
 from ecommerce.extensions.analytics.utils import get_google_analytics_client_id
 
 logger = logging.getLogger(__name__)

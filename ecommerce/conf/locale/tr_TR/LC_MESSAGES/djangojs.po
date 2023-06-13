@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # adem ÖZGÜR <admozgur@gmail.com>, 2015
 # Ali Işıngör <ali@artistanbul.io>, 2017-2019
 # ali selek <aliselek01@gmail.com>, 2015

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 from ecommerce.extensions.fulfillment.modules import BaseFulfillmentModule
 from ecommerce.extensions.fulfillment.status import LINE

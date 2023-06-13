@@ -1,4 +1,3 @@
-from __future__ import absolute_import, unicode_literals
 
 import json
 import logging
@@ -131,7 +130,7 @@ class LMSPublisher:
         message = None
         try:
             data = json.loads(response)
-            if isinstance(data, six.string_types):
+            if isinstance(data, str):
                 message = data
             elif isinstance(data, dict) and data:
                 message = list(data.values())[0]

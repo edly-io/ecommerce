@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
 
 import uuid
 
@@ -48,6 +47,7 @@ class EnterpriseOfferFormTests(EnterpriseServiceMockMixin, TestCase):
             'max_discount': 300,
             'max_user_discount': 50,
             'max_user_applications': 3,
+            'usage_email_frequency': ConditionalOffer.DAILY
         }
         data.update(**kwargs)
         return data
@@ -455,7 +455,7 @@ class EnterpriseOfferFormTests(EnterpriseServiceMockMixin, TestCase):
         total_discount = 400
         expected_errors = {
             'max_discount': [
-                'Ensure new value must be greater than or equal to consumed({}) value.'.format(total_discount)
+                'Ensure new value must be greater than or equal to consumed({:.2f}) value.'.format(total_discount)
             ]
         }
         # create an enterprise offer that can provide max $500 discount and has already consumed $400
@@ -554,7 +554,7 @@ class EnterpriseOfferFormTests(EnterpriseServiceMockMixin, TestCase):
         """
         expected_errors = {
             'max_user_discount': [
-                'Ensure new value must be greater than or equal to consumed(400) value.'
+                'Ensure new value must be greater than or equal to consumed(400.00) value.'
             ]
         }
         # create an enterprise offer that can provide max $500 discount and has already consumed $400
@@ -585,3 +585,32 @@ class EnterpriseOfferFormTests(EnterpriseServiceMockMixin, TestCase):
         offer = form.save()
         self.assertEqual(offer.max_user_applications, data['max_user_applications'])
         self.assertEqual(offer.max_user_discount, data['max_user_discount'])
+
+    @ddt.data(
+        {
+            'emails_for_usage_alert': 'dummy@example.com, dummy1@example.com',
+            'is_valid_form': True,
+            'expected_errors': ''
+        },
+        {
+            'emails_for_usage_alert': 'dummyexample.com, dummy1@example.com',
+            'is_valid_form': False,
+            'expected_errors': ['Given email address dummyexample.com is not a valid email.']
+        },
+        {
+            'emails_for_usage_alert': 'dummy@example.com : dummy1@example.com',
+            'is_valid_form': False,
+            'expected_errors': ['Given email address dummy@example.com : dummy1@example.com is not a valid email.']
+        },
+    )
+    @ddt.unpack
+    def test_emails_for_usage_alert(self, emails_for_usage_alert, is_valid_form, expected_errors):
+        """
+        Test emails_for_usage_alert field with valid and invalid data
+        """
+        data = self.generate_data(emails_for_usage_alert=emails_for_usage_alert)
+        form = EnterpriseOfferForm(data=data)
+        if is_valid_form:
+            self.assertTrue(form.is_valid())
+        else:
+            self.assert_form_errors(data, {'emails_for_usage_alert': expected_errors})

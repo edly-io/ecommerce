@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+
 
 import json
+from urllib.parse import urljoin
 
 import httpretty
 import mock

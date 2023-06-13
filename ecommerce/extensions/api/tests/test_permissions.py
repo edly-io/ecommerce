@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 from rest_framework.parsers import JSONParser
 from rest_framework.request import Request

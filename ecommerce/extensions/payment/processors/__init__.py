@@ -1,4 +1,3 @@
-from __future__ import absolute_import, unicode_literals
 
 import abc
 from collections import namedtuple
@@ -15,7 +14,7 @@ HandledProcessorResponse = namedtuple('HandledProcessorResponse',
                                       ['transaction_id', 'total', 'currency', 'card_number', 'card_type'])
 
 
-class BasePaymentProcessor(six.with_metaclass(abc.ABCMeta, object)):  # pragma: no cover
+class BasePaymentProcessor(metaclass=abc.ABCMeta):  # pragma: no cover
     """Base payment processor class."""
 
     # NOTE: Ensure that, if passed to a Django template, Django does not attempt to instantiate this class
@@ -113,7 +112,7 @@ class BasePaymentProcessor(six.with_metaclass(abc.ABCMeta, object)):  # pragma: 
     @abc.abstractmethod
     def issue_credit(self, order_number, basket, reference_number, amount, currency):
         """
-        Issue a credit for the specified transaction.
+        Issue a credit/refund for the specified transaction.
 
         Arguments:
             order_number (str): Order number of the order being refunded.
@@ -136,7 +135,7 @@ class BasePaymentProcessor(six.with_metaclass(abc.ABCMeta, object)):  # pragma: 
         return waffle.switch_is_active(settings.PAYMENT_PROCESSOR_SWITCH_PREFIX + cls.NAME)
 
 
-class BaseClientSidePaymentProcessor(six.with_metaclass(abc.ABCMeta, BasePaymentProcessor)):  # pylint: disable=abstract-method
+class BaseClientSidePaymentProcessor(BasePaymentProcessor, metaclass=abc.ABCMeta):  # pylint: disable=abstract-method
     """ Base class for client-side payment processors. """
 
     def get_template_name(self):

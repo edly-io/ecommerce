@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # Iaroslav V <yivasilev@fa.ru>, 2018
 # Liubov Fomicheva <liubov.nelapa@gmail.com>, 2017-2018
 # Maksimenkova Olga <omaksimenkova@hse.ru>, 2015

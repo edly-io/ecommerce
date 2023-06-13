@@ -3,8 +3,8 @@ from __future__ import absolute_import
 import datetime
 import hashlib
 import logging
+from urllib.parse import urljoin, urlsplit
 
-import six  # pylint: disable=ungrouped-imports
 import waffle
 from analytics import Client as SegmentClient
 from dateutil.parser import parse
@@ -24,7 +24,6 @@ from jsonfield.fields import JSONField
 from requests.exceptions import ConnectionError as ReqConnectionError
 from requests.exceptions import Timeout
 from simple_history.models import HistoricalRecords
-from six.moves.urllib.parse import urljoin, urlsplit
 from slumber.exceptions import HttpNotFoundError, SlumberBaseException
 
 from ecommerce.core.constants import ALL_ACCESS_CONTEXT, ALLOW_MISSING_LMS_USER_ID
@@ -216,39 +215,6 @@ class SiteConfiguration(models.Model):
         blank=True
     )
 
-    enable_course_payments = models.BooleanField(
-        verbose_name=_('Enable Course Payments'),
-        help_text=_('Enable the courses payments along with courses enrollment via subscription.'),
-        default=True
-    )
-
-    edly_client_theme_branding_settings = JSONField(
-        verbose_name=_('Edly client theme branding settings'),
-        help_text=_('JSON string containing edly client theme branding settings.'),
-        null=False,
-        blank=False,
-        default={}
-    )
-
-    def get_edly_configuration_value(self, name, default=None):
-        """
-        Return Configuration value for the key specified as name argument.
-        Function logs a message if there is an error retrieving a key.
-
-        Arguments:
-            name (str): Name of the key for which to return configuration value.
-            default: default value tp return if key is not found in the configuration
-
-        Returns:
-            Configuration value for the given key or returns `None` if default is not available.
-        """
-        try:
-            return self.edly_client_theme_branding_settings.get(name, default)
-        except AttributeError as error:
-            log.exception('Invalid JSON data. \n [%s]', error)
-
-        return default
-
     @property
     def payment_processors_set(self):
         """
@@ -279,7 +245,7 @@ class SiteConfiguration(models.Model):
                     self.site.id,
                     name
                 )
-                raise ValidationError(six.text_type(exc))
+                raise ValidationError(str(exc))
 
     def _clean_client_side_payment_processor(self):
         """

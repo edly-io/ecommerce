@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # Ahmed Jazzar <ahmed.mojaz@gmail.com>, 2015
 # Ahmed Jazzar <ahmed.mojaz@gmail.com>, 2016
 # Anthony Mangano <amangano@edx.org>, 2017
@@ -23,8 +27,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: edx-platform\n"
 "Report-Msgid-Bugs-To: \n"
+<<<<<<< HEAD
 "POT-Creation-Date: 2020-05-17 20:11+0000\n"
 "PO-Revision-Date: 2020-05-11 05:54+0000\n"
+=======
+"POT-Creation-Date: 2020-05-28 07:40+0000\n"
+"PO-Revision-Date: 2020-05-24 20:13+0000\n"
+>>>>>>> upstream/open-release/koa.master
 "Last-Translator: edx_transifex_bot <i18n-working-group+edx-transifex-bot@edx.org>\n"
 "Language-Team: Arabic (http://www.transifex.com/open-edx/edx-platform/language/ar/)\n"
 "MIME-Version: 1.0\n"
@@ -286,6 +295,7 @@ msgstr ""
 msgid "Name"
 msgstr "الاسم"
 
+<<<<<<< HEAD
 #: ecommerce/core/models.py:758 ecommerce/extensions/offer/models.py:485
 msgid "EnterpriseCustomer UUID"
 msgstr ""
@@ -299,6 +309,21 @@ msgstr ""
 msgid "Coupon does not exist."
 msgstr "القسيمة غير موجودة."
 
+=======
+#: ecommerce/core/models.py:758 ecommerce/extensions/offer/models.py:490
+msgid "EnterpriseCustomer UUID"
+msgstr ""
+
+#: ecommerce/core/models.py:759 ecommerce/extensions/offer/models.py:368
+#: ecommerce/extensions/offer/models.py:557
+msgid "UUID for an EnterpriseCustomer from the Enterprise Service."
+msgstr ""
+
+#: ecommerce/coupons/views.py:71 ecommerce/coupons/views.py:120
+msgid "Coupon does not exist."
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/coupons/views.py:76
 msgid "This coupon code is not yet valid."
 msgstr "رمز القسيمة غير صالح إلى الآن."
@@ -363,6 +388,16 @@ msgid ""
 "support."
 msgstr ""
 
+<<<<<<< HEAD
+=======
+#: ecommerce/coupons/views.py:213
+msgid ""
+"This coupon is not valid for purchasing a program. Try using this on an "
+"individual course in the program. If you need assistance, contact edX "
+"support."
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/coupons/views.py:240
 msgid "Invalid data sharing consent token provided."
 msgstr "تم تقديم رمز الموافقة على مشاركة البيانات غير صالح."
@@ -382,7 +417,11 @@ msgid "This coupon code is not valid for this course. Try a different course."
 msgstr "رمز القسيمة هذا غير صالح لهذه الدورة. جرب دورة مختلفة."
 
 #: ecommerce/courses/models.py:33 ecommerce/extensions/basket/models.py:20
+<<<<<<< HEAD
 #: ecommerce/extensions/offer/models.py:167
+=======
+#: ecommerce/extensions/offer/models.py:172
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/extensions/payment/models.py:63
 #: ecommerce/templates/oscar/dashboard/offers/offer_detail.html:63
 #: ecommerce/templates/oscar/dashboard/offers/summary.html:14
@@ -470,28 +509,56 @@ msgid ""
 "{new_enterprise} as your enterprise and try again."
 msgstr ""
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/conditions.py:293
+=======
+#: ecommerce/enterprise/conditions.py:177
+#, python-brace-format
+msgid ""
+"This coupon has been made available through {new_enterprise}. To redeem this"
+" coupon, you must first logout. When you log back in, please select "
+"{new_enterprise} as your enterprise and try again."
+msgstr ""
+
+#: ecommerce/enterprise/conditions.py:331
+>>>>>>> upstream/open-release/koa.master
 msgid ""
 "This code is not valid with your email. Please login with the correct email "
 "assigned to the code or contact your Learning Manager for additional "
 "questions."
 msgstr ""
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:25
+=======
+#: ecommerce/enterprise/forms.py:29
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/enterprise/templates/enterprise/enterpriseoffer_list.html:30
 msgid "Enterprise Customer UUID"
 msgstr "UUID لعميل المؤسسة"
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:26
+=======
+#: ecommerce/enterprise/forms.py:30
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/enterprise/templates/enterprise/enterpriseoffer_list.html:31
 msgid "Enterprise Customer Catalog UUID"
 msgstr "UUID كتالوج عملاء المؤسسة"
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:27 ecommerce/programs/forms.py:22
+=======
+#: ecommerce/enterprise/forms.py:31 ecommerce/programs/forms.py:22
+>>>>>>> upstream/open-release/koa.master
 msgid "Discount Type"
 msgstr "نوع الخصم"
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:29 ecommerce/programs/forms.py:24
+=======
+#: ecommerce/enterprise/forms.py:33 ecommerce/programs/forms.py:24
+>>>>>>> upstream/open-release/koa.master
 msgid "Discount Value"
 msgstr "قيمة الخصم"
 
@@ -499,6 +566,7 @@ msgstr "قيمة الخصم"
 msgid "Contract Discount Type"
 msgstr ""
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:35
 msgid "Contract Discount"
 msgstr ""
@@ -524,6 +592,48 @@ msgid "Start Date"
 msgstr ""
 
 #: ecommerce/enterprise/forms.py:57 ecommerce/programs/forms.py:35
+=======
+#: ecommerce/enterprise/forms.py:36
+msgid "Contract Discount Type"
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:39
+msgid "Contract Discount"
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:42
+msgid "Prepaid Invoice Amount"
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:44
+msgid "Salesforce Opportunity ID"
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:56
+msgid "The maximum number of enrollments that can redeem this offer."
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:57
+msgid "The maximum USD dollar amount that can be redeemed by this offer."
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:58
+msgid ""
+"The maximum number of enrollments, by a user, that can redeem this offer."
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:59
+msgid ""
+"The maximum USD dollar amount that can be redeemed using this offer by a "
+"user."
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:62 ecommerce/programs/forms.py:34
+msgid "Start Date"
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:63 ecommerce/programs/forms.py:35
+>>>>>>> upstream/open-release/koa.master
 msgid "End Date"
 msgstr "تاريخ الانتهاء"
 
@@ -531,45 +641,90 @@ msgstr "تاريخ الانتهاء"
 msgid "Enrollment Limit"
 msgstr ""
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:59
 msgid "Bookings Limit"
 msgstr ""
 
 #: ecommerce/enterprise/forms.py:120
+=======
+#: ecommerce/enterprise/forms.py:64
+msgid "Enrollment Limit"
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:65
+msgid "Bookings Limit"
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:66
+msgid "Per User Enrollment Limit"
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:67
+msgid "Per User Bookings Limit"
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:129 ecommerce/enterprise/forms.py:168
+>>>>>>> upstream/open-release/koa.master
 #, python-brace-format
 msgid ""
 "Ensure new value must be greater than or equal to "
 "consumed({offer_enrollments}) value."
 msgstr ""
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:132
 msgid "Ensure this value is greater than or equal to 0."
 msgstr ""
 
 #: ecommerce/enterprise/forms.py:139
+=======
+#: ecommerce/enterprise/forms.py:141 ecommerce/enterprise/forms.py:180
+msgid "Ensure this value is greater than or equal to 0."
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:148 ecommerce/enterprise/forms.py:192
+>>>>>>> upstream/open-release/koa.master
 #, python-brace-format
 msgid ""
 "Ensure new value must be greater than or equal to "
 "consumed({consumed_discount}) value."
 msgstr ""
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:167
+=======
+#: ecommerce/enterprise/forms.py:220
+>>>>>>> upstream/open-release/koa.master
 msgid "An offer already exists for this Enterprise & Catalog combination."
 msgstr "يوجد بالفعل عرض لمجموعة Enterprise & Catalog هذه."
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:170 ecommerce/enterprise/forms.py:179
+=======
+#: ecommerce/enterprise/forms.py:223 ecommerce/enterprise/forms.py:232
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/programs/forms.py:72
 msgid "Percentage discounts cannot be greater than 100%."
 msgstr "لا يمكن أن تكون الخصومات المئوية أكبر من 100٪."
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:173 ecommerce/programs/forms.py:75
+=======
+#: ecommerce/enterprise/forms.py:226 ecommerce/programs/forms.py:75
+>>>>>>> upstream/open-release/koa.master
 msgid "A start date must be specified when specifying an end date."
 msgstr "يجب تحديد تاريخ البدء عند تحديد تاريخ الانتهاء."
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:176 ecommerce/programs/forms.py:78
+=======
+#: ecommerce/enterprise/forms.py:229 ecommerce/programs/forms.py:78
+>>>>>>> upstream/open-release/koa.master
 msgid "The start date must occur before the end date."
 msgstr "يجب أن يقع تاريخ البدء قبل تاريخ الانتهاء."
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/forms.py:98
 #, python-brace-format
 msgid "Discount provided by {enterprise_customer_name}."
@@ -584,6 +739,17 @@ msgid "This field is required when contract discount type is absolute."
 msgstr ""
 
 #: ecommerce/enterprise/forms.py:213
+=======
+#: ecommerce/enterprise/forms.py:237
+msgid "More than 2 digits after the decimal not allowed for absolute value."
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:242
+msgid "This field is required when contract discount type is absolute."
+msgstr ""
+
+#: ecommerce/enterprise/forms.py:266
+>>>>>>> upstream/open-release/koa.master
 msgid "Discount of type {} provided by {} for {}."
 msgstr ""
 
@@ -693,17 +859,37 @@ msgid ""
 "              "
 msgstr ""
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/utils.py:237
+=======
+#: ecommerce/enterprise/templates/enterprise/enterpriseoffer_list.html:64
+#, python-format
+msgid ""
+"\n"
+"                %(platform_name)s Enterprise Offer Administration Tool\n"
+"              "
+msgstr ""
+
+#: ecommerce/enterprise/utils.py:238
+>>>>>>> upstream/open-release/koa.master
 #, python-brace-format
 msgid "SKU {sku} does not exist."
 msgstr ""
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/utils.py:246
+=======
+#: ecommerce/enterprise/utils.py:247
+>>>>>>> upstream/open-release/koa.master
 #, python-brace-format
 msgid "There is no Enterprise Customer associated with SKU {sku}."
 msgstr "لا يوجد عميل Enterprise مرتبط برمز التخزين التعريفي {sku}."
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/utils.py:254
+=======
+#: ecommerce/enterprise/utils.py:255
+>>>>>>> upstream/open-release/koa.master
 #, python-brace-format
 msgid ""
 "If you have concerns about sharing your data, please contact your "
@@ -712,7 +898,11 @@ msgstr ""
 "إذا كانت لديك مخاوف بشأن مشاركة بياناتك ، فيرجى الاتصال بـ"
 "المسؤول في {enterprise}."
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/utils.py:257
+=======
+#: ecommerce/enterprise/utils.py:258
+>>>>>>> upstream/open-release/koa.master
 #, python-brace-format
 msgid ""
 "If you have concerns about sharing your data, please contact your "
@@ -721,7 +911,11 @@ msgstr ""
 "إذا كانت لديك مخاوف بشأن مشاركة بياناتك ، فيرجى الاتصال بـ"
 "المسؤول في {enterprise} على {contact_info}."
 
+<<<<<<< HEAD
 #: ecommerce/enterprise/utils.py:263
+=======
+#: ecommerce/enterprise/utils.py:264
+>>>>>>> upstream/open-release/koa.master
 #, python-brace-format
 msgid "Enrollment in {course_name} was not complete."
 msgstr "لم يكتمل التسجيل في {course_name}."
@@ -755,6 +949,7 @@ msgstr "أحد المنتجات التي تحاول طلبها غير متوفّ
 #: ecommerce/extensions/api/exceptions.py:21
 msgid ""
 "We couldn't find enough information about you to perform the calculation."
+<<<<<<< HEAD
 msgstr ""
 
 #: ecommerce/extensions/api/serializers.py:175
@@ -773,6 +968,26 @@ msgstr "فعّال"
 msgid "Products must have a certificate type."
 msgstr "يجب أن يكون للمنتجات نوع الشهادة."
 
+=======
+msgstr ""
+
+#: ecommerce/extensions/api/serializers.py:175
+msgid "EXPIRED"
+msgstr ""
+
+#: ecommerce/extensions/api/serializers.py:177
+msgid "INACTIVE"
+msgstr "غير نشط"
+
+#: ecommerce/extensions/api/serializers.py:178
+msgid "ACTIVE"
+msgstr "فعّال"
+
+#: ecommerce/extensions/api/serializers.py:468
+msgid "Products must have a certificate type."
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/extensions/api/serializers.py:471
 #: ecommerce/extensions/api/serializers.py:506
 msgid "Products must have a price."
@@ -822,6 +1037,13 @@ msgstr "المنتجات التي تحتوي على SKU(s) [{skus}] غير مو�
 msgid "Provide username or is_anonymous query param, but not both"
 msgstr ""
 
+<<<<<<< HEAD
+=======
+#: ecommerce/extensions/api/v2/views/baskets.py:468
+msgid "Provide username or is_anonymous query param, but not both"
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/extensions/api/v2/views/products.py:54
 #, python-brace-format
 msgid "Product API only supports {http_method} for {product_class} products."
@@ -875,6 +1097,7 @@ msgstr "انتهت صلاحية القسيمة رمز '{code}'."
 #: ecommerce/extensions/basket/utils.py:420
 #, python-brace-format
 msgid "Coupon code '{code}' is not active."
+<<<<<<< HEAD
 msgstr ""
 
 #: ecommerce/extensions/basket/views.py:90
@@ -895,6 +1118,20 @@ msgstr "لقد قمت بالفعل بشراء هذه المنتجات"
 msgid "Coupon code '{code}' is not valid for this basket."
 msgstr ""
 
+=======
+msgstr ""
+
+#: ecommerce/extensions/basket/utils.py:426
+#, python-brace-format
+msgid "Coupon code '{code}' is not available. {msg}"
+msgstr ""
+
+#: ecommerce/extensions/basket/utils.py:432
+#, python-brace-format
+msgid "Coupon code '{code}' is not valid for this basket."
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/extensions/basket/utils.py:445
 #, python-brace-format
 msgid ""
@@ -921,28 +1158,41 @@ msgid ""
 "After you complete your order you will be able to select course dates from "
 "your dashboard."
 msgstr ""
+<<<<<<< HEAD
 "بعد إكمال طلبك ، ستتمكن من تحديد تواريخ الدورة من"
 "لوحة القيادة الخاصة بك."
+=======
+>>>>>>> upstream/open-release/koa.master
 
 #: ecommerce/extensions/basket/views.py:311
 msgid ""
 "After you complete your order you will be automatically enrolled in the "
 "verified track of the course."
 msgstr ""
+<<<<<<< HEAD
 "بعد إكمال طلبك ، سيتم تسجيلك تلقائيًا في"
 "المسار المؤكد للدورة."
 
 #: ecommerce/extensions/basket/views.py:315
 msgid "After you complete your order you will receive credit for your course."
 msgstr "بعد إكمال طلبك ، ستحصل على رصيد لدورتك."
+=======
+
+#: ecommerce/extensions/basket/views.py:315
+msgid "After you complete your order you will receive credit for your course."
+msgstr ""
+>>>>>>> upstream/open-release/koa.master
 
 #: ecommerce/extensions/basket/views.py:318
 msgid ""
 "After you complete your order you will be automatically enrolled in the "
 "course."
 msgstr ""
+<<<<<<< HEAD
 "بعد إكمال طلبك ، سيتم تسجيلك تلقائيًا في"
 "دورة."
+=======
+>>>>>>> upstream/open-release/koa.master
 
 #: ecommerce/extensions/basket/views.py:322
 #, python-brace-format
@@ -1073,13 +1323,18 @@ msgstr "الحالة"
 msgid "Failed to retrieve enrollment data."
 msgstr "عذرًا، لقد فشلنا في استرجاع بيانات التسجيل."
 
+<<<<<<< HEAD
 #: ecommerce/extensions/offer/models.py:358
+=======
+#: ecommerce/extensions/offer/models.py:363
+>>>>>>> upstream/open-release/koa.master
 msgid "Course Catalog ID from the Discovery Service."
 msgstr "معرف كتالوج الدورة التدريبية من خدمة الاكتشاف."
 
 #: ecommerce/extensions/offer/models.py:369
 msgid "UUID for an EnterpriseCustomerCatalog from the Enterprise Service."
 
+<<<<<<< HEAD
 #: ecommerce/extensions/offer/models.py:287
 msgid "UUID for an EnterpriseCustomer from the Enterprise Service."
 msgstr "UUID لعميل EnterpriseCustomer من خدمة Enterprise."
@@ -1089,14 +1344,29 @@ msgid "EnterpriseCustomer UUID"
 msgstr ""
 
 #: ecommerce/extensions/offer/models.py:492
+=======
+#: ecommerce/extensions/offer/models.py:374
+msgid "UUID for an EnterpriseCustomerCatalog from the Enterprise Service."
+msgstr ""
+
+#: ecommerce/extensions/offer/models.py:497
+>>>>>>> upstream/open-release/koa.master
 msgid "EnterpriseCustomer Name"
 msgstr "اسم العميل"
 
+<<<<<<< HEAD
 #: ecommerce/extensions/offer/models.py:497
 msgid "EnterpriseCustomerCatalog UUID"
 msgstr ""
 
 #: ecommerce/extensions/offer/models.py:502
+=======
+#: ecommerce/extensions/offer/models.py:502
+msgid "EnterpriseCustomerCatalog UUID"
+msgstr ""
+
+#: ecommerce/extensions/offer/models.py:507
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/extensions/voucher/utils.py:54
 #: ecommerce/extensions/voucher/utils.py:191
 #: ecommerce/extensions/voucher/utils.py:271
@@ -1111,6 +1381,7 @@ msgstr "برنامج UUID"
 msgid "Email to user pending."
 msgstr ""
 
+<<<<<<< HEAD
 #: ecommerce/extensions/offer/models.py:510
 msgid "Code successfully assigned to user."
 msgstr ""
@@ -1140,6 +1411,41 @@ msgid "Revoke"
 msgstr ""
 
 #: ecommerce/extensions/offer/models.py:557
+=======
+#: ecommerce/extensions/offer/models.py:514
+msgid "Email to user pending."
+msgstr ""
+
+#: ecommerce/extensions/offer/models.py:515
+msgid "Code successfully assigned to user."
+msgstr ""
+
+#: ecommerce/extensions/offer/models.py:516
+msgid "Code has been redeemed by user."
+msgstr ""
+
+#: ecommerce/extensions/offer/models.py:517
+msgid "Email to user bounced."
+msgstr ""
+
+#: ecommerce/extensions/offer/models.py:518
+msgid "Code has been revoked for this user."
+msgstr ""
+
+#: ecommerce/extensions/offer/models.py:552
+msgid "Assign"
+msgstr ""
+
+#: ecommerce/extensions/offer/models.py:553
+msgid "Remind"
+msgstr ""
+
+#: ecommerce/extensions/offer/models.py:554
+msgid "Revoke"
+msgstr ""
+
+#: ecommerce/extensions/offer/models.py:562
+>>>>>>> upstream/open-release/koa.master
 msgid "Make a particular template version active."
 msgstr ""
 
@@ -1231,6 +1537,14 @@ msgid ""
 "I am purchasing on behalf of my employer or other professional organization"
 msgstr ""
 
+<<<<<<< HEAD
+=======
+#: ecommerce/extensions/payment/forms.py:124
+msgid ""
+"I am purchasing on behalf of my employer or other professional organization"
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/extensions/payment/forms.py:141
 #: ecommerce/extensions/payment/forms.py:218
 #: ecommerce/extensions/payment/views/__init__.py:98
@@ -1319,7 +1633,11 @@ msgstr ""
 msgid "..."
 msgstr "..."
 
+<<<<<<< HEAD
 #: ecommerce/extensions/payment/views/cybersource.py:476
+=======
+#: ecommerce/extensions/payment/views/cybersource.py:466
+>>>>>>> upstream/open-release/koa.master
 msgid "transaction declined"
 msgstr ""
 
@@ -1332,9 +1650,12 @@ msgid ""
 "This functionality can be restored by activating the {switch_name} Waffle "
 "switch. Be careful when re-activating this switch!"
 msgstr ""
+<<<<<<< HEAD
 "حدث خطأ أثناء معالجة دفعتك. لم يتم تحصيل رسوم منك."
 "الرجاء التحقق جيدًا من المعلومات التي قدمتها وحاول مرة أخرى. للحصول على المساعدة"
 "{link_start} اتصل بالدعم {link_end}."
+=======
+>>>>>>> upstream/open-release/koa.master
 
 #: ecommerce/extensions/refund/models.py:69
 msgid "Order"
@@ -1599,6 +1920,7 @@ msgstr "رقم الطلبية"
 msgid "Redeemed By Username"
 msgstr "تم الاسترداد باسم المستخدم"
 
+<<<<<<< HEAD
 #: ecommerce/extensions/voucher/utils.py:234
 msgid "Redeemed For Course ID"
 msgstr "تم الاسترداد بمعرّف الدورة التدريبية"
@@ -1624,15 +1946,21 @@ msgid "Email Domains"
 msgstr "مجالات البريد الإلكتروني"
 
 #: ecommerce/extensions/voucher/utils.py:534
+=======
+#: ecommerce/extensions/voucher/utils.py:785
+>>>>>>> upstream/open-release/koa.master
 #, python-brace-format
 msgid "Range for coupon [{coupon_id}]"
 msgstr "نطاق القسيمة [{coupon_id}]"
 
+<<<<<<< HEAD
 #: ecommerce/extensions/voucher/utils.py:785
 #, python-brace-format
 msgid "Range for coupon [{coupon_id}]"
 msgstr "نطاق القسيمة [{coupon_id}]"
 
+=======
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/extensions/voucher/views.py:32
 #, python-brace-format
 msgid "Coupon Report for {coupon_name}"
@@ -1964,6 +2292,7 @@ msgstr "أداة مشرف المساق"
 msgid "E-Commerce Dashboard"
 msgstr "لوحة معلومات التجارة الإلكترونية"
 
+<<<<<<< HEAD
 #: ecommerce/templates/customer/email_base.html:188
 #, python-format
 msgid "Copyright © %(year)s %(platform_name)s. All rights reserved."
@@ -2251,6 +2580,8 @@ msgstr ""
 msgid "%(partner_name)s: Order Confirmation: [%(order_number)s]"
 msgstr "%(partner_name)s: تأكيد الطلب: [%(order_number)s]"
 
+=======
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/templates/edx/base_menu.html:7
 msgid "Sign Out"
 msgstr "تسجيل الخروج"
@@ -2335,6 +2666,14 @@ msgstr "إيقاف%(voucher_discount_amount)s "
 msgid "Discount of type %(type)s provided by %(enterprise_name)s"
 msgstr ""
 
+<<<<<<< HEAD
+=======
+#: ecommerce/templates/edx/checkout/receipt.html:137
+#, python-format
+msgid "Discount of type %(type)s provided by %(enterprise_name)s"
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/templates/edx/checkout/receipt.html:142
 msgid "Discount for your first upgrade"
 msgstr ""
@@ -2518,7 +2857,11 @@ msgstr ""
 
 #: ecommerce/templates/edx/email_confirmation_required.html:27
 msgid "Why activate?"
+<<<<<<< HEAD
 msgstr "لماذا التفعيل؟"
+=======
+msgstr ""
+>>>>>>> upstream/open-release/koa.master
 
 #: ecommerce/templates/edx/email_confirmation_required.html:29
 msgid ""
@@ -2635,11 +2978,14 @@ msgstr "تحديث"
 msgid "summary"
 msgstr "ملخص"
 
+<<<<<<< HEAD
 #: ecommerce/templates/oscar/basket/partials/client_side_checkout_basket.html:54
 msgid "Quanity"
 msgstr "كمية"
 
 #: ecommerce/templates/oscar/basket/partials/client_side_checkout_basket.html:64
+=======
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/templates/oscar/basket/partials/client_side_checkout_basket.html:68
 msgid "Discounts applied"
 msgstr "الخصم الذي تم تطبيقه"
@@ -2686,12 +3032,21 @@ msgstr "إجمالي"
 
 #: ecommerce/templates/oscar/basket/partials/client_side_checkout_basket.html:135
 msgid "order details"
+<<<<<<< HEAD
 msgstr "تفاصيل الطلب"
 
 #: ecommerce/templates/oscar/basket/partials/client_side_checkout_basket.html:153
 msgid "select payment method"
 msgstr "اختار طريقة الدفع"
 
+=======
+msgstr ""
+
+#: ecommerce/templates/oscar/basket/partials/client_side_checkout_basket.html:153
+msgid "select payment method"
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/templates/oscar/basket/partials/client_side_checkout_basket.html:155
 msgid "Pay with a Credit Card"
 msgstr "الدفع بواسطة بطاقة ائتمان"
@@ -2915,7 +3270,11 @@ msgid ""
 "\n"
 "      SDN Check Failure\n"
 "    "
+<<<<<<< HEAD
 msgstr "فشل التحقق من SDN"
+=======
+msgstr ""
+>>>>>>> upstream/open-release/koa.master
 
 #: ecommerce/templates/oscar/checkout/sdn_failure.html:26
 msgid ""
@@ -3495,6 +3854,21 @@ msgstr "تعليق ..."
 msgid "Suspend offer"
 msgstr "تعليق العرض"
 
+<<<<<<< HEAD
+=======
+#: ecommerce/templates/oscar/dashboard/offers/offer_detail.html:25
+msgid "Reinstate offer"
+msgstr ""
+
+#: ecommerce/templates/oscar/dashboard/offers/offer_detail.html:26
+msgid "Suspending..."
+msgstr ""
+
+#: ecommerce/templates/oscar/dashboard/offers/offer_detail.html:26
+msgid "Suspend offer"
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/templates/oscar/dashboard/offers/offer_detail.html:27
 msgid "Delete offer"
 msgstr "حذف العرض"
@@ -3507,6 +3881,7 @@ msgstr "العرض متاح حاليا"
 msgid "Offer not available due to restrictions!"
 msgstr "العرض غير متاح بسبب القيود!"
 
+<<<<<<< HEAD
 #: ecommerce/templates/oscar/dashboard/offers/offer_detail.html:41
 msgid "Total cost:"
 msgstr "التكلفة الإجمالية:"
@@ -3515,6 +3890,20 @@ msgstr "التكلفة الإجمالية:"
 msgid "Number of orders:"
 msgstr "عدد الطلبات:"
 
+=======
+#: ecommerce/templates/oscar/dashboard/offers/offer_detail.html:39
+msgid "Offer not available due to restrictions!"
+msgstr ""
+
+#: ecommerce/templates/oscar/dashboard/offers/offer_detail.html:41
+msgid "Total cost:"
+msgstr ""
+
+#: ecommerce/templates/oscar/dashboard/offers/offer_detail.html:42
+msgid "Number of orders:"
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/templates/oscar/dashboard/offers/offer_detail.html:43
 msgid "Number of uses:"
 msgstr "عدد الاستخدامات:"

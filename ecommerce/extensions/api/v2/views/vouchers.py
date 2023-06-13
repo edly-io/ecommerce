@@ -1,7 +1,8 @@
 """HTTP endpoints for interacting with vouchers."""
-from __future__ import absolute_import
+
 
 import logging
+from urllib.parse import urlparse
 
 import django_filters
 import pytz
@@ -164,11 +165,14 @@ class VoucherViewSet(NonDestroyableModelViewSet):
         multiple_credit_providers = False
         credit_provider_price = None
 
+        logger.info('[Voucher Offers] CourseSeatTypes: [%s], Voucher: [%s]', course_seat_types, voucher.id)
+
         products, stock_records, course_run_metadata = self.retrieve_course_objects(
             response['results'], course_seat_types
         )
         contains_verified_course = ('verified' in course_seat_types)
         for product in products:
+            logger.info('[Voucher Offers] Constructing offer data. Product: [%s]', product.id)
             # Omit unavailable seats from the offer results so that one seat does not cause an
             # error message for every seat in the query result.
             if not request.strategy.fetch_for_product(product).availability.is_available_to_buy:
@@ -177,7 +181,8 @@ class VoucherViewSet(NonDestroyableModelViewSet):
 
             course_id = product.course_id
             course_catalog_data = course_run_metadata[course_id]
-            if course_seat_types == 'credit':
+            if course_seat_types == 'credit' or product.attr.certificate_type == 'credit':
+                logger.info('[Voucher Offers] Constructing offer data for credit.')
                 # Omit credit seats for which the user is not eligible or which the user already bought.
                 if not request.user.is_eligible_for_credit(product.course_id, request.site.siteconfiguration):
                     continue

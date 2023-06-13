@@ -1,8 +1,9 @@
 # pylint: disable=no-else-return
-from __future__ import absolute_import, unicode_literals
+
 
 import logging
 import time
+import urllib
 from collections import OrderedDict
 from datetime import datetime
 from decimal import Decimal
@@ -50,6 +51,7 @@ from ecommerce.extensions.basket import message_utils
 from ecommerce.extensions.basket.constants import EMAIL_OPT_IN_ATTRIBUTE
 from ecommerce.extensions.basket.exceptions import BadRequestException, RedirectException, VoucherException
 from ecommerce.extensions.basket.utils import (
+    add_flex_microform_flag_to_url,
     add_invalid_code_message_to_url,
     add_utm_params_to_url,
     apply_offers_on_basket,
@@ -445,8 +447,6 @@ class BasketAddItemsView(BasketLogicMixin, APIView):
                 basket = prepare_basket(request, available_products, voucher)
             except AlreadyPlacedOrderException:
                 return render(request, 'edx/error.html', {'error': _('You have already purchased these products')})
-            except SubscriptionNotBuyableException:
-                return render(request, 'edx/error.html', {'error': _('This subscription is inactive or you already have an active subscription')})
 
             self._set_email_preference_on_basket(request, basket)
 
@@ -457,10 +457,10 @@ class BasketAddItemsView(BasketLogicMixin, APIView):
                 if not (len(available_products) == 1 and available_products[0].is_enrollment_code_product):
                     # Display an error message when an invalid code is passed as a parameter
                     invalid_code = code
-            return self._redirect_response_to_basket_or_payment(request, skus, invalid_code)
+            return self._redirect_response_to_basket_or_payment(request, invalid_code)
 
         except BadRequestException as e:
-            return HttpResponseBadRequest(six.text_type(e))
+            return HttpResponseBadRequest(str(e))
         except RedirectException as e:
             return e.response
 
@@ -505,16 +505,12 @@ class BasketAddItemsView(BasketLogicMixin, APIView):
             defaults={'value_text': request.GET.get('email_opt_in') == 'true'},
         )
 
-    def _redirect_response_to_basket_or_payment(self, request, skus, invalid_code=None):
+    def _redirect_response_to_basket_or_payment(self, request, invalid_code=None):
         redirect_url = get_payment_microfrontend_or_basket_url(request)
-        # If a user is eligible and bucketed, REV1074 experiment information will be added to their url
-        REV1074_is_active = waffle.flag_is_active(self.request, 'REV1074.enable_experiment')
-        if REV1074_is_active and skus and not invalid_code:  # pragma: no cover
-            redirect_url = add_REV1074_information_to_url_if_eligible(redirect_url, request, skus[0])
-            redirect_url += '?basket_id=' + str(request.basket.id)
-        else:  # pragma: no cover
-            redirect_url = add_utm_params_to_url(redirect_url, list(self.request.GET.items()))
+        redirect_url = add_utm_params_to_url(redirect_url, list(self.request.GET.items()))
         redirect_url = add_invalid_code_message_to_url(redirect_url, invalid_code)
+        # TODO: Remove as part of PCI-81
+        redirect_url = add_flex_microform_flag_to_url(redirect_url, request)
 
         return HttpResponseRedirect(redirect_url, status=303)
 
@@ -581,7 +577,7 @@ class BasketSummaryView(BasketLogicMixin, BasketView):
             context.update(payment_processors_data)
 
         context.update({
-            'formset_lines_data': list(six.moves.zip(formset, lines_data)),
+            'formset_lines_data': list(zip(formset, lines_data)),
             'homepage_url': get_lms_url(''),
             'min_seat_quantity': 1,
             'max_seat_quantity': 100,
@@ -610,7 +606,7 @@ class BasketSummaryView(BasketLogicMixin, BasketView):
             return {
                 'client_side_payment_processor': payment_processor,
                 'enable_client_side_checkout': True,
-                'months': list(six.moves.range(1, 13)),
+                'months': list(range(1, 13)),
                 'payment_form': PaymentForm(
                     user=self.request.user,
                     request=self.request,
@@ -619,13 +615,38 @@ class BasketSummaryView(BasketLogicMixin, BasketView):
                 ),
                 'paypal_enabled': 'paypal' in (p.NAME for p in payment_processors),
                 # Assumption is that the credit card duration is 15 years
-                'years': list(six.moves.range(current_year, current_year + 16)),
+                'years': list(range(current_year, current_year + 16)),
             }
         else:
             msg = 'Unable to load client-side payment processor [{processor}] for ' \
                   'site configuration [{sc}]'.format(processor=site_configuration.client_side_payment_processor,
                                                      sc=site_configuration.id)
             raise SiteConfigurationError(msg)
+
+
+class CaptureContextApiLogicMixin:  # pragma: no cover
+    """
+    Business logic for the capture context API.
+    """
+    def _add_capture_context(self, response):
+        response['flex_microform_enabled'] = waffle.flag_is_active(
+            self.request,
+            'payment.cybersource.flex_microform_enabled'
+        )
+        if not response['flex_microform_enabled']:
+            return
+        payment_processor_class = self.request.site.siteconfiguration.get_client_side_payment_processor_class()
+        if not payment_processor_class:
+            return
+        payment_processor = payment_processor_class(self.request.site)
+        if not hasattr(payment_processor, 'get_capture_context'):
+            return
+
+        try:
+            response['capture_context'] = payment_processor.get_capture_context(self.request.session)
+        except:  # pylint: disable=bare-except
+            logger.exception("Error generating capture_context")
+            return
 
 
 class PaymentApiLogicMixin(BasketLogicMixin):
@@ -738,6 +759,30 @@ class PaymentApiLogicMixin(BasketLogicMixin):
 
     def _get_response_status(self, response):
         return message_utils.get_response_status(response['messages'])
+
+
+class CaptureContextApiView(CaptureContextApiLogicMixin, APIView):  # pragma: no cover
+    """
+    Api for retrieving capture context / public key for the Cybersource flex-form.
+
+    GET:
+        Retrieves a capture context / public key for the Cybersource flex-form.
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):  # pylint: disable=unused-argument
+        try:
+            return self.get_capture_context_api_response()
+        except RedirectException as e:
+            return Response({'redirect': e.response.url})
+
+    def get_capture_context_api_response(self, status=None):
+        """
+        Serializes the capture context api response.
+        """
+        data = {}
+        self._add_capture_context(data)
+        return Response(data, status=status)
 
 
 class PaymentApiView(PaymentApiLogicMixin, APIView):
@@ -909,14 +954,14 @@ class VoucherAddLogicMixin:
             # the standard redemption flow, we kick the user out to the `redeem` flow.
             # This flow will handle any additional information that needs to be gathered
             # due to the fact that the voucher is attached to an Enterprise Customer.
-            params = six.moves.urllib.parse.urlencode(
+            params = urllib.parse.urlencode(
                 OrderedDict([
                     ('code', code),
                     ('sku', stock_record.partner_sku),
                     ('failure_url', self.request.build_absolute_uri(
                         '{path}?{params}'.format(
                             path=reverse('basket:summary'),
-                            params=six.moves.urllib.parse.urlencode(
+                            params=urllib.parse.urlencode(
                                 {
                                     CONSENT_FAILED_PARAM: code
                                 }

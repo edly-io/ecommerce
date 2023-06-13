@@ -1,5 +1,5 @@
 """Exceptions and error messages used by payment processors."""
-from __future__ import absolute_import, unicode_literals
+from __future__ import unicode_literals
 
 from django.utils.translation import ugettext_lazy as _
 from oscar.apps.payment.exceptions import GatewayError, PaymentError
@@ -50,34 +50,4 @@ class InvalidBasketError(PaymentError):
 
 class AuthorizationError(PaymentError):
     """ Authorization was declined. """
-
-
-class RedundantPaymentNotificationError(PaymentError):
-    """ Raised when duplicate payment notification is detected with same transaction ID. """
-
-
-class ExcessivePaymentForOrderError(PaymentError):
-    """ Raised when duplicate payment notification is detected with different transaction ID. """
-
-
-class MissingTransactionDetailError(PaymentError):
-    """ Unable to get Authorizenet transaction detail using a transaction_id received through notification. """
-    pass
-
-
-class RefundError(Exception):
-    """ Raised when requested payment processor is unable to create a refund for settled transcations. """
-    pass
-
-
-class PaymentProcessorResponseNotFound(RefundError):
-    """ Raised when requested processor is unable to get Payment Processor Response for settled transaction. """
-    pass
-
-
-class MissingProcessorResponseCardInfo(RefundError):
-    """
-        Raised when requested processor is unable to get card information from payment processor response
-        for settled transaction.
-    """
     pass
