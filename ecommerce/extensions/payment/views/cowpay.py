@@ -178,7 +178,7 @@ class CowpayExecutionView(EdxOrderPlacementMixin, View):
         data['user'] = user.id
         logger.info('Data received: %s', data)
 
-        if not data['order_status'] == 'PAID':
+        if not data['payment_status'] == 'PAID':
             logger.warning('No execution step can be carried out until order status is PAID')
             return JsonResponse({'message': 'Payment has been cancelled.'}, status=200)
 
