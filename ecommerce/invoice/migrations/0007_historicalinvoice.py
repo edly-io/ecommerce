@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('basket', '0011_add_email_basket_attribute_type'),
         ('order', '0017_order_partner'),
-        ('core', '0051_ecommercefeatureroleassignment_enterprise_id'),
+        ('core', '0054_ecommercefeatureroleassignment_enterprise_id'),
         ('invoice', '0006_auto_20180228_1057'),
     ]
 

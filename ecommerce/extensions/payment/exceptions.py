@@ -51,3 +51,40 @@ class InvalidBasketError(PaymentError):
 class AuthorizationError(PaymentError):
     """ Authorization was declined. """
     pass
+
+
+class RedundantPaymentNotificationError(PaymentError):
+    """ Raised when duplicate payment notification is detected with same transaction ID. """
+
+
+class ExcessivePaymentForOrderError(PaymentError):
+    """ Raised when duplicate payment notification is detected with different transaction ID. """
+
+
+class MissingTransactionDetailError(PaymentError):
+    """ Unable to get Authorizenet transaction detail using a transaction_id received through notification. """
+    pass
+
+
+class RefundError(Exception):
+    """ Raised when requested payment processor is unable to create a refund for settled transcations. """
+    pass
+
+
+class PaymentProcessorResponseNotFound(RefundError):
+    """ Raised when requested processor is unable to get Payment Processor Response for settled transaction. """
+    pass
+
+
+class MissingProcessorResponseCardInfo(RefundError):
+    """
+        Raised when requested processor is unable to get card information from payment processor response
+        for settled transaction.
+    """
+    pass
+
+
+class SDNFallbackDataEmptyError(Exception):
+    """ Error for when we call checkSDNFallback and the data is not yet populated.
+    This data is populated by running: ./manage.py populate_sdn_fallback_data_and_metadata
+    See ecommerce ADR 0007-sdn-fallback for more info """

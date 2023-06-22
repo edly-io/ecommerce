@@ -7,10 +7,6 @@ Note:
 """
 from django.utils.deprecation import MiddlewareMixin
 
-from __future__ import absolute_import
-
-from django.utils.deprecation import MiddlewareMixin
-
 from ecommerce.theming.models import SiteTheme
 
 
