@@ -2,6 +2,8 @@
 Views for API v1.
 """
 
+from logging import getLogger
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites.models import Site
 from django.contrib.sites.shortcuts import get_current_site
@@ -30,6 +32,8 @@ from ecommerce.extensions.edly_ecommerce_app.helpers import (
 from ecommerce.extensions.edly_ecommerce_app.permissions import CanAccessSiteCreation
 from ecommerce.extensions.partner.models import Partner
 from ecommerce.theming.models import SiteTheme
+
+logger = getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class SiteThemesActions(APIView):
@@ -228,14 +232,16 @@ class EdlySiteConfigViewset(APIView):
         """
         ecom_data = request.data.get('ecommerce', {})
         site_theme = request.data.get('site_theme', '')
-
+        logger.info('ecommerce update: ')
         if not ecom_data and not site_theme:
+            logger.info('ecommerce update failed')
             return Response('Invalid payload.', status=status.HTTP_400_BAD_REQUEST)
 
         validations_messages = validate_site_configurations_for_self_service_api(ecom_data)
         validations_messages += validate_site_theme(site_theme)
 
         if validations_messages:
+            logger.info('ecommerce update failed due to validation messages')
             return Response(validations_messages, status=status.HTTP_400_BAD_REQUEST)
         try:
             if ecom_data:
@@ -269,6 +275,7 @@ class EdlySiteConfigViewset(APIView):
         Update django settings override for request site.
         """
         site = self.request.site
+        logger.info('ecommerce update site {}'.format(site))
         self._update_site_configurations_for_site(site, request_data)
 
     def _update_site_configurations_for_site(self, site, request_data):
@@ -284,8 +291,9 @@ class EdlySiteConfigViewset(APIView):
                 )
             else:
                 site_configurations[field] = request_data[field]
-
+        logger.info('ecommerce update site run 2nd last')
         site.siteconfiguration.edly_client_theme_branding_settings = site_configurations
+        logger.info('ecommerce update site run last')
         site.siteconfiguration.save()
     
     def _update_django_settings_override_for_site(self, django_settings_override, request_data):
