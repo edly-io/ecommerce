@@ -1,0 +1,14 @@
+{% load static %}
+
+<script type="text/javascript"
+    src="{{ client_side_payment_processor.base_url }}"
+    charset="utf-8">
+</script>
+<script type="text/javascript">
+    window.AuthorizenetConfig = {
+        postURL: "{% url 'authorizenet:submit' %}",
+        apiLoginID: "{{ client_side_payment_processor.api_login_id }}",
+        clientKey: "{{ client_side_payment_processor.client_key }}"
+    }
+</script>
+<script src="{% static 'js/views/authorizenet.js' %}"></script>

@@ -31,6 +31,7 @@ STRIPE_URLS = [
 AUTHORIZENET_URLS = [
     url(r'^notification/$', authorizenet.AuthorizeNetNotificationView.as_view(), name='authorizenet_notifications'),
     url(r'^redirect/$', authorizenet.handle_redirection, name='redirect'),
+    url(r'^submit/$', authorizenet.AuthorizenetClientView.as_view(), name='submit'),
 ]
 
 COWPAY_URLS = [

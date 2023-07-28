@@ -8,7 +8,7 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -16,10 +16,14 @@ from oscar.apps.partner import strategy
 from oscar.core.loading import get_class, get_model
 from rest_framework.views import APIView
 
+from ecommerce.extensions.basket.utils import basket_add_organization_attribute
 from ecommerce.core.url_utils import get_lms_dashboard_url
 from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
+from ecommerce.extensions.checkout.utils import get_receipt_page_url
 from ecommerce.extensions.payment.exceptions import InvalidBasketError
-from ecommerce.extensions.payment.processors.authorizenet import AuthorizeNet
+from ecommerce.extensions.payment.forms import AuthorizenetPaymentForm
+from ecommerce.extensions.payment.processors.authorizenet import AuthorizeNet, AuthorizenetClient
+from ecommerce.extensions.payment.views import BasePaymentSubmitView
 from ecommerce.notifications.notifications import send_notification
 
 logger = logging.getLogger(__name__)
@@ -252,3 +256,47 @@ def handle_redirection(request):
         response.set_cookie('pendingTransactionCourse', course_id_hash, domain=domain)
 
     return response
+
+
+class AuthorizenetClientView(EdxOrderPlacementMixin, BasePaymentSubmitView):
+
+
+    form_class = AuthorizenetPaymentForm
+
+    @property
+    def payment_processor(self):
+        return AuthorizenetClient(self.request.site)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        basket = form_data['basket']
+        order_number = basket.order_number
+        data_descriptor = form_data['data_descriptor']
+        data_value = form_data['data_value']
+
+        basket_add_organization_attribute(basket, self.request.POST)
+
+        response = self.payment_processor.get_transaction_parameters(
+            basket, data_descriptor=data_descriptor, data_value=data_value
+        )
+        try:
+            self.handle_payment(response, basket)
+        except Exception:  # pylint: disable=broad-except
+            logger.exception('An error occurred while processing the Authorizent payment for basket [%d].', basket.id)
+            return JsonResponse({}, status=400)
+
+        try:
+            order = self.create_order(self.request, basket)
+        except Exception:  # pylint: disable=broad-except
+            logger.exception('An error occurred while processing the Authorizenet payment for basket [%d].', basket.id)
+            return JsonResponse({}, status=400)
+
+        self.handle_post_order(order)
+
+        receipt_url = get_receipt_page_url(
+            site_configuration=self.request.site.siteconfiguration,
+            order_number=order_number,
+            disable_back_button=True,
+        )
+
+        return HttpResponseRedirect(receipt_url)

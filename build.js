@@ -63,6 +63,10 @@
         {
             name: 'js/views/cowpay',
             exclude: ['js/common']
+        },
+        {
+            name: 'js/views/authorizenet',
+            exclude: ['js/common']
         }
     ]
 })
