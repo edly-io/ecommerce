@@ -1,6 +1,7 @@
 """ AuthorizeNet payment processor. """
 from __future__ import absolute_import, unicode_literals
 
+import crum
 import json
 import logging
 from urllib.parse import quote
@@ -14,7 +15,7 @@ from authorizenet.apicontrollers import (
 from authorizenet.constants import constants
 from django.urls import reverse
 from oscar.apps.payment.exceptions import GatewayError
-from oscar.core.loading import get_model
+from oscar.core.loading import get_class, get_model
 
 from ecommerce.core.url_utils import get_ecommerce_url
 from ecommerce.extensions.payment.exceptions import (
@@ -23,10 +24,12 @@ from ecommerce.extensions.payment.exceptions import (
     PaymentProcessorResponseNotFound,
     RefundError
 )
+from ecommerce.extensions.payment.forms import AuthorizenetPaymentForm
 from ecommerce.extensions.payment.processors import BaseClientSidePaymentProcessor, HandledProcessorResponse
 from ecommerce.extensions.payment.utils import LxmlObjectJsonEncoder
 
 logger = logging.getLogger(__name__)
+Applicator = get_class('offer.applicator', 'Applicator')
 PaymentProcessorResponse = get_model('payment', 'PaymentProcessorResponse')
 
 AUTH_CAPTURE_TRANSACTION_TYPE = "authCaptureTransaction"
@@ -353,3 +356,147 @@ class AuthorizeNet(BaseClientSidePaymentProcessor):
             order_number)
         logger.exception(msg)
         raise RefundError(msg)
+
+
+class AuthorizenetClient(BaseClientSidePaymentProcessor):
+    NAME = 'authorizenetclient'
+    template_name = 'payment/authorizenet.html'
+
+    def __init__(self, site):
+        """
+        Constructs a new instance of the Authorizenet Client processor.
+
+        Raises:
+            KeyError: If no settings configured for this payment processor.
+        """
+        super(AuthorizenetClient, self).__init__(site)
+        self.request = crum.get_current_request()
+        configuration = self.configuration
+        self.client_key = configuration['client_key']
+        self.base_url = configuration['base_url']
+        self.api_login_id = configuration['api_login_id']
+        self.transaction_key = configuration['transaction_key']
+        self.authorizenet_production_mode = configuration['production_mode']
+
+    @property
+    def authorizenet_form(self):
+        return AuthorizenetPaymentForm(
+            user=self.request.user,
+            request=self.request,
+            initial={'basket': self.request.basket},
+            label_suffix=''
+        )
+    
+    def get_transaction_parameters(self, basket, request=None, **kwargs):
+        basket.strategy = self.request.strategy
+        Applicator().apply(basket, self.request.user, self.request)
+
+        merchant_auth = apicontractsv1.merchantAuthenticationType()
+        merchant_auth.name = self.api_login_id
+        merchant_auth.transactionKey = self.transaction_key
+
+        # Create the payment object for a payment nonce
+        opaque_data = apicontractsv1.opaqueDataType()
+        opaque_data.dataDescriptor = kwargs['data_descriptor']
+        opaque_data.dataValue = kwargs['data_value']
+
+        # Add the payment data to a paymentType object
+        payment_one = apicontractsv1.paymentType()
+        payment_one.opaqueData = opaque_data
+
+        # Create order information
+        order = apicontractsv1.orderType()
+        order.invoiceNumber = basket.order_number
+        order.description = '{} - {}: {}'.format(
+            basket.order_number,
+            basket.site.partner.name,
+            basket.all_lines().first().product.title
+        )
+
+        # Set the customer's Bill To address
+        owner = basket.owner
+        customer_address = apicontractsv1.customerAddressType()
+        customer_address.firstName = owner.first_name
+        customer_address.lastName = owner.last_name
+
+        # Set the customer's identifying information
+        customer_data = apicontractsv1.customerDataType()
+        customer_data.type = "individual"
+        customer_data.id = str(owner.id)
+        customer_data.email = owner.email
+        
+        # Add values for transaction settings
+        duplicate_window_setting = apicontractsv1.settingType()
+        duplicate_window_setting.settingName = "duplicateWindow"
+        duplicate_window_setting.settingValue = "600"
+        settings = apicontractsv1.ArrayOfSetting()
+        settings.setting.append(duplicate_window_setting)
+
+        # Create a transactionRequestType object and add the previous objects to it
+        transaction_request = apicontractsv1.transactionRequestType()
+        transaction_request.transactionType = "authCaptureTransaction"
+        transaction_request.amount = basket.total_incl_tax
+        transaction_request.order = order
+        transaction_request.payment = payment_one
+        transaction_request.billTo = customer_address
+        transaction_request.customer = customer_data
+        transaction_request.transactionSettings = settings
+
+        # Assemble the complete transaction request
+        create_transaction_request = apicontractsv1.createTransactionRequest()
+        create_transaction_request.merchantAuthentication = merchant_auth
+        create_transaction_request.refId = basket.order_number
+        create_transaction_request.transactionRequest = transaction_request
+        
+        # Create the controller and get response
+        create_transaction_controller = createTransactionController(create_transaction_request)
+        if self.authorizenet_production_mode:
+            create_transaction_controller.setenvironment(constants.PRODUCTION)
+
+        create_transaction_controller.execute()
+
+        response = create_transaction_controller.getresponse()
+
+        if response is not None:
+            if response.messages.resultCode == 'Ok':
+                if hasattr(response.transactionResponse, 'messages'):
+                    logger.info('Successfully created transaction with Transaction ID: %s' % response.transactionResponse.transId)
+                    logger.info('Transaction Response Code: %s' % response.transactionResponse.responseCode)
+                    logger.info('Message Code: %s' % response.transactionResponse.messages.message[0].code)
+                    logger.info('Auth Code: %s' % response.transactionResponse.authCode)
+                    logger.info('Description: %s' % response.transactionResponse.messages.message[0].description)
+                else:
+                    if hasattr(response.transactionResponse, 'errors'):
+                        logger.info('Error Code:  %s' % str(response.transactionResponse.errors.error[0].errorCode))
+                        logger.info('Error Message: %s' % response.transactionResponse.errors.error[0].errorText)
+            else:
+                if hasattr(response, 'transactionResponse') and hasattr(response.transactionResponse, 'errors'):
+                    logger.info('Error Code: %s' % str(response.transactionResponse.errors.error[0].errorCode))
+                    logger.info('Error Message: %s' % response.transactionResponse.errors.error[0].errorText)
+                else:
+                    logger.info('Error Code: %s' % response.messages.message[0]['code'].text)
+                    logger.info('Error Message: %s' % response.messages.message[0]['text'].text)
+
+        return response
+
+    def handle_processor_response(self, response, basket=None):
+        currency = basket.currency
+        transaction_id = response.transactionResponse.transId if hasattr(response.transactionResponse, 'transId') else None
+        transaction_dict = LxmlObjectJsonEncoder().encode(response)
+
+        self.record_processor_response(transaction_dict, transaction_id=transaction_id, basket=basket)
+        logger.info('Successfully created Authorizenet charge [%s] for basket [%d].', 'merchant_id', basket.id)
+
+        total = basket.total_incl_tax
+        card_type = self.NAME
+
+        return HandledProcessorResponse(
+            transaction_id=transaction_id,
+            total=total,
+            currency=currency,
+            card_number='XXXX',
+            card_type=card_type
+        )
+
+    def issue_credit(self, order_number, basket, reference_number, amount, currency):
+        raise NotImplementedError('Authorizenet payment processor does not support refunds.')
