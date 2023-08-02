@@ -14,7 +14,7 @@ from authorizenet.apicontrollers import (
 )
 from authorizenet.constants import constants
 from django.urls import reverse
-from oscar.apps.payment.exceptions import GatewayError
+from oscar.apps.payment.exceptions import GatewayError, TransactionDeclined
 from oscar.core.loading import get_class, get_model
 
 from ecommerce.core.url_utils import get_ecommerce_url
@@ -469,13 +469,31 @@ class AuthorizenetClient(BaseClientSidePaymentProcessor):
                     if hasattr(response.transactionResponse, 'errors'):
                         logger.info('Error Code:  %s' % str(response.transactionResponse.errors.error[0].errorCode))
                         logger.info('Error Message: %s' % response.transactionResponse.errors.error[0].errorText)
+                        self.handle_processor_response(response, basket)
+                        raise TransactionDeclined(
+                            'Payment error: {}'.format(
+                                response.transactionResponse.errors.error[0].errorText
+                            )
+                        )
             else:
                 if hasattr(response, 'transactionResponse') and hasattr(response.transactionResponse, 'errors'):
                     logger.info('Error Code: %s' % str(response.transactionResponse.errors.error[0].errorCode))
                     logger.info('Error Message: %s' % response.transactionResponse.errors.error[0].errorText)
+                    self.handle_processor_response(response, basket)
+                    raise TransactionDeclined(
+                            'Payment error: {}'.format(
+                                response.transactionResponse.errors.error[0].errorText
+                            )
+                        )
                 else:
                     logger.info('Error Code: %s' % response.messages.message[0]['code'].text)
                     logger.info('Error Message: %s' % response.messages.message[0]['text'].text)
+                    self.handle_processor_response(response, basket)
+                    raise TransactionDeclined(
+                            'Payment Gateway error: {}'.format(
+                                response.messages.message[0]['text'].text
+                            )
+                        )
 
         return response
 

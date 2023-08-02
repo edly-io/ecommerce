@@ -25,10 +25,12 @@ define([
             $cardCode.attr('required', true);
             $expiryMonth.attr('required', true);
             $expiryYear.attr('required', true);
+            $expiryMonth.attr('maxLength', 2);
+            $expiryYear.attr('maxLength', 2);
 
             $cardNumber.keyup(function () {
                 $('.help-block-card').html('');
-                if (!CreditCardUtils.isValidCardNumber($cardNumber.val())) {
+                if ($cardNumber.val() !== '' && !CreditCardUtils.isValidCardNumber($cardNumber.val())) {
                     $('.help-block-card').css('color', 'red').html('*Invalid Card Number');
                 }
             });
