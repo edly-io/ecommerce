@@ -1,5 +1,5 @@
 """Oscar-specific settings"""
-from __future__ import absolute_import
+
 
 from django.utils.translation import ugettext_lazy as _
 from oscar.defaults import *
@@ -130,6 +130,7 @@ OSCAR_DEFAULT_CURRENCY_SYMBOL = '$'
 # PAYMENT PROCESSING
 PAYMENT_PROCESSORS = (
     'ecommerce.extensions.payment.processors.cybersource.Cybersource',
+    'ecommerce.extensions.payment.processors.cybersource.CybersourceREST',
     'ecommerce.extensions.payment.processors.paypal.Paypal',
     'ecommerce.extensions.payment.processors.stripe.Stripe',
     'ecommerce.extensions.payment.processors.authorizenet.AuthorizeNet',
@@ -143,6 +144,18 @@ PAYMENT_PROCESSOR_ERROR_PATH = '/checkout/error/'
 PAYMENT_PROCESSOR_CONFIG = {
     'edx': {
         'cybersource': {
+            'profile_id': None,
+            'access_key': None,
+            'secret_key': None,
+            'payment_page_url': None,
+            'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
+            'send_level_2_3_details': True,
+            'apple_pay_merchant_identifier': '',
+            'apple_pay_merchant_id_domain_association': '',
+            'apple_pay_merchant_id_certificate_path': '',
+            'apple_pay_country_code': '',
+        },
+        'cybersource-rest': {
             'profile_id': None,
             'access_key': None,
             'secret_key': None,

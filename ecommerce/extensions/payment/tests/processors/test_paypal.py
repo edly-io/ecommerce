@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """Unit tests of Paypal payment processor implementation."""
-from __future__ import absolute_import, unicode_literals
+
 
 import json
 import logging
+from urllib.parse import urljoin
 
 import ddt
 import mock
@@ -480,7 +481,7 @@ class PaypalTests(PaypalMixin, PaymentProcessorTestCaseMixin, TestCase):
 
     def test_issue_credit(self):
         """
-        Tests issuing credit with Paypal processor
+        Tests issuing credit/refund with Paypal processor
         """
         refund = self.create_refund(self.processor_name)
         order = refund.order
@@ -508,7 +509,7 @@ class PaypalTests(PaypalMixin, PaymentProcessorTestCaseMixin, TestCase):
 
     def test_issue_credit_error(self):
         """
-        Tests issue credit fails in case of erroneous response or exceptions
+        Tests issue credit/refund fails in case of erroneous response or exceptions
         """
         refund = self.create_refund(self.processor_name)
         order = refund.order

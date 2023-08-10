@@ -1,11 +1,13 @@
 -c pins.txt
 
-authorizenet==1.1.4
 analytics-python
+authorizenet==1.1.4
 bleach
 coreapi
+cybersource-rest-client-python
 django<3.0
 django-compressor
+django-config-models>=1.0.0         # Configuration models for Django allowing config management with auditing
 django-cors-headers                 #  Used to allow to configure CORS headers for cross-domain requests
 django-crispy-forms<1.9.0
 django_extensions
@@ -47,14 +49,10 @@ pytz
 requests
 rules
 sailthru-client==2.2.3
-six
 sorl-thumbnail
 stripe==1.70.0
 unicodecsv
 xss-utils
 zeep
-
-# Install from github
-git+https://github.com/django-compressor/django-appconf.git@5169ce2c92d9836e0b3ab3ec645727d9d5225d1a#egg=django-appconf
 
 git+https://github.com/python-social-auth/social-app-django.git@c00d23c2b45c3317bd35b15ad1b959338689cef8#egg=social-auth-app-django

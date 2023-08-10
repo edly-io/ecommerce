@@ -1,4 +1,3 @@
-from __future__ import absolute_import, unicode_literals
 
 import logging
 from decimal import Decimal
@@ -13,6 +12,7 @@ from requests.exceptions import ConnectionError as ReqConnectionError
 from requests.exceptions import Timeout
 from slumber.exceptions import SlumberHttpBaseException
 
+from ecommerce.courses.utils import get_course_info_from_catalog
 from ecommerce.enterprise.api import catalog_contains_course_runs, get_enterprise_id_for_user
 from ecommerce.enterprise.utils import get_or_create_enterprise_customer_user
 from ecommerce.extensions.basket.utils import ENTERPRISE_CATALOG_ATTRIBUTE_TYPE
@@ -40,7 +40,7 @@ def is_offer_max_user_discount_available(basket, offer):
     # no need to do anything if this is not an enterprise offer or `user_max_discount` is not set
     if offer.priority != OFFER_PRIORITY_ENTERPRISE or offer.max_user_discount is None:
         return True
-    discount_value = _get_course_discount_value(basket, offer)
+    discount_value = _get_basket_discount_value(basket, offer)
     # check if offer has discount available for user
     sum_user_discounts_for_this_offer = OrderDiscount.objects.filter(
         offer_id=offer.id, order__user_id=basket.owner.id, order__status=ORDER.COMPLETE
@@ -57,7 +57,7 @@ def is_offer_max_discount_available(basket, offer):
     # no need to do anything if this is not an enterprise offer or `max_discount` is not set
     if offer.priority != OFFER_PRIORITY_ENTERPRISE or offer.max_discount is None:
         return True
-    discount_value = _get_course_discount_value(basket, offer)
+    discount_value = _get_basket_discount_value(basket, offer)
     # check if offer has discount available
     new_total_discount = discount_value + offer.total_discount
     if new_total_discount <= offer.max_discount:
@@ -66,25 +66,21 @@ def is_offer_max_discount_available(basket, offer):
     return False
 
 
-def _get_course_discount_value(basket, offer):
+def _get_basket_discount_value(basket, offer):
     """Calculate the discount value based on benefit type and value"""
-    product = basket.lines.first().product
-    seat = product.course.seat_products.get(id=product.id)
-    stock_record = StockRecord.objects.get(product=seat, partner=product.course.partner)
-    course_price = stock_record.price_excl_tax
-
+    sum_basket_lines = basket.all_lines().aggregate(total=Sum('stockrecord__price_excl_tax'))['total'] or Decimal(0.0)
     # calculate discount value that will be covered by the offer
     benefit_type = get_benefit_type(offer.benefit)
     benefit_value = offer.benefit.value
     if benefit_type == Benefit.PERCENTAGE:
-        discount_value = get_discount_value(float(offer.benefit.value), float(course_price))
+        discount_value = get_discount_value(float(offer.benefit.value), float(sum_basket_lines))
         discount_value = Decimal(discount_value)
     else:  # Benefit.FIXED
-        # There is a possibility that the discount value could be greater than the course price
-        # ie, discount value is $100, course price is $75, in this case the full price of the course will be covered
-        # and learner will owe $0 to checkout.
-        if benefit_value > course_price:
-            discount_value = course_price
+        # There is a possibility that the discount value could be greater than the sum of basket lines
+        # ie, discount value is $100, basket lines are $75, in this case the full price of the basket lines
+        # will be covered and learner will owe $0 to checkout.
+        if benefit_value > sum_basket_lines:
+            discount_value = sum_basket_lines
         else:
             discount_value = benefit_value
     return discount_value
@@ -127,8 +123,33 @@ class EnterpriseCustomerCondition(ConditionWithoutRangeMixin, SingleItemConsumpt
             else None
         enterprise_name_in_condition = str(self.enterprise_customer_name)
         username = basket.owner.username
-        course_run_ids = []
+
+        # This variable will hold both course keys and course run identifiers.
+        course_ids = []
         for line in basket.all_lines():
+            if line.product.is_course_entitlement_product:
+                try:
+                    response = get_course_info_from_catalog(basket.site, line.product)
+                except (ReqConnectionError, KeyError, SlumberHttpBaseException, Timeout) as exc:
+                    logger.exception(
+                        '[Code Redemption Failure] Unable to apply enterprise offer because basket '
+                        'contains a course entitlement product but we failed to get course info from  '
+                        'course entitlement product.'
+                        'User: %s, Offer: %s, Message: %s, Enterprise: %s, Catalog: %s, Course UUID: %s',
+                        username,
+                        offer.id,
+                        exc,
+                        enterprise_in_condition,
+                        enterprise_catalog,
+                        line.product.attr.UUID
+                    )
+                    return False
+                else:
+                    course_ids.append(response['key'])
+
+                    # Skip to the next iteration.
+                    continue
+
             course = line.product.course
             if not course:
                 # Basket contains products not related to a course_run.
@@ -144,7 +165,43 @@ class EnterpriseCustomerCondition(ConditionWithoutRangeMixin, SingleItemConsumpt
                                    enterprise_catalog)
                 return False
 
-            course_run_ids.append(course.id)
+            course_ids.append(course.id)
+
+        courses_in_basket = ','.join(course_ids)
+        user_enterprise = get_enterprise_id_for_user(basket.site, basket.owner)
+        if user_enterprise and enterprise_in_condition != user_enterprise:
+            # Learner is not linked to the EnterpriseCustomer associated with this condition.
+            if offer.offer_type == ConditionalOffer.VOUCHER:
+                logger.warning('[Code Redemption Failure] Unable to apply enterprise offer because Learner\'s '
+                               'enterprise (%s) does not match this conditions\'s enterprise (%s). '
+                               'User: %s, Offer: %s, Enterprise: %s, Catalog: %s, Courses: %s',
+                               user_enterprise,
+                               enterprise_in_condition,
+                               username,
+                               offer.id,
+                               enterprise_in_condition,
+                               enterprise_catalog,
+                               courses_in_basket)
+
+                logger.info(
+                    '[Code Redemption Issue] Linking learner with the enterprise in Condition. '
+                    'User [%s], Enterprise [%s]',
+                    username,
+                    enterprise_in_condition
+                )
+                get_or_create_enterprise_customer_user(
+                    basket.site,
+                    enterprise_in_condition,
+                    username,
+                    False
+                )
+                msg = _('This coupon has been made available through {new_enterprise}. '
+                        'To redeem this coupon, you must first logout. When you log back in, '
+                        'please select {new_enterprise} as your enterprise '
+                        'and try again.').format(new_enterprise=enterprise_name_in_condition)
+                messages.warning(crum.get_current_request(), msg,)
+
+            return False
 
         courses_in_basket = ','.join(course_run_ids)
         user_enterprise = get_enterprise_id_for_user(basket.site, basket.owner)
@@ -196,7 +253,7 @@ class EnterpriseCustomerCondition(ConditionWithoutRangeMixin, SingleItemConsumpt
 
         try:
             catalog_contains_course = catalog_contains_course_runs(
-                basket.site, course_run_ids, enterprise_in_condition,
+                basket.site, course_ids, enterprise_in_condition,
                 enterprise_customer_catalog_uuid=enterprise_catalog
             )
         except (ReqConnectionError, KeyError, SlumberHttpBaseException, Timeout) as exc:

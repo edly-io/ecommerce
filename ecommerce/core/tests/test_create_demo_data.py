@@ -1,7 +1,8 @@
-from __future__ import absolute_import
+
 
 import sys
 from datetime import datetime
+from io import StringIO
 
 import httpretty
 import mock

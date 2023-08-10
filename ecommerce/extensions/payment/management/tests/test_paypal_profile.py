@@ -1,6 +1,7 @@
-from __future__ import absolute_import
+
 
 import json
+from io import StringIO
 
 import ddt
 import mock

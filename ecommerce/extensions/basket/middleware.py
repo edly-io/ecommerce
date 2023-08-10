@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 import newrelic.agent
 from edx_django_utils import monitoring as monitoring_utils

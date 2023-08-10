@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # Jirayu Chamamahattana <mman2x@gmail.com>, 2015
 # Noppachai Eiamwasant <noporo@hotmail.com>, 2015
 # Pornchai TummarATTAnanonT <yantaku@gmail.com>, 2015-2016

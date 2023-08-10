@@ -1,7 +1,6 @@
 """
 Django rules for enterprise
 """
-from __future__ import absolute_import
 
 import crum
 import rules

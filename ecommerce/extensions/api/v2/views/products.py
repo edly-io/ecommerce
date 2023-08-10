@@ -1,5 +1,4 @@
 """HTTP endpoints for interacting with products."""
-from __future__ import absolute_import
 
 import logging
 
@@ -18,6 +17,8 @@ from ecommerce.extensions.api import serializers
 from ecommerce.extensions.api.filters import ProductFilter
 from ecommerce.extensions.api.v2.views import NonDestroyableModelViewSet
 from ecommerce.extensions.edly_ecommerce_app.permissions import IsAdminOrCourseCreator
+
+logger = logging.getLogger(__name__)
 
 logger = logging.getLogger(__name__)
 

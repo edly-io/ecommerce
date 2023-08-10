@@ -1,13 +1,12 @@
 """ PayPal payment processing. """
-from __future__ import absolute_import, unicode_literals
 
 import logging
 import re
 import uuid
 from decimal import Decimal
+from urllib.parse import urljoin
 
 import paypalrestsdk
-import six  # pylint: disable=ungrouped-imports
 import waffle
 from django.conf import settings
 from django.urls import reverse
@@ -155,7 +154,7 @@ class Paypal(BasePaymentProcessor):
             },
             'transactions': [{
                 'amount': {
-                    'total': six.text_type(basket.total_incl_tax),
+                    'total': str(basket.total_incl_tax),
                     'currency': basket.currency,
                 },
                 # Paypal allows us to send additional transaction related data in 'description' & 'custom' field
@@ -172,7 +171,7 @@ class Paypal(BasePaymentProcessor):
                             'name': middle_truncate(self.get_courseid_title(line), PAYPAL_FREE_FORM_FIELD_MAX_SIZE),
                             # PayPal requires that the sum of all the item prices (where price = price * quantity)
                             # equals to the total amount set in amount['total'].
-                            'price': six.text_type(line.line_price_incl_tax_incl_discounts / line.quantity),
+                            'price': str(line.line_price_incl_tax_incl_discounts / line.quantity),
                             'currency': line.stockrecord.price_currency,
                         }
                         for line in basket.all_lines()
@@ -379,7 +378,7 @@ class Paypal(BasePaymentProcessor):
 
             refund = sale.refund({
                 'amount': {
-                    'total': six.text_type(amount),
+                    'total': str(amount),
                     'currency': currency,
                 }
             })

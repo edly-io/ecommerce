@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 import sys
 
@@ -28,7 +27,7 @@ def query_yes_no(question, default="yes"):
 
     while True:
         sys.stdout.write(question + prompt)
-        choice = moves.input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return valid[default]
         if choice in valid:

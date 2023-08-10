@@ -1,13 +1,13 @@
-from __future__ import absolute_import, unicode_literals
 
 import datetime
 import os
+import re
 from decimal import Decimal
+from urllib.parse import urljoin
 
 import ddt
 import mock
 import responses
-import six  # pylint: disable=ungrouped-imports
 from django.conf import settings
 from django.urls import reverse
 from factory.django import mute_signals
@@ -161,7 +161,7 @@ class CybersourceMixin(PaymentEventsMixin):
         """
         reason_code = kwargs.get('reason_code', '100')
         req_reference_number = kwargs.get('req_reference_number', basket.order_number)
-        total = six.text_type(basket.total_incl_tax)
+        total = str(basket.total_incl_tax)
         auth_amount = auth_amount or total
 
         notification = {
@@ -199,7 +199,7 @@ class CybersourceMixin(PaymentEventsMixin):
         return notification
 
     def mock_cybersource_wsdl(self):
-        files = ('CyberSourceTransaction_1.115.wsdl', 'CyberSourceTransaction_1.115.xsd')
+        files = ('CyberSourceTransaction_1.166.wsdl', 'CyberSourceTransaction_1.166.xsd')
 
         for filename in files:
             path = os.path.join(os.path.dirname(__file__), filename)
@@ -223,7 +223,7 @@ class CybersourceMixin(PaymentEventsMixin):
         </wsse:Security>
     </soap:Header>
     <soap:Body>
-        <c:replyMessage xmlns:c="urn:schemas-cybersource-com:transaction-data-1.115">
+        <c:replyMessage xmlns:c="urn:schemas-cybersource-com:transaction-data-1.166">
             <c:merchantReferenceCode>{merchant_reference_code}</c:merchantReferenceCode>
             <c:requestID>{request_id}</c:requestID>
             <c:decision>{decision}</c:decision>
@@ -239,6 +239,9 @@ class CybersourceMixin(PaymentEventsMixin):
                 <c:requestDateTime>2017-06-12T23:40:14Z</c:requestDateTime>
                 <c:amount>{amount}</c:amount>
                 <c:reconciliationID>10595141283</c:reconciliationID>
+                <c:authorizationCode>831000</c:authorizationCode>
+                <c:processorResponse>000</c:processorResponse>
+                <c:paymentNetworkTransactionID>558196000003814</c:paymentNetworkTransactionID>
             </c:ccCreditReply>
         </c:replyMessage>
     </soap:Body>
@@ -278,7 +281,7 @@ class CybersourceMixin(PaymentEventsMixin):
             'locale': settings.LANGUAGE_CODE,
             'transaction_type': 'sale',
             'reference_number': basket.order_number,
-            'amount': six.text_type(basket.total_incl_tax),
+            'amount': str(basket.total_incl_tax),
             'currency': basket.currency,
             'override_custom_receipt_page': basket.site.siteconfiguration.build_ecommerce_url(
                 reverse('cybersource:redirect')
@@ -335,7 +338,7 @@ class CybersourceMixin(PaymentEventsMixin):
                 </wsse:Security>
             </soap:Header>
             <soap:Body>
-                <c:replyMessage xmlns:c="urn:schemas-cybersource-com:transaction-data-1.115">
+                <c:replyMessage xmlns:c="urn:schemas-cybersource-com:transaction-data-1.166">
                     <c:merchantReferenceCode>EDX-100045</c:merchantReferenceCode>
                     <c:requestID>4996329373316728804010</c:requestID>
                     <c:decision>{decision}</c:decision>
@@ -467,7 +470,7 @@ class CybersourceNotificationTestsMixin(CybersourceMixin):
         error_message = (
             'CyberSource payment failed due to [{error_class}] for transaction [{transaction_id}], order '
             '[{order_number}], and basket [{basket_id}]. The complete payment response [Unknown Error] was recorded '
-            'in entry [{response_id}].'
+            'in entry [{response_id}]. Processed by [cybersource].'
         )
         self._test_payment_handling_errors(error_class, log_level, message_prefix + error_message, error_class_name)
 
@@ -475,10 +478,11 @@ class CybersourceNotificationTestsMixin(CybersourceMixin):
         (ExcessivePaymentForOrderError, 'INFO', 'Received duplicate CyberSource payment notification with different '
                                                 'transaction ID for basket [{basket_id}] which is associated with an '
                                                 'existing order [{order_number}]. Payment collected twice, '
-                                                'request a refund.'),
+                                                'request a refund. Processed by [cybersource].'),
         (RedundantPaymentNotificationError, 'INFO', 'Received redundant CyberSource payment notification with same '
                                                     'transaction ID for basket [{basket_id}] which is associated with '
-                                                    'an existing order [{order_number}]. No payment was collected.')
+                                                    'an existing order [{order_number}]. No payment was collected. '
+                                                    'Processed by [cybersource].')
     )
     @ddt.unpack
     def test_payment_handling_unique_errors(self, error_class, log_level, error_message):
@@ -550,7 +554,7 @@ class CybersourceNotificationTestsMixin(CybersourceMixin):
         notification = self.generate_notification(self.basket, billing_address=self.billing_address)
         msg = (
             'Received CyberSource payment notification for basket [{id}] '
-            'which is in a non-frozen state, [{status}]'
+            'which is in a non-frozen state, [{status}]. Processed by [cybersource].'
         ).format(
             id=self.basket.id,
             status=status
@@ -584,7 +588,7 @@ class CybersourceNotificationTestsMixin(CybersourceMixin):
                 ),
             )
 
-    def test_unexpected_validate_notification_error(self):
+    def test_unexpected_validate_order_completion_error(self):
         """ Verify the view logs and redirects to the error page when the payment unexpectedly fails. """
         notification = self.generate_notification(self.basket)
 
@@ -601,7 +605,7 @@ class CybersourceNotificationTestsMixin(CybersourceMixin):
                         'ERROR',
                         (
                             'Unhandled exception processing CyberSource payment notification for transaction [{}], '
-                            'order [{}], and basket [{}].'.format(
+                            'order [{}], and basket [{}]. Processed by [cybersource].'.format(
                                 notification.get('transaction_id'),
                                 self.basket.order_number,
                                 self.basket.id,
@@ -624,7 +628,8 @@ class CybersourceNotificationTestsMixin(CybersourceMixin):
                     logger_name,
                     'ERROR',
                     (
-                        'Error processing order for transaction [{}], with order [{}] and basket [{}].'.format(
+                        'Error processing order for transaction [{}], with order [{}] and basket [{}]. '
+                        'Processed by [cybersource].'.format(
                             notification.get('transaction_id'),
                             self.basket.order_number,
                             self.basket.id,
@@ -741,7 +746,8 @@ class CybersourceNotificationTestsMixin(CybersourceMixin):
         if mock_value:
             duplicate_reference_message = (
                 'Received CyberSource payment notification for basket [{}] which is associated '
-                'with existing order [{}]. No payment was collected, and no new order will be created.'
+                'with existing order [{}]. No payment was collected, and no new order will be created. '
+                'Processed by [cybersource].'
             ).format(self.basket.id, self.basket.order_number)
         else:
             duplicate_reference_message = ''
@@ -773,7 +779,7 @@ class CybersourceNotificationTestsMixin(CybersourceMixin):
     def _get_payment_notification_message(self, notification):
         return (
             'Received CyberSource payment notification for transaction [{}], associated with order [{}] and basket '
-            '[{}].'
+            '[{}]. Processed by [cybersource].'
         ).format(
             notification.get('transaction_id'),
             self.basket.order_number,
@@ -855,7 +861,7 @@ class PaypalMixin:
         self.mock_api_response('/v1/oauth2/token', oauth2_response, rsps=rsps)
 
     def get_payment_creation_response_mock(self, basket, state=PAYMENT_CREATION_STATE, approval_url=APPROVAL_URL):
-        total = six.text_type(basket.total_incl_tax)
+        total = str(basket.total_incl_tax)
         payment_creation_response = {
             'create_time': '2015-05-04T18:18:27Z',
             'id': self.PAYMENT_ID,
@@ -893,7 +899,7 @@ class PaypalMixin:
                         {
                             'quantity': line.quantity,
                             'name': line.product.title,
-                            'price': six.text_type(line.line_price_incl_tax_incl_discounts / line.quantity),
+                            'price': str(line.line_price_incl_tax_incl_discounts / line.quantity),
                             'currency': line.stockrecord.price_currency,
                         }
                         for line in basket.all_lines()
@@ -948,7 +954,7 @@ class PaypalMixin:
     def mock_payment_execution_response(self, basket, state=PAYMENT_EXECUTION_STATE, payer_info=None):
         if payer_info is None:
             payer_info = self.PAYER_INFO
-        total = six.text_type(basket.total_incl_tax)
+        total = str(basket.total_incl_tax)
         payment_execution_response = {
             'create_time': '2015-05-04T15:55:27Z',
             'id': self.PAYMENT_ID,
@@ -978,7 +984,7 @@ class PaypalMixin:
                         {
                             'quantity': line.quantity,
                             'name': line.product.title,
-                            'price': six.text_type(line.line_price_incl_tax_incl_discounts / line.quantity),
+                            'price': str(line.line_price_incl_tax_incl_discounts / line.quantity),
                             'currency': line.stockrecord.price_currency,
                         }
                         for line in basket.all_lines()
@@ -1042,3 +1048,14 @@ class PaypalMixin:
         root = 'https://api.sandbox.paypal.com' if mode == 'sandbox' else 'https://api.paypal.com'
 
         return urljoin(root, path)
+
+
+class CyberSourceRESTAPIMixin:
+    def convertToCybersourceWireFormat(self, processor_json):
+        # `deserialize` maps keys used by the REST api into a python-friendly convention.
+        # This undoes that mapping to make it easier to add recorded responses to tests.
+        return re.sub(
+            r'([a-z])_([a-z])',
+            lambda x: x.group(1) + x.group(2).upper(),
+            processor_json
+        ).replace('links', '_links').replace('_self', 'self')

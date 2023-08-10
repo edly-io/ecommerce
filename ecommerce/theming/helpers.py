@@ -1,7 +1,7 @@
 """
     Helpers for accessing comprehensive theming related variables.
 """
-from __future__ import absolute_import
+
 
 import logging
 import os
@@ -154,7 +154,7 @@ def get_theme_base_dirs():
 
     if not isinstance(theme_dirs, list):
         raise ImproperlyConfigured("COMPREHENSIVE_THEME_DIRS must be a list.")
-    if not all([isinstance(theme_dir, six.string_types) for theme_dir in theme_dirs]):
+    if not all([isinstance(theme_dir, str) for theme_dir in theme_dirs]):
         raise ImproperlyConfigured("COMPREHENSIVE_THEME_DIRS must contain only strings.")
     if not all([theme_dir.startswith("/") for theme_dir in theme_dirs]):
         raise ImproperlyConfigured("COMPREHENSIVE_THEME_DIRS must contain only absolute paths to themes dirs.")
@@ -241,11 +241,11 @@ class Theme:
     def __hash__(self):
         return hash((self.theme_dir_name, self.path))
 
-    def __unicode__(self):
+    def __str__(self):
         return u"<Theme: {name} at '{path}'>".format(name=self.name, path=self.path)
 
     def __repr__(self):
-        return self.__unicode__()
+        return self.__str__()
 
     @property
     def path(self):

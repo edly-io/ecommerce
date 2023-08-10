@@ -1,8 +1,9 @@
 """Production settings and globals."""
-from __future__ import absolute_import
+
 
 import codecs
 from os import environ
+from urllib.parse import urljoin
 
 import six
 import yaml
@@ -77,7 +78,7 @@ DB_OVERRIDES = dict(
     PORT=environ.get('DB_MIGRATION_PORT', DATABASES['default']['PORT']),
 )
 
-for override, value in six.iteritems(DB_OVERRIDES):
+for override, value in DB_OVERRIDES.items():
     DATABASES['default'][override] = value
 
 for key, value in LOGGING_ROOT_OVERRIDES.items():
@@ -115,8 +116,11 @@ authorizenet_dict = {
 }
 PAYMENT_PROCESSOR_CONFIG['edx'].update({'authorizenet': authorizenet_dict})
 
-for __, configs in six.iteritems(PAYMENT_PROCESSOR_CONFIG):
-    for __, config in six.iteritems(configs):
+OSCAR_DEFAULT_CURRENCY = environ.get('OSCAR_DEFAULT_CURRENCY', OSCAR_DEFAULT_CURRENCY)
+
+# PAYMENT PROCESSOR OVERRIDES
+for __, configs in PAYMENT_PROCESSOR_CONFIG.items():
+    for __, config in configs.items():
         config.update({
             'receipt_path': PAYMENT_PROCESSOR_RECEIPT_PATH,
             'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
@@ -130,10 +134,6 @@ ENTERPRISE_CATALOG_API_URL = urljoin(ENTERPRISE_CATALOG_SERVICE_URL, 'api/v1/')
 
 # List of enterprise customer uuids to exclude from transition to use of enterprise-catalog
 ENTERPRISE_CUSTOMERS_EXCLUDED_FROM_CATALOG = config_from_yaml.get('ENTERPRISE_CUSTOMERS_EXCLUDED_FROM_CATALOG', ())
-
-CORS_ALLOW_HEADERS = corsheaders_default_headers + (
-    'use-jwt-cookie',
-)
 
 # Authorizenet payment processor set a cookie for dashboard to show pending course purchased dashoard
 # notification. This cookie domain will be used to set and delete that cookie.
@@ -155,3 +155,7 @@ DISCOVERY_SERVICE_WORKER_USERNAME = config_from_yaml.get('DISCOVERY_SERVICE_WORK
 
 # Redirect URL for expired sites
 EXPIRE_REDIRECT_URL = config_from_yaml.get('EXPIRE_REDIRECT_URL', EXPIRE_REDIRECT_URL)
+
+CORS_ALLOW_HEADERS = corsheaders_default_headers + (
+    'use-jwt-cookie',
+)
