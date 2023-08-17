@@ -57,6 +57,7 @@ urlpatterns = AUTH_URLS + WELL_KNOWN_URLS + [
     url(r'^api-docs/', get_swagger_view(title='Ecommerce API'), name='api_docs'),
     url(r'^courses/', include(('ecommerce.courses.urls', 'courses'))),
     url(r'^credit/', include(('ecommerce.credit.urls', 'credit'))),
+    url(r'^enterprise/', include(('ecommerce.enterprise.urls', 'enterprise'))),
     url(r'^coupons/', include(('ecommerce.coupons.urls', 'coupons'))),
     url(r'^health/$', core_views.health, name='health'),
     url(r'^i18n/', include(('django.conf.urls.i18n'))),
