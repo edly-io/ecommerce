@@ -93,7 +93,7 @@ libsass==0.9.2            # via -r requirements/base.in, django-libsass
 linecache2==1.0.0         # via cybersource-rest-client-python, traceback2
 logger==1.4               # via cybersource-rest-client-python
 lxml==4.6.1               # via premailer, zeep
-markdown==2.6.9           # via -r requirements/base.in
+markdown==3.0             # via -r requirements/base.in
 markupsafe==1.1.1         # via jinja2
 mysqlclient==1.4.6        # via -r requirements/base.in
 naked==0.1.31             # via crypto, cybersource-rest-client-python
