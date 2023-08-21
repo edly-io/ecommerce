@@ -6,10 +6,12 @@ import base64
 import logging
 
 from django.conf import settings
+from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from oscar.apps.partner import strategy
@@ -276,7 +278,9 @@ class AuthorizenetClientView(EdxOrderPlacementMixin, BasePaymentSubmitView):
             if form.is_valid():
                 return self.form_valid(form)
         except (TransactionDeclined) as exp:
-            return HttpResponse('Transcaction was declined due to {}'.format(str(exp)), status=400)
+            messages.add_message(request, messages.ERROR, 'Payment error: {}'.format(str(exp)))
+            basket_url = reverse('basket:summary')
+            return HttpResponseRedirect(basket_url)
 
         return self.form_invalid(form)
 
