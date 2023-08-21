@@ -58,6 +58,7 @@ urlpatterns = AUTH_URLS + WELL_KNOWN_URLS + [
     url(r'^courses/', include(('ecommerce.courses.urls', 'courses'))),
     url(r'^credit/', include(('ecommerce.credit.urls', 'credit'))),
     url(r'^enterprise/', include(('ecommerce.enterprise.urls', 'enterprise'))),
+    url(r'^subscriptions/', include(('ecommerce.subscriptions.urls', 'subscriptions'))),
     url(r'^coupons/', include(('ecommerce.coupons.urls', 'coupons'))),
     url(r'^health/$', core_views.health, name='health'),
     url(r'^i18n/', include(('django.conf.urls.i18n'))),
