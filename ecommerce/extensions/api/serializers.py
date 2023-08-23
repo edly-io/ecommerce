@@ -38,6 +38,7 @@ from ecommerce.extensions.api.v2.constants import (
     REFUND_ORDER_EMAIL_SUBJECT
 )
 from ecommerce.extensions.catalogue.utils import attach_vouchers_to_coupon_product
+from ecommerce.extensions.edly_ecommerce_app.helpers import is_valid_site_course
 from ecommerce.extensions.offer.constants import (
     OFFER_ASSIGNED,
     OFFER_ASSIGNMENT_EMAIL_BOUNCED,

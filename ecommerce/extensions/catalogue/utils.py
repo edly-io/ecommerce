@@ -208,7 +208,12 @@ def generate_sku(product, partner):
             str(product.attr.UUID),
             str(partner.id)
         )).encode('utf-8')
-
+    elif product.is_subscription_product:
+        _hash = ' '.join((
+            getattr(product, 'title', ''),
+            str(product.attr.subscription_type),
+            str(partner.id)
+        )).encode('utf-8')
     else:
         raise Exception('Unexpected product class')
 
