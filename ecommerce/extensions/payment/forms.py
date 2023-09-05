@@ -318,3 +318,111 @@ class CowpayFawryPaymentForm(forms.Form):
             Applicator().apply(basket, self.request.user, self.request)
 
         return basket
+
+
+class AuthorizenetPaymentForm(forms.Form):
+    """
+    Payment form  for Authorizenet with billing details.
+
+    This form captures the data necessary to complete a payment transaction with Authorizenet.
+    """
+    def __init__(self, user, request, *args, **kwargs):
+        super(AuthorizenetPaymentForm, self).__init__(*args, **kwargs)
+        self.request = request
+        self.basket_has_enrollment_code_product = any(
+            line.product.is_enrollment_code_product for line in self.request.basket.all_lines()
+        )
+        update_basket_queryset_filter(self, user)
+
+        self.helper = FormHelper(self)
+        self.helper.layout = Layout(
+            Div('basket'),
+            Div(
+                Div('full_name'),
+                HTML('<p class="help-block-name"></p>'),
+                css_class='form-item col-md-12'
+            ),
+            Div(
+                Div('card_number'),
+                HTML('<p class="help-block-card"></p>'),
+                css_class='form-item col-md-12'
+            ),
+            Div(
+                Div('card_code', css_class='form-item col-md-4'),
+                Div('expiry_month', css_class='form-item col-md-4'),
+                Div('expiry_year', css_class='form-item col-md-4'),
+                HTML('<p class="help-block-expiry"></p>'),
+                css_class='row'
+            ),
+            Div(
+                HTML('<input type="hidden" name="data_value" id="id_data_value" />'),
+                css_class='form-item col-md-12'
+            ),
+            Div(
+                HTML('<input type="hidden" name="data_descriptor" id="id_data_descriptor" />'),
+                HTML('<div class="authorizenet-error"></div>'),
+                css_class='form-item col-md-12'
+            ),
+        )
+
+        for bound_field in list(self):
+            # https://www.w3.org/WAI/tutorials/forms/validation/#validating-required-input
+            if hasattr(bound_field, 'field') and bound_field.field.required:
+                # Translators: This is a string added next to the name of the required
+                # fields on the payment form. For example, the first name field is
+                # required, so this would read "First name (required)".
+                self.fields[bound_field.name].label = _('{label} (required)').format(label=bound_field.label)
+                bound_field.field.widget.attrs['required'] = 'required'
+
+                if self.basket_has_enrollment_code_product and 'organization' not in self.fields:
+                    # If basket has any enrollment code items then we will add an organization
+                    # field next to "last_name."
+                    self.fields['organization'] = forms.CharField(max_length=60, label=_('Organization (required)'))
+                    organization_div = Div(
+                        Div(
+                            Div('organization'),
+                            HTML('<p class="help-block"></p>'),
+                            css_class='form-item col-md-6'
+                        ),
+                        css_class='row'
+                    )
+                    self.helper.layout.fields.insert(list(self.fields.keys()).index('last_name') + 1, organization_div)
+                    # Purchased on behalf of an enterprise or for personal use
+                    self.fields[PURCHASER_BEHALF_ATTRIBUTE] = forms.BooleanField(
+                        required=False,
+                        label=_('I am purchasing on behalf of my employer or other professional organization')
+                    )
+                    purchaser_div = Div(
+                        Div(
+                            Div(PURCHASER_BEHALF_ATTRIBUTE),
+                            HTML('<p class="help-block"></p>'),
+                            css_class='form-item col-md-12'
+                        ),
+                        css_class='row'
+                    )
+                    self.helper.layout.fields.insert(list(self.fields.keys()).index('organization') + 1, purchaser_div)
+
+    basket = forms.ModelChoiceField(
+        queryset=Basket.objects.all(),
+        widget=forms.HiddenInput(),
+        required=False,
+        error_messages={
+            'invalid_choice': _('There was a problem retrieving your basket. Refresh the page to try again.'),
+        }
+    )
+    full_name = forms.CharField(max_length=60, label=_('Full Name'))
+    card_number = forms.CharField(max_length=16, required=False, label=_('Card Number'))
+    card_code = forms.CharField(max_length=4, required=False, label=_('CVV'))
+    expiry_month = forms.CharField(max_length=60, required=False, label=_('Expiry Month (mm)'))
+    expiry_year = forms.CharField(max_length=60, required=False, label=_('Expiry Year (yy)'))
+    data_descriptor = forms.CharField(max_length=255)
+    data_value = forms.CharField(max_length=255)
+
+    def clean_basket(self):
+        basket = self.cleaned_data['basket']
+
+        if basket:
+            basket.strategy = self.request.strategy
+            Applicator().apply(basket, self.request.user, self.request)
+
+        return basket

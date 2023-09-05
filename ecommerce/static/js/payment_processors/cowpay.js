@@ -43,9 +43,9 @@ define([
                 }
             };
             $cowpayButton.on('click', function() {
-                $('body').append($('<div id="cowpay-iframe-container"></div>'));
-                COWPAYIFRAMEDIALOG.init();
-                COWPAYIFRAMEDIALOG.load(config.cowpayIframeToken);
+                COWPAYOTPDIALOG.init();
+                COWPAYOTPDIALOG.load(config.cowpayIframeToken);
+                $('#cowpay-otp-container').css({"position":"relative","z-index":"100"});
             })
         }
     };

@@ -84,7 +84,7 @@ class Cowpay(BaseClientSidePaymentProcessor):
 
     @property
     def iframe_token(self):
-        cowpay_url = urljoin(self.base_url, '/api/v1/iframe/token')
+        cowpay_url = urljoin(self.base_url, '/api/v2/charge/card/init')
         headers = self._get_request_header()
         basket = self.request.basket
         payload = self._get_request_payload(
@@ -104,7 +104,7 @@ class Cowpay(BaseClientSidePaymentProcessor):
         return get_receipt_page_url(site.siteconfiguration, order_number=basket.order_number)
 
     def get_transaction_parameters(self, basket, request=None, **kwargs):
-        cowpay_url = urljoin(self.base_url, '/api/v1/charge/fawry')
+        cowpay_url = urljoin(self.base_url, '/api/v2/charge/fawry')
         headers = self._get_request_header()
         data = kwargs.get('form_data')
         if data:
