@@ -127,7 +127,8 @@ class CybersourceREST(ApplePayMixin, BaseClientSidePaymentProcessor):
     """
 
     NAME = "cybersource-rest"
-
+    PCI_FIELDS = ('card_cvn', 'card_expiry_date', 'card_number', 'card_type',)
+    
     def __init__(self, site):
         """
         Constructs a new instance of the CyberSource processor.
