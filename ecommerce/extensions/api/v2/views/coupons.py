@@ -408,6 +408,8 @@ class CouponViewSet(EdxOrderPlacementMixin, viewsets.ModelViewSet):
             return
 
         voucher_range = vouchers.first().original_offer.benefit.range
+        if not voucher_range:
+            return voucher_range
 
         enterprise_customer_data = request_data.get('enterprise_customer')
 
