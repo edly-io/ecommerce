@@ -131,6 +131,7 @@ OSCAR_DEFAULT_CURRENCY_SYMBOL = '$'
 PAYMENT_PROCESSORS = (
     'ecommerce.extensions.payment.processors.cybersource.Cybersource',
     'ecommerce.extensions.payment.processors.cybersource.CybersourceREST',
+    'ecommerce.extensions.payment.processors.cybersourcemicroform.CybersourceMicroform',
     'ecommerce.extensions.payment.processors.paypal.Paypal',
     'ecommerce.extensions.payment.processors.stripe.Stripe',
     'ecommerce.extensions.payment.processors.authorizenet.AuthorizeNet',

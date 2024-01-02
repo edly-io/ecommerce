@@ -1,0 +1,11 @@
+{% load static %}
+
+<script type="text/javascript"
+    src="{{ client_side_payment_processor.base_url }}"
+    charset="utf-8">
+</script>
+<script type="text/javascript">
+    window.AuthorizenetConfig = {
+    }
+</script>
+<script src="{% static 'js/views/cybersource_microform.js' %}"></script>

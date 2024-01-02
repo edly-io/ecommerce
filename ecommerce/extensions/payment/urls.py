@@ -1,7 +1,7 @@
 
 from django.conf.urls import include, url
 
-from ecommerce.extensions.payment.views import PaymentFailedView, SDNFailure, authorizenet, cybersource, paypal, stripe, cowpay
+from ecommerce.extensions.payment.views import PaymentFailedView, SDNFailure, authorizenet, cybersource, cybersource_microform, paypal, stripe, cowpay
 
 CYBERSOURCE_APPLE_PAY_URLS = [
     url(r'^authorize/$', cybersource.CybersourceApplePayAuthorizationView.as_view(), name='authorize'),
@@ -13,6 +13,7 @@ CYBERSOURCE_URLS = [
     url(r'^submit/$', cybersource.CybersourceSubmitView.as_view(), name='submit'),
     url(r'^api-submit/$', cybersource.CybersourceSubmitAPIView.as_view(), name='api_submit'),
     url(r'^authorize/$', cybersource.CybersourceAuthorizeAPIView.as_view(), name='authorize'),
+    url(r'^microform/submit/$', cybersource_microform.CybersourceMicroformSubmitView.as_view(), name='microform-submit'),
 ]
 
 PAYPAL_URLS = [
