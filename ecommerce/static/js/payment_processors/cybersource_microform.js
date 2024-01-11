@@ -19,32 +19,126 @@ define([
                     amex: '003',
                     discover: '004'
                 };
+            let $paymentButton = $('#payment-button-cybersource-microform'),
+                $card = $('#id_card_number'),
+                $month = $('#id_expiry_month'),
+                $year = $('#id_expiry_year'),
+                $code = $('#id_card_code')
+
+            // var flex;
+
+            var myStyles = {  
+                'input': {    
+                  'font-size': '14px',    
+                  'font-family': 'helvetica, tahoma, calibri, sans-serif',    
+                  'color': '#555'  
+                },  
+                ':focus': { 'color': 'blue' },  
+                ':disabled': { 'cursor': 'not-allowed' },  
+                'valid': { 'color': '#3c763d' },  
+                'invalid': { 'color': '#a94442' }
+              };
+  
+    
+                // setup
+                // var flex = new Flex(captureContext);
+                // var microform = flex.microform({ styles: myStyles });
+            
+            // should work on form initilize
+            require(['https://testflex.cybersource.com/microform/bundle/v2/flex-microform.min.js'], function (cybersourceFlex) {
+                var flex  = new cybersourceFlex.Flex(config.context);
+                console.log('kkkkk22 -- ', flex);
+                var microform = flex.microform({ styles: myStyles });
+                var number = microform.createField('number', { placeholder: 'Enter card number' });
+                var securityCode = microform.createField('securityCode', { placeholder: '•••' });
+
+                number.load('#number-container');
+                securityCode.load('#securityCode-container');
+
+                $paymentButton.on('click', function(e) {
+                    e.preventDefault();
+                    // console.log('hola----here here------hola ', $card.val(), cybersourceFlex);
+                    // console.log('year', $year.val(), $month.val());
+                    // console.log('code ', $code.val());
+                    // console.log('cc ', config.context)
+
+                    var options = {    
+                        expirationMonth: $month.val(),  
+                        expirationYear: $year.val()
+                      };   
+                      microform.createToken(options, function (err, token) {
+                        if (err) {
+                          // handle error
+                          console.error(err);
+                          errorsOutput.textContent = err.message;
+                        } else {
+                          // At this point you may pass the token back to your server as you wish.
+                          // In this example we append a hidden input to the form and submit it.      
+                          console.log(JSON.stringify(token));
+                          flexResponse.value = JSON.stringify(token);
+                          form.submit();
+                        }
+                      });
+                      
+    
+                    });
+            });
 
             this.signingUrl = config.signingUrl;
 
             // The payment form should post to CyberSource
             $paymentForm.attr('action', config.postUrl);
 
-            // Add name attributes to the PCI fields
-            $pciFields.each(function() {
-                var $this = $(this);
-                $this.attr('name', $this.data('name'));
-            });
+            // $paymentButton.on('click', function(e) {
+            //     e.preventDefault();
+            //     console.log('hola----------hola ', $card.val());
+            //     console.log('year', $year.val(), $month.val());
+            //     console.log('code ', $code.val());
 
-            $paymentForm.submit($.proxy(this.onSubmit, this));
 
-            // Add CyberSource-specific fields
-            $paymentForm.append($('<input type="hidden" name="card_expiry_date" class="pci-field">'));
-            $paymentForm.append($('<input type="hidden" name="card_type" class="pci-field">'));
+
+            //     // var options = {    
+            //     //     expirationMonth: $month.val(),  
+            //     //     expirationYear: $year.val()
+            //     //   };        
+                  
+            //     //   microform.createToken(options, function (err, token) {
+            //     //     if (err) {
+            //     //       // handle error
+            //     //       console.error(err);
+            //     //       errorsOutput.textContent = err.message;
+            //     //     } else {
+            //     //       // At this point you may pass the token back to your server as you wish.
+            //     //       // In this example we append a hidden input to the form and submit it.      
+            //     //       console.log(JSON.stringify(token));
+            //     //       flexResponse.value = JSON.stringify(token);
+            //     //       form.submit();
+            //     //     }
+            //     //   });
+                  
+
+            //     });
+                
+
+            // // Add name attributes to the PCI fields
+            // $pciFields.each(function() {
+            //     var $this = $(this);
+            //     $this.attr('name', $this.data('name'));
+            // });
+
+            // $paymentForm.submit($.proxy(this.onSubmit, this));
+
+            // // Add CyberSource-specific fields
+            // $paymentForm.append($('<input type="hidden" name="card_expiry_date" class="pci-field">'));
+            // $paymentForm.append($('<input type="hidden" name="card_type" class="pci-field">'));
 
             // Add an event listener to populate the CyberSource card type field
-            $paymentForm.on('cardType:detected', function(event, data) {
-                $('input[name=card_type]', $paymentForm).val(cardMap[data.type]);
-            });
+            // $paymentForm.on('cardType:detected', function(event, data) {
+            //     $('input[name=card_type]', $paymentForm).val(cardMap[data.type]);
+            // });
 
-            this.applePayConfig = config.applePay;
-            this.initializeApplePay();
         },
+        
 
         /**
          * Payment form submit handler.
@@ -54,219 +148,158 @@ define([
          *
          * @param event
          */
-        onSubmit: function(event) {
-            var $form = $(event.target),
-                $signedFields = $('input,select', $form).not('.pci-field'),
-                expMonth = $('#card-expiry-month', $form).val(),
-                expYear = $('#card-expiry-year', $form).val();
+        // onSubmit: function(event) {
+        //     var $form = $(event.target),
+        //         $signedFields = $('input,select', $form).not('.pci-field'),
+        //         expMonth = $('#card-expiry-month', $form).val(),
+        //         expYear = $('#card-expiry-year', $form).val();
 
-            // Restore name attributes so the data can be posted to CyberSource
-            $('#card-number', $form).attr('name', 'card_number');
-            $('#card-cvn', $form).attr('name', 'card_cvn');
+        //     // Restore name attributes so the data can be posted to CyberSource
+        //     $('#card-number', $form).attr('name', 'card_number');
+        //     $('#card-cvn', $form).attr('name', 'card_cvn');
 
-            // Post synchronously since we need the returned data.
-            $.ajax({
-                type: 'POST',
-                url: this.signingUrl,
-                data: $signedFields.serialize(),
-                async: false,
-                success: function(data) {
-                    var formData = data.form_fields,
-                        key;
+        //     // Post synchronously since we need the returned data.
+        //     $.ajax({
+        //         type: 'POST',
+        //         url: this.signingUrl,
+        //         data: $signedFields.serialize(),
+        //         async: false,
+        //         success: function(data) {
+        //             var formData = data.form_fields,
+        //                 key;
 
-                    // Format the date for CyberSource (MM-YYYY)
-                    $('input[name=card_expiry_date]', $form).val(expMonth + '-' + expYear);
+        //             // Format the date for CyberSource (MM-YYYY)
+        //             $('input[name=card_expiry_date]', $form).val(expMonth + '-' + expYear);
 
-                    // Disable the fields on the form so they are not posted since their names are not what is
-                    // expected by CyberSource. Instead post add the parameters from the server to the form,
-                    // and post them.
-                    $signedFields.attr('disabled', 'disabled');
+        //             // Disable the fields on the form so they are not posted since their names are not what is
+        //             // expected by CyberSource. Instead post add the parameters from the server to the form,
+        //             // and post them.
+        //             $signedFields.attr('disabled', 'disabled');
 
-                    // eslint-disable-next-line no-restricted-syntax
-                    for (key in formData) {
-                        if (Object.prototype.hasOwnProperty.call(formData, key)) {
-                            $form.append(
-                                '<input type="hidden" name="' + key + '" value="' + formData[key] + '" />'
-                            );
-                        }
-                    }
-                },
+        //             // eslint-disable-next-line no-restricted-syntax
+        //             for (key in formData) {
+        //                 if (Object.prototype.hasOwnProperty.call(formData, key)) {
+        //                     $form.append(
+        //                         '<input type="hidden" name="' + key + '" value="' + formData[key] + '" />'
+        //                     );
+        //                 }
+        //             }
+        //         },
 
-                error: function(jqXHR, textStatus) {
-                    var $field,
-                        cardHolderFields,
-                        error,
-                        k;
+        //         error: function(jqXHR, textStatus) {
+        //             var $field,
+        //                 cardHolderFields,
+        //                 error,
+        //                 k;
 
-                    // Don't allow the form to submit.
-                    event.preventDefault();
-                    event.stopPropagation();
+        //             // Don't allow the form to submit.
+        //             event.preventDefault();
+        //             event.stopPropagation();
 
-                    cardHolderFields = [
-                        'first_name', 'last_name', 'address_line1', 'address_line2', 'state', 'city', 'country',
-                        'postal_code'
-                    ];
+        //             cardHolderFields = [
+        //                 'first_name', 'last_name', 'address_line1', 'address_line2', 'state', 'city', 'country',
+        //                 'postal_code'
+        //             ];
 
-                    if (textStatus === 'error') {
-                        error = JSON.parse(jqXHR.responseText);
+        //             if (textStatus === 'error') {
+        //                 error = JSON.parse(jqXHR.responseText);
 
-                        if (error.field_errors) {
-                            // eslint-disable-next-line no-restricted-syntax
-                            for (k in error.field_errors) {
-                                if (cardHolderFields.indexOf(k) !== -1) {
-                                    $field = $('input[name=' + k + ']');
-                                    // TODO Use custom events to remove this dependency.
-                                    BasketPage.appendCardHolderValidationErrorMsg($field, error.field_errors[k]);
-                                    $field.focus();
-                                }
-                            }
-                        } else {
-                            // Unhandled errors should redirect to the general payment error page.
-                            window.location.href = window.paymentErrorPath;
-                        }
-                    }
-                }
-            });
-        },
+        //                 if (error.field_errors) {
+        //                     // eslint-disable-next-line no-restricted-syntax
+        //                     for (k in error.field_errors) {
+        //                         if (cardHolderFields.indexOf(k) !== -1) {
+        //                             $field = $('input[name=' + k + ']');
+        //                             // TODO Use custom events to remove this dependency.
+        //                             BasketPage.appendCardHolderValidationErrorMsg($field, error.field_errors[k]);
+        //                             $field.focus();
+        //                         }
+        //                     }
+        //                 } else {
+        //                     // Unhandled errors should redirect to the general payment error page.
+        //                     window.location.href = window.paymentErrorPath;
+        //                 }
+        //             }
+        //         }
+        //     });
+        // },
 
-        displayErrorMessage: function(message) {
-            $('#messages').html(_s.sprintf('<div class="alert alert-error">%s<i class="icon-warning-sign"></i></div>',
-                message));
-        },
+        // displayErrorMessage: function(message) {
+        //     $('#messages').html(_s.sprintf('<div class="alert alert-error">%s<i class="icon-warning-sign"></i></div>',
+        //         message));
+        // },
 
-        initializeApplePay: function() {
-            var promise,
-                self = this;
-
-            if (window.ApplePaySession && self.applePayConfig.enabled) {
-                // eslint-disable-next-line no-undef
-                promise = new Promise(function(resolve) {
-                    if (ApplePaySession.canMakePayments()) {
-                        resolve(true);
-                    }
-                    resolve(false);
-                });
-
-                promise.then(
-                    function(canMakePayments) {
-                        var applePayBtn = document.getElementById('applePayBtn');
-
-                        if (canMakePayments) {
-                            console.log('Learner is eligible for Apple Pay');   // eslint-disable-line no-console
-
-                            // Display the button
-                            applePayBtn.style.display = 'inline-flex';
-                            applePayBtn.addEventListener('click', self.onApplePayButtonClicked.bind(self));
-                        } else {
-                            console.log('Apple Pay not setup.');   // eslint-disable-line no-console
-                        }
-                    }
-                );
-
-                return promise;
-            }
-
-            // Return an empty promise for callers expecting a promise (e.g. tests). If Promise is not supported the
-            // browser (e.g. Internet Explorer), return nothing.
-            /* istanbul ignore next */
-            if (typeof Promise !== 'undefined') {
-                // eslint-disable-next-line no-undef
-                return Promise.resolve();
-            }
-
-            /* istanbul ignore next */
-            return null;
-        },
-
-        onApplePayButtonClicked: function(event) {
-            // Setup the session and its event handlers
-            this.applePaySession = new ApplePaySession(2, {
-                countryCode: this.applePayConfig.countryCode,
-                currencyCode: this.applePayConfig.basketCurrency,
-                supportedNetworks: ['amex', 'discover', 'visa', 'masterCard'],
-                merchantCapabilities: ['supports3DS', 'supportsCredit', 'supportsDebit'],
-                total: {
-                    label: this.applePayConfig.merchantName,
-                    type: 'final',
-                    amount: this.applePayConfig.basketTotal
-                },
-                requiredBillingContactFields: ['postalAddress']
-            });
-
-            this.applePaySession.onvalidatemerchant = this.onApplePayValidateMerchant.bind(this);
-            this.applePaySession.onpaymentauthorized = this.onApplePayPaymentAuthorized.bind(this);
-
-            // Let's start the show!
-            this.applePaySession.begin();
-
-            event.preventDefault();
-            event.stopPropagation();
-        },
-
-        onApplePayValidateMerchant: function(event) {
-            var self = this;
-            console.log('Validating merchant...');   // eslint-disable-line no-console
-
-            $.ajax({
-                method: 'POST',
-                url: this.applePayConfig.startSessionUrl,
-                headers: {
-                    'X-CSRFToken': Cookies.get('ecommerce_csrftoken')
-                },
-                data: JSON.stringify({url: event.validationURL}),
-                contentType: 'application/json',
-                success: function(data) {
-                    console.log('Merchant validation succeeded.');   // eslint-disable-line no-console
-                    console.log(data);   // eslint-disable-line no-console
-                    self.applePaySession.completeMerchantValidation(data);
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    // Translators: Do not translate "Apple Pay".
-                    var msg = gettext('Apple Pay is not available at this time. Please try another payment method.');
-
-                    console.log('Merchant validation failed!');   // eslint-disable-line no-console
-                    console.log(textStatus);   // eslint-disable-line no-console
-                    console.log(errorThrown);   // eslint-disable-line no-console
-
-                    self.applePaySession.abort();
-                    self.displayErrorMessage(msg);
-                }
-            });
-        },
-
-        onApplePayPaymentAuthorized: function(event) {
-            var self = this;
-            console.log('Submitting Apple Pay payment to CyberSource...');   // eslint-disable-line no-console
-
-            $.ajax({
-                method: 'POST',
-                url: this.applePayConfig.authorizeUrl,
-                headers: {
-                    'X-CSRFToken': Cookies.get('ecommerce_csrftoken')
-                },
-                data: JSON.stringify(event.payment),
-                contentType: 'application/json',
-                success: function(data) {
-                    console.log(data);   // eslint-disable-line no-console
-                    self.applePaySession.completePayment(ApplePaySession.STATUS_SUCCESS);
-                    self.redirectToReceipt(data.number);
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    var msg = gettext('An error occurred while processing your payment. You have NOT been charged. ' +
-                        'Please try again, or select another payment method.');
-
-                    console.log(textStatus);   // eslint-disable-line no-console
-                    console.log(errorThrown);   // eslint-disable-line no-console
-                    self.applePaySession.completePayment(ApplePaySession.STATUS_FAILURE);
-                    self.displayErrorMessage(msg);
-                }
-            });
-        },
 
         /* istanbul ignore next */
-        redirectToReceipt: function(orderNumber) {
-            /* istanbul ignore next */
-            window.location.href = this.applePayConfig.receiptUrl + '?order_number=' + orderNumber;
-        }
+        // redirectToReceipt: function(orderNumber) {
+        //     /* istanbul ignore next */
+        //     window.location.href = this.applePayConfig.receiptUrl + '?order_number=' + orderNumber;
+        // }
+
     };
 });
+
+
+
+// require(['https://testflex.cybersource.com/microform/bundle/v2/flex-microform.min.js'], function(cybersourceFlex){
+//     console.log('jjjj - ', cybersourceFlex.Flex)
+//     var form = document.querySelector('#my-sample-form');
+// var payButton = document.querySelector('#pay-button');
+// var flexResponse = document.querySelector('#flexresponse');
+// var expMonth = document.querySelector('#expMonth');
+// var expYear = document.querySelector('#expYear');
+// var errorsOutput = document.querySelector('#errors-output');
+
+// // the capture context that was requested server-side for this transaction
+
+
+
+// // custom styles that will be applied to each field we create using Microform
+// var myStyles = {  
+//   'input': {    
+//     'font-size': '14px',    
+//     'font-family': 'helvetica, tahoma, calibri, sans-serif',    
+//     'color': '#555'  
+//   },  
+//   ':focus': { 'color': 'blue' },  
+//   ':disabled': { 'cursor': 'not-allowed' },  
+//   'valid': { 'color': '#3c763d' },  
+//   'invalid': { 'color': '#a94442' }
+// };
+
+// // setup
+// var flex = new cybersourceFlex.Flex(captureContext);
+// var microform = flex.microform({ styles: myStyles });
+// var number = microform.createField('number', { placeholder: 'Enter card number' });
+// var securityCode = microform.createField('securityCode', { placeholder: '•••' });
+
+// number.load('#number-container');
+// securityCode.load('#securityCode-container');
+
+
+// payButton.addEventListener('click', function() {  
+  
+//   var options = {    
+//     expirationMonth: document.querySelector('#expMonth').value,  
+//     expirationYear: document.querySelector('#expYear').value 
+//   };              
+  
+//   microform.createToken(options, function (err, token) {
+//     if (err) {
+//       // handle error
+//       console.error(err);
+//       errorsOutput.textContent = err.message;
+//     } else {
+//       // At this point you may pass the token back to your server as you wish.
+//       // In this example we append a hidden input to the form and submit it.      
+//       console.log(JSON.stringify(token));
+//       flexResponse.value = JSON.stringify(token);
+//       form.submit();
+//     }
+//   });
+// });
+// });
+
+
+// require(['flexMicroformScript'], function (flexMicroformScript) {
+//     console.log('kkkkk -- ', flexMicroformScript)
+// });

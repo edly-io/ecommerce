@@ -31,7 +31,7 @@ define([
             $cardNumber.keyup(function () {
                 $('.help-block-card').html('');
                 if ($cardNumber.val() !== '' && !CreditCardUtils.isValidCardNumber($cardNumber.val())) {
-                    $('.help-block-card').css('color', 'red').html('*Invalid Card Number');
+                    $('.help-block-card').css('color', 'red').html('*olp olp');
                 }
             });
 

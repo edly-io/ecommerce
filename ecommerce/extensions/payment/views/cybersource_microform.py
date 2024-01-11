@@ -7,7 +7,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from ecommerce.extensions.basket.utils import basket_add_organization_attribute
 from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
 from ecommerce.extensions.checkout.utils import get_receipt_page_url
-from ecommerce.extensions.payment.processors.cybersourcemicroform import CybersourceMicroform
+from ecommerce.extensions.payment.processors.cybersource_microform import CybersourceMicroform
 from ecommerce.extensions.payment.forms import CybersourceMicroformPaymentForm
 from ecommerce.extensions.payment.views import BasePaymentSubmitView
 
@@ -18,12 +18,18 @@ class CybersourceMicroformSubmitView(EdxOrderPlacementMixin, BasePaymentSubmitVi
 
 
     form_class = CybersourceMicroformPaymentForm
+    def __init__(self):
+        print('CybersourceMicroform view xc12')
+        super(CybersourceMicroformSubmitView, self).__init__()
+
 
     @property
     def payment_processor(self):
+        print('CybersourceMicroform payment_processor xc12')
         return CybersourceMicroform(self.request.site)
 
     def form_valid(self, form):
+        print('holla--12')
         form_data = form.cleaned_data
         basket = form_data['basket']
         order_number = basket.order_number

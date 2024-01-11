@@ -1,0 +1,79 @@
+{
+  "EDLY_COPYRIGHT_TEXT": "All rights reserved for Edlydev Multisite.",
+  "PANEL_NOTIFICATIONS_BASE_URL": "https://panel.dev.edlydev.edly.io/",
+  "CONTACT_MAILING_ADDRESS": "Arbisoft 28 Mohlanwal Road, Westwood Colony Lahore, Punjab 54000",
+  "DISABLE_PAID_COURSE_MODES": false,
+  "SESSION_COOKIE_DOMAIN": ".edly.io",
+  "BRANDING": {
+    "logo": "https://edly-panel-backend-public-storage.s3.amazonaws.com/edly_site_logos/102/Edly---Higher-Education-LMS_2.png",
+    "favicon": "https://edly-panel-backend-public-storage.s3.amazonaws.com/edly_site_favicons/102/02f6fb0172ccbbed22d04b6160639c37.png"
+  },
+  "PLATFORM_NAME": "https://edlydev.courses.multisitesdev.edly.io",
+  "SERVICES_NOTIFICATIONS_COOKIE_EXPIRY": "900",
+  "FONTS": {
+    "heading-font": "Encode Sans, sans-serif",
+    "font_path": "https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&display=swap",
+    "base-font": "Roboto, sans-serif"
+  },
+  "COLORS": { "primary": "#30b530", "secondary": "#8d8e67" },
+  "DJANGO_SETTINGS_OVERRIDE": {
+    "CSRF_TRUSTED_ORIGINS": [".edly.io"],
+    "OSCAR_FROM_EMAIL": "",
+    "SESSION_COOKIE_DOMAIN": ".edly.io",
+    "PAYMENT_PROCESSOR_CONFIG": {
+      "edlydev": {
+        "stripe": {
+          "apple_pay_merchant_id_domain_association": "green.payments.multisitesdev.edly.io/.well-known/apple-developer-merchantid-domain-association",
+          "publishable_key": "pk_test_3HZgA8H5SE89uUdV4cJtjpCd00q3Su2WH9",
+          "secret_key": "sk_test_QT5fpPHU6uY8MMOqemf9oGFQ005wrdMotX",
+          "country": "us"
+        },
+        "cybersource": {
+          "merchant_id": "edly_103",
+          "soap_api_url": "apitest.cybersource.com",
+          "transaction_key": "9sm0632L7OQP/FwbZmUFgLDNuIJ5ORBX+z7387VqsyYLE8nmYB8qus0C3iFWVpdxI77kZgyM+PdlP8zPPWu8M4igdkYGo8aGkk6RyVsafx3HGV1WtxBUibktbPex6ManuO3IfIV4s9yxtE3VM0SDkMH9iBXNJS8rPLojmChVMoHED2tY06Xo6k9zHilEmVDa6hrqdpWtnw2vYf4PsaAE8voYu8DaMQ51g799tmqyJyJPFpMcLmRla1+sBXiO28j4HxBu1Pc7fiWj1RSY6OiwHWQp72g8RGVBRQcpFGuxY56UZP3VCidAdg9Lc1Xb8H9b6YJLU+VBxrgXcGWoT6eK/A==",
+          "flex_shared_secret_key": "019de993-2359-4e7f-8c84-8a44c274953d",
+          "flex_shared_secret_key_id": "hthNjgEdrWtjU2HGvc7WwU4bKmlahD0gHU7EWTBRpkA="
+        },
+        "paypal": {
+          "cancel_checkout_path": "/checkout/cancel-checkout/",
+          "error_path": "/checkout/error/",
+          "receipt_path": "/checkout/receipt/",
+          "client_secret": "EFjJemV-S8slQr-dmxuy6C8WpQjapw9igdLP0L3C8e6VE27RemQbiWPUNPhL_QrCcqd1ZFlUtsO1SNTn",
+          "mode": "sandbox",
+          "client_id": "AUDBIlqiu2G5db5vLs3OlEzEdD9PS3VRA-vo6iPOfMByBOEdgv70CD9ODzgfUJ5T9XOXUz5iaPG-q6CL"
+        },
+        "authorizenet": {
+          "production_mode": true,
+          "cancel_checkout_path": "/checkout/cancel-checkout/",
+          "merchant_auth_name": "37db9fz65LTY",
+          "redirect_url": "https://accept.authorize.net/payment/payment",
+          "transaction_key": "2esq7stAT9XE537f"
+        },
+        "authorizenetclient": {
+          "base_url": "https://js.authorize.net/v1/Accept.js",
+          "production_mode": true,
+          "client_key": "4zKB8FhmM622TA84FFKk4WsH8dW84GdN69L8NSNjGtaPk2fwS6458eeHb2A54axc",
+          "transaction_key": "2esq7stAT9XE537f",
+          "api_login_id": "37db9fz65LTY"
+        },
+        "cowpay": {
+          "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiMjA3ZDIxNDU4Y2MxYzgwZWFmNDEyM2IwYjg1ZTM0MjJiNjNlNWE3NDgyZTVhMmFmNzFmOWFjOGQ0NWYzMGZiMGE2M2ZlNDJjZTA5N2JjZWQiLCJpYXQiOjE2ODY1OTMxOTMuMDg0MjU5LCJuYmYiOjE2ODY1OTMxOTMuMDg0MjY1LCJleHAiOjQ4NDIyNzAzOTMuMDcyMTYyLCJzdWIiOiI4OTUiLCJzY29wZXMiOltdfQ.Q6WxQ8O-P8JBa6Wg1z4XslUMpGe-DZDguGPPLe7YdYActeeYXOamtseJWGSc5j7M7CzUvJKum1G8mnqKf768sYjJiQSuMPYLgGOA6n_Yschs4VMiXwJ-MwDAoDQfkDYLf9NEhEyxaXQP_4_oX2mpDof0n3dJifPlnIfufVfhseX983Z8cHdbE2F_QJGiPXdNDs5WSKd6DBZHPGmINhYxTlVfKhlk25fbqI1m8dTL5-zoSTw6DNNAwmfBvOj6EDf9lqk6bABOfnTT-q8e9FUwoQan4ZXGCNPZgdNsiNd5esXAZDTYySjnc9cLy23dx5mTX1HplH0zxw5ZUpGewk9myS4mve7KKPZ2h4MkF88XykaRiRx9bQD1TY09OIvAFX444W_EL_R3zV0Fj604VGskIQCr8aUVBFM0LeuVwhEkEOd9Eef6RtX-nj2Q9LbX-yCcK3ehO2uUwUa4-wDUA7VFIkXcBGyTuEHA4ivoya-XS7LvVwdS0FknV6IJ2AKt-Xz_7csU4Ca1SuX5Dpxga96PSOKu8V9ltQIyVq18M8_O5Pt5n_sCVzCrDgGCCXTBLmcvMt3lLDXhRy3JG0gYIgEoDOYebPzW8jcNmwdRuJR47obn0zgRIQJp29fEUijj_XM4fEueoeBALqKcheqAagKWAarrbUwPXYC_OJn4e6boD4M",
+          "merchant_hash_key": "$2y$10$whNgJdaat80fD3tRi83Y.uOhVbXVMLFcXKT4K3XQv1Vo4Z5nxruKm",
+          "merchant_code": "e3GPdoKa3GLu",
+          "base_url": "https://staging.cowpay.me",
+          "mobile_number_for_iframe_token": "+923331234567"
+        }
+      }
+    },
+    "FRONTEND_LOGOUT_URL": "https://edlydev.courses.multisitesdev.edly.io/logout",
+    "CURRENT_PLAN": "elite",
+    "LANGUAGE_CODE": "en",
+    "EDLY_WORDPRESS_URL": "https://edlydev.multisitesdev.edly.io",
+    "OSCAR_DEFAULT_CURRENCY": "USD",
+    "CORS_ORIGIN_WHITELIST": ["https://apps.dev.edlydev.edly.io"],
+    "OSCAR_DEFAULT_CURRENCY_SYMBOL": "$"
+  }
+}
+
+

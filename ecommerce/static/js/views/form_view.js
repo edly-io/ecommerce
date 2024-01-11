@@ -134,13 +134,13 @@ define([
                 e.preventDefault();
 
                 // Validate the input and display a message, if necessary.
-                if (!this.model.isValid(true)) {
-                    AlertUtils.clearAlerts(self);
-                    AlertUtils.renderAlert('danger', '', gettext('Please complete all required fields.'), self);
-                    return undefined;
-                } else if (courseId && !self.editing && self.checkCourseAlreadyExist(courseId)) {
-                    return undefined;
-                }
+                // if (!this.model.isValid(true)) {
+                //     AlertUtils.clearAlerts(self);
+                //     AlertUtils.renderAlert('danger', '', gettext('Please complete all required fields.'), self);
+                //     return undefined;
+                // } else if (courseId && !self.editing && self.checkCourseAlreadyExist(courseId)) {
+                //     return undefined;
+                // }
 
                 $buttons = this.$el.find('.form-actions .btn');
                 $submitButton = $buttons.filter('button[type=submit]');

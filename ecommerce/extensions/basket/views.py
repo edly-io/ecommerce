@@ -516,6 +516,7 @@ class BasketAddItemsView(BasketLogicMixin, APIView):
 
 
 class BasketSummaryView(BasketLogicMixin, BasketView):
+
     @newrelic.agent.function_trace()
     def get_context_data(self, **kwargs):
         context = super(BasketSummaryView, self).get_context_data(**kwargs)
@@ -523,6 +524,7 @@ class BasketSummaryView(BasketLogicMixin, BasketView):
 
     @newrelic.agent.function_trace()
     def get(self, request, *args, **kwargs):
+        print('idhar hun mn')
         basket = request.basket
 
         try:
@@ -576,6 +578,7 @@ class BasketSummaryView(BasketLogicMixin, BasketView):
             payment_processors_data = self._get_payment_processors_data(payment_processors)
             context.update(payment_processors_data)
 
+
         context.update({
             'formset_lines_data': list(zip(formset, lines_data)),
             'homepage_url': get_lms_url(''),
@@ -598,15 +601,18 @@ class BasketSummaryView(BasketLogicMixin, BasketView):
         """
         site_configuration = self.request.site.siteconfiguration
         payment_processor_class = site_configuration.get_client_side_payment_processor_class()
-
+        
+        print('hero2', payment_processor_class)
         if payment_processor_class:
             payment_processor = payment_processor_class(self.request.site)
+            print("olla2 -- ", payment_processor)
             current_year = datetime.today().year
 
             return {
                 'client_side_payment_processor': payment_processor,
                 'enable_client_side_checkout': True,
                 'months': list(range(1, 13)),
+
                 'payment_form': PaymentForm(
                     user=self.request.user,
                     request=self.request,
@@ -628,13 +634,16 @@ class CaptureContextApiLogicMixin:  # pragma: no cover
     """
     Business logic for the capture context API.
     """
+
     def _add_capture_context(self, response):
-        response['flex_microform_enabled'] = waffle.flag_is_active(
-            self.request,
-            'payment.cybersource.flex_microform_enabled'
-        )
-        if not response['flex_microform_enabled']:
-            return
+        # response['flex_microform_enabled'] = waffle.flag_is_active(
+        #     self.request,
+        #     'payment.cybersource.flex_microform_enabled'
+        # )
+        # if not response['flex_microform_enabled']:
+        #     return
+        print('xc13 in mixin')
+        response['flex_microform_enabled'] = True
         payment_processor_class = self.request.site.siteconfiguration.get_client_side_payment_processor_class()
         if not payment_processor_class:
             return

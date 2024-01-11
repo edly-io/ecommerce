@@ -1,5 +1,9 @@
 {% load static %}
-
+<h1>hhhhhhn {{ client_side_payment_processor.base_url }}</h1>
+<h1>hhhhhhn {{ client_side_payment_processor.cancel_page_url }}</h1>
+{% block extrahead %}
+<meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://testflex.cybersource.com">
+{% endblock %}
 <script type="text/javascript"
     src="{{ client_side_payment_processor.base_url }}"
     charset="utf-8">
@@ -8,4 +12,52 @@
     window.AuthorizenetConfig = {
     }
 </script>
+<script>
+    var xc = '{{ client_side_payment_processor }}'
+    console.log('abra ka dabra ', xc)
+    console.log('abra ka dabra ho ho ', xc.cancel_page_url)
+    </script>
+<script>
+    window.CyberSourceConfig = {
+        postUrl: "{{ client_side_payment_processor.client_side_payment_url }}",
+        signingUrl: "{% url 'cybersource:submit' %}",
+        context: "{{ client_side_payment_processor.get_context }}",
+        // applePay: {
+        //     enabled: {{ client_side_payment_processor.apple_pay_enabled|yesno:'true,false' }},
+        //     merchantName: "{{ platform_name }}",
+        //     merchantIdentifier: "{{ client_side_payment_processor.apple_pay_merchant_identifier }}",
+        //     countryCode: "{{ client_side_payment_processor.apple_pay_country_code }}",
+        //     basketCurrency: "{{ basket.currency }}",
+        //     basketTotal: "{{ order_total.incl_tax|floatformat:2 }}",
+        //     startSessionUrl: "{% url 'cybersource:apple_pay:start_session' %}",
+        //     authorizeUrl: "{% url 'cybersource:apple_pay:authorize' %}",
+        //     receiptUrl: "{% url 'checkout:receipt' %}"
+        // }
+    }
+</script>
 <script src="{% static 'js/views/cybersource_microform.js' %}"></script>
+<!-- <script src="https://testflex.cybersource.com/microform/bundle/v2/flex-microform.min.js"></script> -->
+<!-- <script src="https://flex.cybersource.com/cybersource/assets/microform/0.11/flex-microform.min.js"></script> -->
+ 
+
+<!-- <h1>Checkout</h1>
+<div id="errors-output" role="alert"></div>
+<form action="/token" id="my-sample-form" method="post">
+<div class="form-group">
+<label for="cardholderName">Name</label>
+<input id="cardholderName" class="form-control" name="cardholderName"
+placeholder="Name on the card">
+<label id="cardNumber-label">Card Number</label>
+<div id="number-container" class="form-control"></div> <label for="securityCode-container">Security Code</label> <div id="securityCode-container" class="form-control"></div>
+</div>
+<div class="form-row">
+<div class="form-group col-md-6">
+<label for="expMonth">Expiry month</label> <select id="expMonth" class="form-control">
+<option>01</option> <option>02</option> <option>03</option> <option>04</option> <option>05</option> <option>06</option> <option>07</option> <option>08</option> <option>09</option> <option>10</option> <option>11</option> <option>12</option>
+</select> </div>
+<div class="form-group col-md-6">
+<label for="expYear">Expiry year</label> <select id="expYear" class="form-control">
+<option>2021</option> <option>2022</option> <option>2023</option>
+</select> </div>
+</div>
+<button type="button" id="pay-button" class="btn btn-primary">Pay</button> -->

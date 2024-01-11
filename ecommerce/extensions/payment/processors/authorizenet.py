@@ -380,6 +380,7 @@ class AuthorizenetClient(BaseClientSidePaymentProcessor):
 
     @property
     def authorizenet_form(self):
+        print('here autho')
         return AuthorizenetPaymentForm(
             user=self.request.user,
             request=self.request,

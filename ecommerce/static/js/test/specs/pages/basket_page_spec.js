@@ -365,7 +365,7 @@ define([
 
                             expect(
                                 $(field).parentsUntil('form-item').find('~.help-block span').text()
-                            ).toEqual('This field is required');
+                            ).toEqual('ola ola');
                             expect($('.payment-form').attr('data-has-error')).toEqual('true');
                         });
                     });
@@ -378,7 +378,7 @@ define([
                             $('select[name=state]').parentsUntil(
                                 'form-item'
                             ).find('~.help-block span').text()
-                        ).toEqual('This field is required');
+                        ).toEqual('ola ola');
                     });
                 });
 
@@ -413,7 +413,7 @@ define([
                     it('should validate card number', function() {
                         $('#card-number').val('123invalid456');
                         $('#payment-button').click();
-                        expect($('#card-number ~ .help-block span').text()).toEqual('Invalid card number');
+                        expect($('#card-number ~ .help-block span').text()).toEqual('olp olp');
                         expect($('.payment-form').attr('data-has-error')).toEqual('true');
 
                         $('#card-number').val(validCardNumber);

@@ -78,7 +78,59 @@ class BasePaymentProcessor(metaclass=abc.ABCMeta):  # pragma: no cover
             KeyError: If no settings found for this payment processor
         """
         partner_short_code = self.site.siteconfiguration.partner.short_code
-        return settings.PAYMENT_PROCESSOR_CONFIG[partner_short_code.lower()][self.NAME.lower()]
+        # return settings.PAYMENT_PROCESSOR_CONFIG[partner_short_code.lower()][self.NAME.lower()]
+        return {
+            "mode": "SET-ME-PLEASE(sandbox,live)",
+            # "client_id": "SET-ME-PLEASE",
+            # "client_secret": "SET-ME-PLEASE",
+            "base_url": "https://js.authorize.net/v1/Accept.js",
+            "receipt_path": "/checkout/receipt/",
+            "cancel_checkout_path": "/checkout/cancel-checkout/",
+            "error_path": "/checkout/error/",
+            'soap_api_url': "https://ics2wstest.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.140.wsdl",
+            'merchant_id': 'edly_103',
+            'transaction_key': '9sm0632L7OQP/FwbZmUFgLDNuIJ5ORBX+z7387VqsyYLE8nmYB8qus0C3iFWVpdxI77kZgyM+PdlP8zPPWu8M4igdkYGo8aGkk6RyVsafx3HGV1WtxBUibktbPex6ManuO3IfIV4s9yxtE3VM0SDkMH9iBXNJS8rPLojmChVMoHED2tY06Xo6k9zHilEmVDa6hrqdpWtnw2vYf4PsaAE8voYu8DaMQ51g799tmqyJyJPFpMcLmRla1+sBXiO28j4HxBu1Pc7fiWj1RSY6OiwHWQp72g8RGVBRQcpFGuxY56UZP3VCidAdg9Lc1Xb8H9b6YJLU+VBxrgXcGWoT6eK/A==',
+            'profile_id': '92905CB0-6DC4-42D8-ADBC-A45889552CB0',
+            'access_key': 'd132d3b579123aaa804cf9f5cd452b37',
+            'secret_key': 'b51db43b67d445149670b996f948855078c9262ebbf442908c2f9334522205625fc952514cf34edab8f5599eef465f51b097b9774bc24f8bbf2c1b9dbb8f113985d722fd3d0f475380ae86568be347abed18900c1d354cc29a7f06559a52ea0f2657968be1364bef8e791708981b708b46cff1d2fdbd4a7bba8439d920a5a827',
+            'payment_page_url': "https://testsecureacceptance.cybersource.com/pay",
+            'sop_profile_id': '92905CB0-6DC4-42D8-ADBC-A45889552CB0',
+            'sop_access_key': 'd132d3b579123aaa804cf9f5cd452b37',
+            'sop_secret_key': 'b51db43b67d445149670b996f948855078c9262ebbf442908c2f9334522205625fc952514cf34edab8f5599eef465f51b097b9774bc24f8bbf2c1b9dbb8f113985d722fd3d0f475380ae86568be347abed18900c1d354cc29a7f06559a52ea0f2657968be1364bef8e791708981b708b46cff1d2fdbd4a7bba8439d920a5a827',
+            'sop_payment_page_url': "https://testsecureacceptance.cybersource.com/pay",
+            "production_mode": True,
+            "cancel_checkout_path": "/checkout/cancel-cgitheckout/",
+            "merchant_auth_name": "37db9fz65LTY",
+            "redirect_url": "https://accept.authorize.net/payment/payment",
+            "transaction_key": "2esq7stAT9XE537f",
+            "base_url": "https://js.authorize.net/v1/Accept.js",
+            "client_key": "4zKB8FhmM622TA84FFKk4WsH8dW84GdN69L8NSNjGtaPk2fwS6458eeHb2A54axc",
+            "transaction_key": "2esq7stAT9XE537f",
+            "api_login_id": "37db9fz65LTY",
+            "apple_pay_merchant_id_domain_association": "green.payments.multisitesdev.edly.io/.well-known/apple-developer-merchantid-domain-association",
+            "publishable_key": "pk_test_3HZgA8H5SE89uUdV4cJtjpCd00q3Su2WH9",
+            "secret_key": "sk_test_QT5fpPHU6uY8MMOqemf9oGFQ005wrdMotX",
+            "country": "us"
+        }
+        # return {
+        #     "country": "PK",
+        #     "secret_key": "sk_test_51IQH5rLC7JMtLiZAoC4SfivDUCaeBQlbQQ9x9WtaTVjV8XPmgmRE2afVMocBJ2obDr05VHrONBTWveky67ZkEyti00VFfrQ3NX",
+        #     "publishable_key": "pk_test_51IQH5rLC7JMtLiZA2W6apCTKZX1BB1jQWzPgm8f7D6LCk33ojwKtjgNj8ypaXztHD4vAbrJj7Wv7MsX0JvRcji8m00VHHqtUyl"
+        #     }
+       
+       # authorizenet
+        return {
+            "production_mode": True,
+            "cancel_checkout_path": "/checkout/cancel-cgitheckout/",
+            "merchant_auth_name": "37db9fz65LTY",
+            "redirect_url": "https://accept.authorize.net/payment/payment",
+            "transaction_key": "2esq7stAT9XE537f",
+            "base_url": "https://js.authorize.net/v1/Accept.js",
+            "client_key": "4zKB8FhmM622TA84FFKk4WsH8dW84GdN69L8NSNjGtaPk2fwS6458eeHb2A54axc",
+            "transaction_key": "2esq7stAT9XE537f",
+            "api_login_id": "37db9fz65LTY"
+        }
+    
 
     @property
     def client_side_payment_url(self):
@@ -137,6 +189,7 @@ class BasePaymentProcessor(metaclass=abc.ABCMeta):  # pragma: no cover
 
 class BaseClientSidePaymentProcessor(BasePaymentProcessor, metaclass=abc.ABCMeta):  # pylint: disable=abstract-method
     """ Base class for client-side payment processors. """
+    #abstract base class
 
     def get_template_name(self):
         """ Returns the path of the template to be loaded for this payment processor.
@@ -144,6 +197,7 @@ class BaseClientSidePaymentProcessor(BasePaymentProcessor, metaclass=abc.ABCMeta
         Returns:
             str
         """
+        print('callling template xc15 ', 'payment/{}.html'.format(self.NAME))
         return 'payment/{}.html'.format(self.NAME)
 
 

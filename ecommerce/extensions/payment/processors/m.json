@@ -1,0 +1,62 @@
+{
+  "BRANDING": {
+    "logo": "https://edly-cloud-static-assets.s3.amazonaws.com/edly-theme/logo.png",
+    "logo-white": "https://edly-cloud-static-assets.s3.amazonaws.com/edly-theme/logo-white.png",
+    "favicon": "https://edly-cloud-static-assets.s3.amazonaws.com/edly-theme/favicon.png"
+  },
+  "FONTS": {
+    "heading-font": "Open Sans, sans-serif",
+    "font-path": "https://fonts.googleapis.com/css?family=Open+Sans&display=swap",
+    "base-font": "Open Sans, sans-serif"
+  },
+  "SESSION_COOKIE_DOMAIN": ".edx.devstack.lms",
+  "DJANGO_SETTINGS_OVERRIDE": {
+    "CURRENT_PLAN": "ESSENTIALS",
+    "CSRF_TRUSTED_ORIGINS": [
+      ".edx.devstack.lms",
+      "panel.edx.devstack.lms:3030"
+    ],
+    "OSCAR_DEFAULT_CURRENCY": "USD",
+    "OSCAR_DEFAULT_CURRENCY_SYMBOL": "$",
+    "CORS_ORIGIN_WHITELIST": ["https://apps.edx.devstack.lms:3030"],
+    "OSCAR_FROM_EMAIL": "<from email address>",
+    "SESSION_COOKIE_DOMAIN": ".edx.devstack.lms",
+    "LANGUAGE_CODE": "en",
+    "EDLY_WORDPRESS_URL": "http://wordpress.edx.devstack.lms/",
+    "FRONTEND_LOGOUT_URL": "http://edx.devstack.lms:18000/logout",
+    "PAYMENT_PROCESSOR_CONFIG": {
+      "edly": {
+        "paypal": {
+          "mode": "SET-ME-PLEASE(sandbox,live)",
+          "client_id": "SET-ME-PLEASE",
+          "client_secret": "SET-ME-PLEASE",
+          "receipt_path": "/checkout/receipt/",
+          "cancel_checkout_path": "/checkout/cancel-checkout/",
+          "error_path": "/checkout/error/"
+        },
+        "authorizenet": {
+            "production_mode": true,
+            "cancel_checkout_path": "/checkout/cancel-cgitheckout/",
+            "merchant_auth_name": "37db9fz65LTY",
+            "redirect_url": "https://accept.authorize.net/payment/payment",
+            "transaction_key": "2esq7stAT9XE537f"
+          },
+          "authorizenetclient": {
+            "base_url": "https://js.authorize.net/v1/Accept.js",
+            "production_mode": true,
+            "client_key": "4zKB8FhmM622TA84FFKk4WsH8dW84GdN69L8NSNjGtaPk2fwS6458eeHb2A54axc",
+            "transaction_key": "2esq7stAT9XE537f",
+            "api_login_id": "37db9fz65LTY"
+          }
+      }
+    }
+  },
+  "PLATFORM_NAME": "http://wordpress.edx.devstack.lms/",
+  "COLORS": { "primary": "#dd1f25", "secondary": "#dd1f25" },
+  "EDLY_COPYRIGHT_TEXT": "Edly Copy Rights. All rights reserved for edly site.",
+  "PANEL_NOTIFICATIONS_BASE_URL": "http://panel.edx.devstack.lms:9999/",
+  "CONTACT_MAILING_ADDRESS": "Edly 25 Mohlanwal Road, Westwood Colony Lahore, Punjab 54000",
+  "SERVICES_NOTIFICATIONS_COOKIE_EXPIRY": "900",
+  "GTM_ID": "GTM-XXXXXXX",
+  "DISABLE_PAID_COURSE_MODES": false
+}

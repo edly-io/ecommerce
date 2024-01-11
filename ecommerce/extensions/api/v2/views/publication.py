@@ -46,8 +46,8 @@ class AtomicPublicationView(generics.CreateAPIView, generics.UpdateAPIView):
 
         content = serializer.data
         content['message'] = message if message else None
-        trigger_dataloader(
-            self.request.site.partner.short_code,
-            data['id'],
-        )
+        # trigger_dataloader(
+        #     self.request.site.partner.short_code,
+        #     data['id'],
+        # )
         return Response(content, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)

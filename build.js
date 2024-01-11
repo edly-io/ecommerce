@@ -53,7 +53,7 @@
             exclude: ['js/common']
         },
         {
-            name: 'js/views/cybersource_client_side_checkout',
+            name: 'js/views/cybersource_client_side_checkout1',
             exclude: ['js/common']
         },
         {

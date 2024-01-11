@@ -30,7 +30,8 @@ require.config({
         underscore: 'bower_components/underscore/underscore',
         'underscore.string': 'bower_components/underscore.string/dist/underscore.string',
         utils: 'js/utils',
-        views: 'js/views'
+        views: 'js/views',
+        // flexMicroformScript: 'https://testflex.cybersource.com/microform/bundle/v2/flex-microform.min.js'
     },
     shim: {
         bootstrap: {

@@ -33,6 +33,7 @@ USERNAME_REGEX_PARTIAL = r'[\w .@_+-]+'
 USERNAME_PATTERN = r'(?P<username>{regex})'.format(regex=USERNAME_REGEX_PARTIAL)
 
 BASKET_URLS = [
+    
     url(r'^$', basket_views.BasketCreateView.as_view(), name='create'),
     url(
         r'^{basket_id}/$'.format(basket_id=BASKET_ID_PATTERN),

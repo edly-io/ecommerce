@@ -130,6 +130,7 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
         """
 
         super(Cybersource, self).__init__(site)
+        print('oz --')
         configuration = self.configuration
         self.soap_api_url = configuration['soap_api_url']
         self.merchant_id = configuration['merchant_id']
@@ -195,6 +196,8 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
     def get_capture_context(self, session):  # pragma: no cover
         # To delete None values in Input Request Json body
 
+        print('op 12 ')
+
         requestObj = GeneratePublicKeyRequest(
             encryption_type='RsaOaep256',
             target_origin=self.flex_target_origin,
@@ -222,6 +225,7 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
         return new_capture_context
 
     def _unexpired_capture_contexts(self, session):
+
         """
         Return all unexpired capture contexts in the supplied session.
 
@@ -262,6 +266,7 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
         Returns:
             dict: CyberSource-specific parameters required to complete a transaction, including a signature.
         """
+        print('mnop-90')
         sop_config_values = (self.sop_access_key, self.sop_payment_page_url, self.sop_profile_id, self.sop_secret_key,)
         if use_client_side_checkout and not all(sop_config_values):
             raise ProcessorMisconfiguredError(
@@ -273,6 +278,7 @@ class Cybersource(ApplePayMixin, BaseClientSidePaymentProcessor):
 
         # Sign all fields
         parameters['signed_field_names'] = ','.join(sorted(parameters.keys()))
+
         parameters['signature'] = self._generate_signature(parameters, use_client_side_checkout)
 
         payment_page_url = self.sop_payment_page_url if use_client_side_checkout else self.payment_page_url

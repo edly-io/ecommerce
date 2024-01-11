@@ -49,50 +49,51 @@ class BasePaymentSubmitView(View):
     form_class = PaymentForm
     http_method_names = ['post', 'options']
 
-    @method_decorator(login_required)
-    def dispatch(self, request, *args, **kwargs):
-        logger.info(
-            '%s called for basket [%d]. It is in the [%s] state.',
-            self.__class__.__name__,
-            request.basket.id,
-            request.basket.status
-        )
-        return super(BasePaymentSubmitView, self).dispatch(request, *args, **kwargs)
+    # @method_decorator(login_required)
+    # def dispatch(self, request, *args, **kwargs):
+    #     logger.info(
+    #         '%s called for basket [%d]. It is in the [%s] state.',
+    #         self.__class__.__name__,
+    #         request.basket.id,
+    #         request.basket.status
+    #     )
+    #     return super(BasePaymentSubmitView, self).dispatch(request, *args, **kwargs)
 
-    def post(self, request):  # pylint: disable=unused-argument
-        # NOTE (CCB): Ideally, we'd inherit FormView; however, doing so causes issues for children
-        # of this class that want to inherit mixins (e.g. EdxOrderPlacementMixin).
-        form_kwargs = self.get_form_kwargs()
-        form = self.form_class(**form_kwargs)
+    # def post(self, request):  # pylint: disable=unused-argument
+    #     # NOTE (CCB): Ideally, we'd inherit FormView; however, doing so causes issues for children
+    #     # of this class that want to inherit mixins (e.g. EdxOrderPlacementMixin).
+    #     form_kwargs = self.get_form_kwargs()
+    #     form = self.form_class(**form_kwargs)
+    #     print('here 89')
 
-        if form.is_valid():
-            return self.form_valid(form)
+    #     if form.is_valid():
+    #         return self.form_valid(form)
 
-        return self.form_invalid(form)
+    #     return self.form_invalid(form)
 
-    def get_form_kwargs(self):
-        return {
-            'data': self.request.POST,
-            'user': self.request.user,
-            'request': self.request,
-        }
+    # def get_form_kwargs(self):
+    #     return {
+    #         'data': self.request.POST,
+    #         'user': self.request.user,
+    #         'request': self.request,
+    #     }
 
-    @abc.abstractmethod
-    def form_valid(self, form):
-        """ Perform payment processing after validating the form submission. """
+    # @abc.abstractmethod
+    # def form_valid(self, form):
+    #     """ Perform payment processing after validating the form submission. """
 
-    def form_invalid(self, form):
-        logger.info(
-            'Invalid payment form submitted for basket [%d].',
-            self.request.basket.id
-        )
+    # def form_invalid(self, form):
+    #     logger.info(
+    #         'Invalid payment form submitted for basket [%d].',
+    #         self.request.basket.id
+    #     )
 
-        errors = {field: error[0] for field, error in form.errors.items()}
-        logger.debug(errors)
+    #     errors = {field: error[0] for field, error in form.errors.items()}
+    #     logger.debug(errors)
 
-        data = {'field_errors': errors}
+    #     data = {'field_errors': errors}
 
-        if errors.get('basket'):
-            data['error'] = _('There was a problem retrieving your basket. Refresh the page to try again.')
+    #     if errors.get('basket'):
+    #         data['error'] = _('There was a problem retrieving your basket. Refresh the page to try again.')
 
-        return JsonResponse(data, status=400)
+    #     return JsonResponse(data, status=400)

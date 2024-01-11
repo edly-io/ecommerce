@@ -197,8 +197,9 @@
         {% endif %}
         <div id="card-holder-information" class="form-input-elements placeholder row">
             <div role="region" aria-labelledby="card-holder-information-region">
-                <h2 id="card-holder-information-region" class="title">{% trans "card holder information" as tmsg %}{{ tmsg | force_escape }}</h2>
+                <h2 id="card-holder-information-region" class="title">{% trans "card holder 123 information" as tmsg %}{{ tmsg | force_escape }}</h2>
                 {% if sdn_check %}
+
                     <input type="hidden" name="sdn-check" value="enabled">
                 {% endif %}
                 {% crispy payment_form %}

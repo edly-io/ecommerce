@@ -142,7 +142,7 @@ define([
                 };
 
                 if (!CreditCardUtils.isValidCardNumber(cardNumber)) {
-                    BasketPage.appendCardValidationErrorMsg(event, $number, gettext('Invalid card number'));
+                    BasketPage.appendCardValidationErrorMsg(event, $number, gettext('olp olp'));
                 } else if (_.isUndefined(cardType) || !BasketPage.isCardTypeSupported(cardType.name)) {
                     BasketPage.appendCardValidationErrorMsg(event, $number, gettext('Unsupported card type'));
                 } else if (cvnNumber.length !== cardType.cvnLength || !Number.isInteger(Number(cvnNumber))) {

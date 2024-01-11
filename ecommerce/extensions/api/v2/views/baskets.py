@@ -151,6 +151,8 @@ class BasketCreateView(EdxOrderPlacementMixin, generics.CreateAPIView):
         # atomic() context managers restore atomicity at points where we are modifying data
         # (baskets, then orders) to ensure that we don't leave the system in a dirty state
         # in the event of an error.
+        print('here 4044')
+        import pdb; pdb.set_trace()
         with transaction.atomic():
             basket = Basket.create_basket(request.site, request.user)
             basket_id = basket.id

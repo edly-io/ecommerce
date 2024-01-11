@@ -304,7 +304,7 @@ MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
     'edx_rest_framework_extensions.auth.jwt.middleware.JwtRedirectToLoginIfUnauthenticatedMiddleware',
     'edx_rest_framework_extensions.auth.jwt.middleware.JwtAuthCookieMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.contrib.sites.middleware.CurrentSiteMiddleware',
@@ -325,6 +325,7 @@ MIDDLEWARE = (
     'edx_rest_framework_extensions.middleware.RequestMetricsMiddleware',
     'edx_rest_framework_extensions.auth.jwt.middleware.EnsureJWTAuthSettingsMiddleware',
     'crum.CurrentRequestUserMiddleware',
+    # 'csp.middleware.CSPMiddleware',
 )
 # END MIDDLEWARE CONFIGURATION
 
@@ -387,10 +388,11 @@ DJANGO_APPS = [
     'rest_framework_datatables',
     'django_sites_extensions',
     # edx-drf-extensions
-    'csrf.apps.CsrfAppConfig',  # Enables frontend apps to retrieve CSRF tokens.
+    # 'csrf.apps.CsrfAppConfig',  # Enables frontend apps to retrieve CSRF tokens.
     'rules.apps.AutodiscoverRulesConfig',
     'xss_utils',
     'corsheaders',
+    'csp',
 ]
 
 # Apps specific to this project go here.
@@ -965,3 +967,10 @@ DCS_SESSION_COOKIE_SAMESITE_FORCE_ALL = True
 
 # Redirect URL for expired sites
 EXPIRE_REDIRECT_URL = 'http://wordpress.edx.devstack.lms/pricing-and-plans/'
+
+# CSP_DEFAULT_SRC = ("'self'",)
+# CSP_FRAME_ANCESTORS = ("'self'", "https://testflex.cybersource.com")
+# CSP_SCRIPT_SRC = ("'self'", "*")
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'")
+

