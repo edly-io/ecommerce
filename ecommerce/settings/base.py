@@ -393,7 +393,7 @@ DJANGO_APPS = [
     'rules.apps.AutodiscoverRulesConfig',
     'xss_utils',
     'corsheaders',
-    'csp',
+    # 'csp',
 ]
 
 # Apps specific to this project go here.
