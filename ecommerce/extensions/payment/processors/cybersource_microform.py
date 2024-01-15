@@ -149,60 +149,22 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
         # To delete None values in Input Request Json body
         print('xc14 wa wa')
         session = request.session
-        try:
-            requestObj = GeneratePublicKeyRequest(
-                encryption_type='RsaOaep256',
-                target_origin=str(self.request.site),
-            )
-            print(requestObj)
-            requestObj = del_none(requestObj.__dict__)
-            requestObj = json.dumps(requestObj)
+        requestObj = GeneratePublicKeyRequest(
+            encryption_type='RsaOaep256',
+            target_origin='https://dev.payments.multisitesdev.edly.io',
+        )
+        print(requestObj)
+        requestObj = del_none(requestObj.__dict__)
+        requestObj = json.dumps(requestObj)
 
-            api_instance = KeyGenerationApi(self.cybersource_api_config)
-            return_data, _, _ = api_instance.generate_public_key(
-                generate_public_key_request=requestObj,
-                format='JWT',
-                _request_timeout=(self.connect_timeout, self.read_timeout),
-            )
-            if return_data:
-                logger.info('Successfully-zx with site [%s] ', str(self.request.site))
-        except:
-            try:
-                requestObj = GeneratePublicKeyRequest(
-                encryption_type='RsaOaep256',
-                target_origin=str(self.request.site).replace('http', 'https'),
-            )
-                print(requestObj)
-                requestObj = del_none(requestObj.__dict__)
-                requestObj = json.dumps(requestObj)
-
-                api_instance = KeyGenerationApi(self.cybersource_api_config)
-                return_data, _, _ = api_instance.generate_public_key(
-                    generate_public_key_request=requestObj,
-                    format='JWT',
-                    _request_timeout=(self.connect_timeout, self.read_timeout),
-                )
-                if return_data:
-                    logger.info('Successfully-zx with site [%s] ', str(self.request.site).replace('http', 'https'))
-            except:
-                requestObj = GeneratePublicKeyRequest(
-                encryption_type='RsaOaep256',
-                target_origin=None,
-            )
-                
-                print(requestObj)
-                requestObj = del_none(requestObj.__dict__)
-                requestObj = json.dumps(requestObj)
-
-                api_instance = KeyGenerationApi(self.cybersource_api_config)
-                return_data, _, _ = api_instance.generate_public_key(
-                    generate_public_key_request=requestObj,
-                    format='JWT',
-                    _request_timeout=(self.connect_timeout, self.read_timeout),
-                )
-                logger.info('Successfully-zx with site [%s] ', 'nothing works')
-
-        
+        api_instance = KeyGenerationApi(self.cybersource_api_config)
+        return_data, _, _ = api_instance.generate_public_key(
+            generate_public_key_request=requestObj,
+            format='JWT',
+            _request_timeout=(self.connect_timeout, self.read_timeout),
+        )
+        if return_data:
+            logger.info('Successfully-zx with site [%s] ', str(self.request.site))
 
         new_capture_context = {'key_id': return_data.key_id}
         return return_data.key_id

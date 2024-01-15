@@ -326,7 +326,7 @@ MIDDLEWARE = (
     'edx_rest_framework_extensions.middleware.RequestMetricsMiddleware',
     'edx_rest_framework_extensions.auth.jwt.middleware.EnsureJWTAuthSettingsMiddleware',
     'crum.CurrentRequestUserMiddleware',
-    'csp.middleware.CSPMiddleware',
+    # 'csp.middleware.CSPMiddleware',
 )
 # END MIDDLEWARE CONFIGURATION
 
@@ -973,38 +973,38 @@ EXPIRE_REDIRECT_URL = 'http://wordpress.edx.devstack.lms/pricing-and-plans/'
 # CSP_DEFAULT_SRC = ("'self'", "https://testflex.cybersource.com/microform/bundle/v2.1.1/iframe.html")
 # CSP_FRAME_ANCESTORS = ("'self'", "https://testflex.cybersource.com", "https://testflex.cybersource.com/microform/bundle/v2.1.1/iframe.html", "*")
 # CSP_SCRIPT_SRC = ("'self'", "*")
-# CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "*")
+# CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
 # CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", "*")
 
-CSP_DEFAULT_SRC = ("'self'", '*')
-CSP_FRAME_ANCESTORS = ("'self'", "https://testflex.cybersource.com/",'*')
-CSP_FRAME_SRC = ("'self'", "https://testflex.cybersource.com/", '*')
-CSP_CHILD_SRC = ("'self'", "https://testflex.cybersource.com/", '*')
-CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https://testflex.cybersource.com/", "*")
-CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "*")
+# CSP_DEFAULT_SRC = ("'self'", 'none')
+# CSP_FRAME_ANCESTORS = ("'self'", "https://testflex.cybersource.com/",'*')
+# CSP_FRAME_SRC = ("'self'", "https://testflex.cybersource.com/", '*')
+# CSP_CHILD_SRC = ("'self'", "https://testflex.cybersource.com/", '*')
+# CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https://testflex.cybersource.com/", "*")
+# CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
 
-# CSP_FRAME_ANCESTORS = ("*")
-# CSP_DEFAULT_SRC = ["*"]
-# CSP_CONNECT_SRC = ["*"]
-# CSP_SCRIPT_SRC = ["*"]
-# CSP_STYLE_SRC = ["*"]
-# CSP_CHILD_SRC = ["*"]
-# CSP_FRAME_SRC = ["*"]
-# CSP_IMG_SRC = ["*"]
-# CSP_FONT_SRC = ["*"]
-# CSP_MEDIA_SRC = ["*"]
-# CSP_OBJECT_SRC = ["*"]
+# CSP_FRAME_ANCESTORS = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_DEFAULT_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_CONNECT_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_CHILD_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_FRAME_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_IMG_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_FONT_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_MEDIA_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_OBJECT_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
 
 # CSP = {
-#     'default-src': ("'self'", '*'),
+#     'default-src': ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*"),
 #     'frame-ancestors': ("'self'", "https://testflex.cybersource.com/"),
 #     'script-src': ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https://testflex.cybersource.com/"),
 #     # Add other directives as needed
 # }
 
 
-# CSP_STYLE_SRC = ("'self'", '*')
-# CSP_SCRIPT_SRC = ("'self'", '*')
+# CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
+# CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://testflex.cybersource.com/","*")
 
 # CSP_DEFAULT_SRC = (
 #     "'self'", "'unsafe-inline'", "'unsafe-eval'",
