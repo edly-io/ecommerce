@@ -309,6 +309,7 @@ MIDDLEWARE = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.contrib.sites.middleware.CurrentSiteMiddleware',
     'ecommerce.extensions.edly_ecommerce_app.middleware.EdlyOrganizationAccessMiddleware',
+    # 'ecommerce.extensions.edly_ecommerce_app.middleware.XFrameOptionsMiddleware'
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'waffle.middleware.WaffleMiddleware',
     'ecommerce.extensions.analytics.middleware.TrackingMiddleware',
@@ -325,7 +326,7 @@ MIDDLEWARE = (
     'edx_rest_framework_extensions.middleware.RequestMetricsMiddleware',
     'edx_rest_framework_extensions.auth.jwt.middleware.EnsureJWTAuthSettingsMiddleware',
     'crum.CurrentRequestUserMiddleware',
-    # 'csp.middleware.CSPMiddleware',
+    'csp.middleware.CSPMiddleware',
 )
 # END MIDDLEWARE CONFIGURATION
 
@@ -392,7 +393,7 @@ DJANGO_APPS = [
     'rules.apps.AutodiscoverRulesConfig',
     'xss_utils',
     'corsheaders',
-    # 'csp',
+    'csp',
 ]
 
 # Apps specific to this project go here.
@@ -925,6 +926,7 @@ BACKEND_SERVICE_EDX_OAUTH2_SECRET = "ecommerce-backend-service-secret"
 BACKEND_SERVICE_EDX_OAUTH2_PROVIDER_URL = "http://127.0.0.1:8000/oauth2"
 EXTRA_APPS = []
 API_ROOT = None
+X_FRAME_OPTIONS = "ALLOW-FROM *"
 
 # Needed to link to the payment micro-frontend
 PAYMENT_MICROFRONTEND_URL = None
@@ -968,9 +970,53 @@ DCS_SESSION_COOKIE_SAMESITE_FORCE_ALL = True
 # Redirect URL for expired sites
 EXPIRE_REDIRECT_URL = 'http://wordpress.edx.devstack.lms/pricing-and-plans/'
 
-# CSP_DEFAULT_SRC = ("'self'",)
-# CSP_FRAME_ANCESTORS = ("'self'", "https://testflex.cybersource.com")
+# CSP_DEFAULT_SRC = ("'self'", "https://testflex.cybersource.com/microform/bundle/v2.1.1/iframe.html")
+# CSP_FRAME_ANCESTORS = ("'self'", "https://testflex.cybersource.com", "https://testflex.cybersource.com/microform/bundle/v2.1.1/iframe.html", "*")
 # CSP_SCRIPT_SRC = ("'self'", "*")
-CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
-CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'")
+# CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "*")
+# CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", "*")
+
+CSP_DEFAULT_SRC = ("'self'", '*')
+CSP_FRAME_ANCESTORS = ("'self'", "https://testflex.cybersource.com/",'*')
+CSP_FRAME_SRC = ("'self'", "https://testflex.cybersource.com/", '*')
+CSP_CHILD_SRC = ("'self'", "https://testflex.cybersource.com/", '*')
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https://testflex.cybersource.com/", "*")
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "*")
+
+# CSP_FRAME_ANCESTORS = ("*")
+# CSP_DEFAULT_SRC = ["*"]
+# CSP_CONNECT_SRC = ["*"]
+# CSP_SCRIPT_SRC = ["*"]
+# CSP_STYLE_SRC = ["*"]
+# CSP_CHILD_SRC = ["*"]
+# CSP_FRAME_SRC = ["*"]
+# CSP_IMG_SRC = ["*"]
+# CSP_FONT_SRC = ["*"]
+# CSP_MEDIA_SRC = ["*"]
+# CSP_OBJECT_SRC = ["*"]
+
+# CSP = {
+#     'default-src': ("'self'", '*'),
+#     'frame-ancestors': ("'self'", "https://testflex.cybersource.com/"),
+#     'script-src': ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https://testflex.cybersource.com/"),
+#     # Add other directives as needed
+# }
+
+
+# CSP_STYLE_SRC = ("'self'", '*')
+# CSP_SCRIPT_SRC = ("'self'", '*')
+
+# CSP_DEFAULT_SRC = (
+#     "'self'", "'unsafe-inline'", "'unsafe-eval'",
+#     "https://ajax.googleapis.com",
+#     "https://edly-cloud-static-assets.s3.amazonaws.com",
+#     "https://edly-edx-theme-files.s3.amazonaws.com",
+#     'https://fonts.googleapis.com',
+#     'https://fonts.gstatic.com',
+#     "https://www.googletagmanager.com",
+#     "*.edly.io", "*", "https://testflex.cybersource.com"
+# )
+
+#  https://testflex.cybersource.com/microform/bundle/v2.1.1/iframe.html
+
 

@@ -90,3 +90,13 @@ def _should_extend_config(current_value, new_value):
 
 def _is_logged_in_path(path):
     return '/login' in path
+
+class XFrameOptionsMiddleware(MiddlewareMixin):
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        response['X-Frame-Options'] = 'ALLOW-FROM https://testflex.cybersource.com/'
+        return response
+

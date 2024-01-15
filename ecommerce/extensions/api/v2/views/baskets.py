@@ -152,7 +152,7 @@ class BasketCreateView(EdxOrderPlacementMixin, generics.CreateAPIView):
         # (baskets, then orders) to ensure that we don't leave the system in a dirty state
         # in the event of an error.
         print('here 4044')
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         with transaction.atomic():
             basket = Basket.create_basket(request.site, request.user)
             basket_id = basket.id
@@ -248,6 +248,7 @@ class BasketCreateView(EdxOrderPlacementMixin, generics.CreateAPIView):
         Returns:
             dict: Response data.
         """
+        print('mmnop-12')
         basket.freeze()
 
         audit_log(

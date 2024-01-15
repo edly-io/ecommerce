@@ -524,8 +524,9 @@ class BasketSummaryView(BasketLogicMixin, BasketView):
 
     @newrelic.agent.function_trace()
     def get(self, request, *args, **kwargs):
-        print('idhar hun mn')
         basket = request.basket
+        print('idhar hun mn 6 ', basket)
+        # return Response(status=200)
 
         try:
             self.fire_segment_events(request, basket)
@@ -533,6 +534,7 @@ class BasketSummaryView(BasketLogicMixin, BasketView):
             self._redirect_to_payment_microfrontend_if_configured(request)
         except RedirectException as e:
             return e.response
+        print('idhar hun mn 9 ')
 
         return super(BasketSummaryView, self).get(request, *args, **kwargs)
 
