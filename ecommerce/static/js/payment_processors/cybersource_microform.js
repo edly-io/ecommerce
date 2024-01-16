@@ -45,7 +45,9 @@ define([
                 // var microform = flex.microform({ styles: myStyles });
             
             // should work on form initilize
-            require(['https://testflex.cybersource.com/microform/bundle/v2/flex-microform.min.js'], function (cybersourceFlex) {
+            // require(['https://testflex.cybersource.com/microform/bundle/v2/flex-microform.min.js'], function (cybersourceFlex) {
+            require(['https://flex.cybersource.com/cybersource/assets/microform/0.11/flex-microform.min.js'], function (cybersourceFlex) {
+            
                 var flex  = new cybersourceFlex.Flex(config.context);
                 console.log('kkkkk22 -- ', flex);
                 var microform = flex.microform({ styles: myStyles });
@@ -70,13 +72,13 @@ define([
                         if (err) {
                           // handle error
                           console.error(err);
-                          errorsOutput.textContent = err.message;
+                          // errorsOutput.textContent = err.message;
                         } else {
                           // At this point you may pass the token back to your server as you wish.
                           // In this example we append a hidden input to the form and submit it.      
-                          console.log(JSON.stringify(token));
-                          flexResponse.value = JSON.stringify(token);
-                          form.submit();
+                          console.log('final-trans-- ',JSON.stringify(token));
+                          // flexResponse.value = JSON.stringify(token);
+                          // form.submit();
                         }
                       });
                       
