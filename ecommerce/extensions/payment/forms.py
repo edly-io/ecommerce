@@ -467,21 +467,21 @@ class CybersourceMicroformPaymentForm(forms.Form):
             #     Div('securityCode-container', id='securityCode-container'),
             #     css_class='form-item col-md-6 form-control'
             # ),
-             Div(
-                Field('cardholderName', css_class='form-control'),
-                HTML('<label id="cardNumber-label">Card Number</label>'),
-                Div('', css_class='form-control', id='number-container'),  # Assuming this is an empty field for the card number
-                HTML('<label for="securityCode-container">Security Code</label>'),
-                Div('', css_class='form-control', id='securityCode-container'),  # Assuming this is an empty field for the security code
-                css_class='form-group'
-            ),
+            #  Div(
+            #     Field('cardholderName', css_class='form-control'),
+            #     HTML('<label id="cardNumber-label">Card Number</label>'),
+            #     Div('', css_class='form-control', id='number-container'),  # Assuming this is an empty field for the card number
+            #     HTML('<label for="securityCode-container">Security Code</label>'),
+            #     Div('', css_class='form-control', id='securityCode-container'),  # Assuming this is an empty field for the security code
+            #     css_class='form-group'
+            # ),
+            # Div(
+            #     Div('card_number'),
+            #     HTML('<p class="help-block-card"></p>'),
+            #     css_class='form-item col-md-12'
+            # ),
             Div(
-                Div('card_number'),
-                HTML('<p class="help-block-card"></p>'),
-                css_class='form-item col-md-12'
-            ),
-            Div(
-                Div('card_code', css_class='form-item col-md-4'),
+                # Div('card_code', css_class='form-item col-md-4'),
                 Div('expiry_month', css_class='form-item col-md-4'),
                 Div('expiry_year', css_class='form-item col-md-4'),
                 HTML('<p class="help-block-expiry"></p>'),
