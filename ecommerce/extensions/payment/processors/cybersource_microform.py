@@ -9,7 +9,10 @@ from django.conf import settings
 from oscar.core.loading import get_class, get_model
 
 from ecommerce.extensions.payment.forms import CybersourceMicroformPaymentForm
-from ecommerce.extensions.payment.processors import BaseClientSidePaymentProcessor, HandledProcessorResponse
+from ecommerce.extensions.payment.processors import (
+    BaseClientSidePaymentProcessor,
+    HandledProcessorResponse,
+)
 from ecommerce.extensions.payment.utils import LxmlObjectJsonEncoder
 
 import base64
@@ -25,6 +28,7 @@ from typing import Optional
 import jwt
 import jwt.exceptions
 import waffle
+
 from CyberSource import (
     AuthReversalRequest,
     CreatePaymentRequest,
@@ -45,11 +49,16 @@ from CyberSource import (
     Ptsv2paymentsTokenInformation,
     ReversalApi
 )
+# import CyberSource
 from CyberSource.rest import ApiException
 from django.conf import settings
 from django.urls import reverse
 from jwt.algorithms import RSAAlgorithm
-from oscar.apps.payment.exceptions import GatewayError, TransactionDeclined, UserCancelled
+from oscar.apps.payment.exceptions import (
+    GatewayError,
+    TransactionDeclined,
+    UserCancelled,
+)
 from oscar.core.loading import get_class, get_model
 from pytz import UTC
 from zeep import Client
@@ -57,10 +66,11 @@ from zeep.helpers import serialize_object
 from zeep.wsse import UsernameToken
 
 logger = logging.getLogger(__name__)
-Applicator = get_class('offer.applicator', 'Applicator')
-PaymentProcessorResponse = get_model('payment', 'PaymentProcessorResponse')
+Applicator = get_class("offer.applicator", "Applicator")
+PaymentProcessorResponse = get_model("payment", "PaymentProcessorResponse")
 
 AUTH_CAPTURE_TRANSACTION_TYPE = "authCaptureTransaction"
+
 
 def del_none(d):  # pragma: no cover
     for key, value in list(d.items()):
@@ -70,10 +80,10 @@ def del_none(d):  # pragma: no cover
             del_none(value)
     return d
 
-class CybersourceMicroform(BaseClientSidePaymentProcessor):
-    NAME = 'cybersource_microform'
-    template_name = 'payment/cybersource_microform.html'
 
+class CybersourceMicroform(BaseClientSidePaymentProcessor):
+    NAME = "cybersource_microform"
+    template_name = "payment/cybersource_microform.html"
 
     def __init__(self, site):
         """
@@ -83,22 +93,24 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
         """
         super(CybersourceMicroform, self).__init__(site)
         # import pdb; pdb.set_trace()
-        print('CybersourceMicroform processors xc14')
+        print("CybersourceMicroform processors xc14")
         self.request = crum.get_current_request()
         configuration = self.configuration
-        self.base_url = configuration['base_url']
-        self.merchant_id = configuration['merchant_id']
-        self.transaction_key = configuration['transaction_key']
-        self.send_level_2_3_details = configuration.get('send_level_2_3_details', True)
+        self.base_url = configuration["base_url"]
+        self.merchant_id = configuration["merchant_id"]
+        self.transaction_key = configuration["transaction_key"]
+        self.send_level_2_3_details = configuration.get("send_level_2_3_details", True)
         self.language_code = settings.LANGUAGE_CODE
 
-        self.flex_run_environment = configuration.get('flex_run_environment', 'cybersource.environment.SANDBOX')
-        self.flex_shared_secret_key_id = configuration.get('flex_shared_secret_key_id')
-        self.flex_shared_secret_key = configuration.get('flex_shared_secret_key')
+        self.flex_run_environment = configuration.get(
+            "flex_run_environment", "cybersource.environment.SANDBOX"
+        )
+        self.flex_shared_secret_key_id = configuration.get("flex_shared_secret_key_id")
+        self.flex_shared_secret_key = configuration.get("flex_shared_secret_key")
         self.flex_target_origin = None
 
-        self.connect_timeout = configuration.get('api_connect_timeout', 5.0)
-        self.read_timeout = configuration.get('api_read_timeout', 5.0)
+        self.connect_timeout = configuration.get("api_connect_timeout", 5.0)
+        self.read_timeout = configuration.get("api_read_timeout", 5.0)
 
         # self.cybersource_api_config = {
         #     'authentication_type': 'http_signature',
@@ -110,42 +122,40 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
         # }
 
         self.cybersource_api_config = {
-            'authentication_type': 'http_signature',
-            'run_environment': "apitest.cybersource.com",
+            "authentication_type": "http_signature",
+            "run_environment": "apitest.cybersource.com",
             # 'run_environment': self.flex_run_environment,
-            'merchantid': 'edly400',
-            'merchant_keyid': '6128d4be-b5b1-4fa4-8df5-ffc4c00e1114',
-            'merchant_secretkey': '82W/a35zNTtYo5a5BOFwc3AQWsCJ73kNeI1Csyzw2sI=',
-            'enable_log': False,
+            "merchantid": "edly400",
+            "merchant_keyid": "6128d4be-b5b1-4fa4-8df5-ffc4c00e1114",
+            "merchant_secretkey": "82W/a35zNTtYo5a5BOFwc3AQWsCJ73kNeI1Csyzw2sI=",
+            "enable_log": False,
         }
         self.context_key = None
         # self.get_capture_context(self.request)
 
-
-
     @property
     def cybersource_form(self):
-        print('here cybero')
-        print('xc13 form')
+        print("here cybero")
+        print("xc13 form")
         return CybersourceMicroformPaymentForm(
             user=self.request.user,
             request=self.request,
-            initial={'basket': self.request.basket},
-            label_suffix=''
+            initial={"basket": self.request.basket},
+            label_suffix="",
         )
-    
+
     @property
     def get_context(self):
-
         if not self.context_key:
             self.context_key = self.get_capture_context(self.request)
         return self.context_key
-    
+
     @property
     def cancel_page_url(self):
-        return 'ho ho ho'
+        return "ho ho ho"
 
     def get_capture_context(self, request):  # pragma: no cover
+
         # To delete None values in Input Request Json body
         print('xc14 wa wa')
         session = request.session
@@ -168,17 +178,18 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
 
         new_capture_context = {'key_id': return_data.key_id}
         return return_data.key_id
-        self.context_key = return_data.key_id
-        print('key ', return_data)
-        capture_contexts = [
-            capture_context
-            for (capture_context, _)
-            in self._unexpired_capture_contexts(session)
-        ]
-        capture_contexts.insert(0, new_capture_context)
-        # Prevent session size explosion by limiting the number of recorded capture contexts
-        session['capture_contexts'] = capture_contexts[:20]
-        return new_capture_context
+
+    # self.context_key = return_data.key_id
+    # print('key ', return_data)
+    # capture_contexts = [
+    #     capture_context
+    #     for (capture_context, _)
+    #     in self._unexpired_capture_contexts(session)
+    # ]
+    # capture_contexts.insert(0, new_capture_context)
+    # # Prevent session size explosion by limiting the number of recorded capture contexts
+    # session['capture_contexts'] = capture_contexts[:20]
+    # return new_capture_context
 
     def _unexpired_capture_contexts(self, session):
         """
@@ -193,28 +204,39 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
         now = datetime.datetime.now(UTC)
         return [
             (capture_context, decoded_capture_context)
-            for (capture_context, decoded_capture_context)
-            in (
-                (capture_context, jwt.decode(capture_context['key_id'], verify=False))
-                for capture_context
-                in session.get('capture_contexts', [])
+            for (capture_context, decoded_capture_context) in (
+                (capture_context, jwt.decode(capture_context["key_id"], verify=False))
+                for capture_context in session.get("capture_contexts", [])
             )
-            if not datetime.datetime.fromtimestamp(decoded_capture_context['exp'], tz=UTC) < now
+            if not datetime.datetime.fromtimestamp(
+                decoded_capture_context["exp"], tz=UTC
+            )
+            < now
         ]
 
     def get_transaction_parameters(self, basket, request=None, **kwargs):
-        print('xc13 get_transaction_parameters')
+        print("xc13 get_transaction_parameters")
         response = []
         return response
 
     def handle_processor_response(self, response, basket=None):
-        print('xc13 handle_processor_response')
+        print("xc13 handle_processor_response")
         currency = basket.currency
-        transaction_id = response.transactionResponse.transId if hasattr(response.transactionResponse, 'transId') else None
+        transaction_id = (
+            response.transactionResponse.transId
+            if hasattr(response.transactionResponse, "transId")
+            else None
+        )
         transaction_dict = LxmlObjectJsonEncoder().encode(response)
 
-        self.record_processor_response(transaction_dict, transaction_id=transaction_id, basket=basket)
-        logger.info('Successfully created Cybersource Microform charge [%s] for basket [%d].', 'merchant_id', basket.id)
+        self.record_processor_response(
+            transaction_dict, transaction_id=transaction_id, basket=basket
+        )
+        logger.info(
+            "Successfully created Cybersource Microform charge [%s] for basket [%d].",
+            "merchant_id",
+            basket.id,
+        )
 
         total = basket.total_incl_tax
         card_type = self.NAME
@@ -223,9 +245,11 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
             transaction_id=transaction_id,
             total=total,
             currency=currency,
-            card_number='XXXX',
-            card_type=card_type
+            card_number="XXXX",
+            card_type=card_type,
         )
 
     def issue_credit(self, order_number, basket, reference_number, amount, currency):
-        raise NotImplementedError('Authorizenet payment processor does not support refunds.')
+        raise NotImplementedError(
+            "Authorizenet payment processor does not support refunds."
+        )

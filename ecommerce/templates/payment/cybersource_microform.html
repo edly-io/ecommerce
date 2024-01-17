@@ -19,9 +19,10 @@
     </script>
 <script>
     window.CyberSourceConfig = {
-        postUrl: "{{ client_side_payment_processor.client_side_payment_url }}",
-        signingUrl: "{% url 'cybersource:submit' %}",
+        // postUrl: "{{ client_side_payment_processor.client_side_payment_url }}",
+        // signingUrl: "{% url 'cybersource:submit' %}",
         context: "{{ client_side_payment_processor.get_context }}",
+        postURL: "{% url 'cybersource:microform-submit' %}",
         // applePay: {
         //     enabled: {{ client_side_payment_processor.apple_pay_enabled|yesno:'true,false' }},
         //     merchantName: "{{ platform_name }}",

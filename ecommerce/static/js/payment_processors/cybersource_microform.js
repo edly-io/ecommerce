@@ -24,6 +24,7 @@ define([
                 $month = $('#id_expiry_month'),
                 $year = $('#id_expiry_year'),
                 $code = $('#id_card_code')
+                $paymentForm.attr('action', config.postURL);
 
             // var flex;
 
@@ -38,6 +39,17 @@ define([
                 'valid': { 'color': '#3c763d' },  
                 'invalid': { 'color': '#a94442' }
               };
+
+              var additionalData = {
+                additional_data_name: 'additional_data_value'
+            };
+              $.each(additionalData, function(name, value) {
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: name,
+                    value: value
+                }).appendTo($paymentForm); // Replace with the actual ID of your form
+            });
   
     
                 // setup
@@ -57,12 +69,15 @@ define([
                 number.load('#number-container');
                 securityCode.load('#securityCode-container');
 
+
                 $paymentButton.on('click', function(e) {
                     e.preventDefault();
-                    // console.log('hola----here here------hola ', $card.val(), cybersourceFlex);
-                    // console.log('year', $year.val(), $month.val());
+                    console.log('hola----here here------hola ');
+                    console.log('year', $year.val(), $month.val());
                     // console.log('code ', $code.val());
                     // console.log('cc ', config.context)
+
+                    
 
                     var options = {    
                         expirationMonth: $month.val(),  
@@ -80,16 +95,19 @@ define([
                           // flexResponse.value = JSON.stringify(token);
                           // form.submit();
                         }
+                        
+                        
+                        // $paymentForm.submit();
                       });
                       
     
                     });
             });
 
-            this.signingUrl = config.signingUrl;
+            // this.signingUrl = config.signingUrl;
 
             // The payment form should post to CyberSource
-            $paymentForm.attr('action', config.postUrl);
+            // $paymentForm.attr('action', config.postUrl);
 
             // $paymentButton.on('click', function(e) {
             //     e.preventDefault();

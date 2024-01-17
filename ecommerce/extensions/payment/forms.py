@@ -467,14 +467,14 @@ class CybersourceMicroformPaymentForm(forms.Form):
             #     Div('securityCode-container', id='securityCode-container'),
             #     css_class='form-item col-md-6 form-control'
             # ),
-            #  Div(
-            #     Field('cardholderName', css_class='form-control'),
-            #     HTML('<label id="cardNumber-label">Card Number</label>'),
-            #     Div('', css_class='form-control', id='number-container'),  # Assuming this is an empty field for the card number
-            #     HTML('<label for="securityCode-container">Security Code</label>'),
-            #     Div('', css_class='form-control', id='securityCode-container'),  # Assuming this is an empty field for the security code
-            #     css_class='form-group'
-            # ),
+             Div(
+                # Field('cardholderName', css_class='form-control'),
+                HTML('<label id="cardNumber-label">Card Number</label>'),
+                Div('', css_class='form-control', id='number-container'),  # Assuming this is an empty field for the card number
+                HTML('<label for="securityCode-container">Security Code</label>'),
+                Div('', css_class='form-control', id='securityCode-container'),  # Assuming this is an empty field for the security code
+                css_class='form-item col-md-12'
+            ),
             # Div(
             #     Div('card_number'),
             #     HTML('<p class="help-block-card"></p>'),
@@ -543,7 +543,8 @@ class CybersourceMicroformPaymentForm(forms.Form):
             'invalid_choice': _('There was a problem retrieving your basket. Refresh the page to try again.'),
         }
     )
-    full_name = forms.CharField(max_length=60, label=_('Full Name'))
+    full_name = forms.CharField(max_length=60, label=_('Full Name'),
+                                 widget=forms.TextInput(attrs={'placeholder': 'Name on the card'}))
     # card_number = forms.CharField(max_length=16, required=False, label=_('Card Number'))
     # card_code = forms.CharField(max_length=4, required=False, label=_('CVV'))
     expiry_month = forms.CharField(max_length=60, required=False, label=_('Expiry Month (mm)'))

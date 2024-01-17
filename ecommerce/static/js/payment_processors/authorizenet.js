@@ -18,6 +18,7 @@ define([
                 $fullName = $('#id_full_name');
 
             this.postURL = config.postURL;
+            console.log('kl--- ', config.postURL);
             $paymentForm.attr('action', config.postURL);
 
             $fullName.attr('required', true);
@@ -63,15 +64,16 @@ define([
                 Accept.dispatchData(secureData, responseHandler);
 
                 function responseHandler(response) {
-                    if (response.messages.resultCode === 'Error') {
-                        var i = 0;
-                        while (i < response.messages.message.length) {
-                            $('.authorizenet-error').css('color', 'red').append("<p>*" + response.messages.message[i].text + "</p>");
-                            i = i + 1;
-                        }
-                    } else {
-                        paymentFormUpdate(response.opaqueData);
-                    }
+                    // if (response.messages.resultCode === 'Error') {
+                    //     var i = 0;
+                    //     while (i < response.messages.message.length) {
+                    //         $('.authorizenet-error').css('color', 'green').append("<p>*" + response.messages.message[i].text + "</p>");
+                    //         i = i + 1;
+                    //     }
+                    // } else {
+                    //     paymentFormUpdate(response.opaqueData);
+                    // }
+                    paymentFormUpdate(response.opaqueData);
                 }
 
                 function paymentFormUpdate(opaqueData) {
