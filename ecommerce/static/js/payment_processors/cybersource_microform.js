@@ -126,7 +126,7 @@ define([
                       
                     //   $paymentForm.submit();
     
-                    // });
+                    });
             });
             function isDateInvalid(year, month) {
               if (!(/^\d{4}$/.test(year))) {
