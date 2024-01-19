@@ -7,7 +7,11 @@ import datetime
 
 from django.conf import settings
 from oscar.core.loading import get_class, get_model
-from oscar.apps.payment.exceptions import GatewayError, TransactionDeclined, UserCancelled
+from oscar.apps.payment.exceptions import (
+    GatewayError,
+    TransactionDeclined,
+    UserCancelled,
+)
 from ecommerce.extensions.payment.forms import CybersourceMicroformPaymentForm
 from ecommerce.extensions.payment.processors import (
     BaseClientSidePaymentProcessor,
@@ -27,7 +31,7 @@ from ecommerce.extensions.payment.exceptions import (
     PartialAuthorizationError,
     PCIViolation,
     ProcessorMisconfiguredError,
-    RedundantPaymentNotificationError
+    RedundantPaymentNotificationError,
 )
 
 import base64
@@ -82,18 +86,11 @@ from zeep.helpers import serialize_object
 from zeep.wsse import UsernameToken
 
 logger = logging.getLogger(__name__)
-Applicator = get_class("offer.applicator", "Applicator")
-PaymentProcessorResponse = get_model("payment", "PaymentProcessorResponse")
+# Applicator = get_class("offer.applicator", "Applicator")
+# PaymentProcessorResponse = get_model("payment", "PaymentProcessorResponse")
 
-AUTH_CAPTURE_TRANSACTION_TYPE = "authCaptureTransaction"
+# AUTH_CAPTURE_TRANSACTION_TYPE = "authCaptureTransaction"
 
-# class Decision(Enum):
-#     accept = 'AUTHORIZED'
-#     cancel = 'CANCEL'
-#     decline = 'DECLINED'
-#     error = 'ERROR'
-#     review = 'REVIEW'
-#     authorized_pending_review = 'AUTHORIZED_PENDING_REVIEW'
 
 def del_none(d):  # pragma: no cover
     for key, value in list(d.items()):
@@ -119,18 +116,22 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
         print("CybersourceMicroform processors xc14")
         self.request = crum.get_current_request()
         configuration = self.configuration
-        self.base_url = configuration["base_url"]
-        self.merchant_id = configuration["merchant_id"]
-        self.transaction_key = configuration["transaction_key"]
-        self.send_level_2_3_details = configuration.get("send_level_2_3_details", True)
+        production_host_name = "api.cybersource.com"
+        sandbox_host_name = "apitest.cybersource.com"
+        # self.run_environment = production_host_name if configuration["production_mode"] else sandbox_host_name
+
+        # self.base_url = configuration["base_url"]
+        # self.merchant_id = configuration["merchant_id"]
+        # self.transaction_key = configuration["transaction_key"]
+        # self.send_level_2_3_details = configuration.get("send_level_2_3_details", True)
         self.language_code = settings.LANGUAGE_CODE
 
-        self.flex_run_environment = configuration.get(
-            "flex_run_environment", "cybersource.environment.SANDBOX"
-        )
-        self.flex_shared_secret_key_id = configuration.get("flex_shared_secret_key_id")
-        self.flex_shared_secret_key = configuration.get("flex_shared_secret_key")
-        self.flex_target_origin = None
+        # self.flex_run_environment = configuration.get(
+        #     "flex_run_environment", "cybersource.environment.SANDBOX"
+        # )
+        # self.flex_shared_secret_key_id = configuration.get("flex_shared_secret_key_id")
+        # self.flex_shared_secret_key = configuration.get("flex_shared_secret_key")
+        # self.flex_target_origin = None
 
         self.connect_timeout = configuration.get("api_connect_timeout", 10.0)
         self.read_timeout = configuration.get("api_read_timeout", 10.0)
@@ -146,11 +147,12 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
 
         self.cybersource_api_config = {
             "authentication_type": "http_signature",
-            "run_environment": "apitest.cybersource.com",
-            # 'run_environment': self.flex_run_environment,
-            "merchantid": "edly400",
-            "merchant_keyid": "6128d4be-b5b1-4fa4-8df5-ffc4c00e1114",
-            "merchant_secretkey": "82W/a35zNTtYo5a5BOFwc3AQWsCJ73kNeI1Csyzw2sI=",
+            "run_environment": production_host_name
+            if configuration["production_mode"]
+            else sandbox_host_name,
+            "merchantid": configuration["merchant_id"],
+            "merchant_keyid": configuration["merchant_key_id"],
+            "merchant_secretkey": configuration["merchant_secret_key"],
             "enable_log": False,
         }
         self.context_key = None
@@ -179,7 +181,7 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
 
     def get_capture_context(self, request):  # pragma: no cover
         # To delete None values in Input Request Json body
-        print("xc14 wa wa")
+        print("gotit ", str(self.request.site).replace("basket/", ""))
         session = request.session
         requestObj = GeneratePublicKeyRequest(
             encryption_type="RsaOaep256",
@@ -198,7 +200,8 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
         # if return_data:
         #     logger.info("Successfully-zx with site [%s] ", str(self.request.site))
 
-        new_capture_context = {"key_id": return_data.key_id}
+        # new_capture_context = {"key_id": return_data.key_id}
+        print("all-good ", return_data.key_id)
         return return_data.key_id
 
     # self.context_key = return_data.key_id
@@ -241,7 +244,7 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
         # ttj = "\"eyJraWQiOiIwOE1zNXJ3aloySXZnekZWeDliZ2dQNGxhNXdFa2FQZSIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjp7ImV4cGlyYXRpb25ZZWFyIjoiMjAyOSIsIm51bWJlciI6IjQwMTI…"
         #  Dummy example using your provided keys
         ttj = "eyJraWQiOiIwOFFybkxJQTFuQ1RUd2R6WkZkYmcwQVpoQUxyS3dYdiIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjp7ImV4cGlyYXRpb25ZZWFyIjoiMjAyNCIsIm51bWJlciI6IjU1NTU1NVhYWFhYWDQ0NDQiLCJleHBpcmF0aW9uTW9udGgiOiIxMSIsInR5cGUiOiIwMDIifSwiaXNzIjoiRmxleC8wOCIsImV4cCI6MTcwNTU2Nzc1OCwidHlwZSI6Im1mLTAuMTEuMCIsImlhdCI6MTcwNTU2Njg1OCwianRpIjoiMUU0NEFDT01SM1RTNFVZOUc1NEVESEJPVjY2WVVLMjQyV1pSS1E1QTdTNDY0Q1pJQjlOSTY1QThFNjBFMkUwRSIsImNvbnRlbnQiOnsicGF5bWVudEluZm9ybWF0aW9uIjp7ImNhcmQiOnsiZXhwaXJhdGlvblllYXIiOnsidmFsdWUiOiIyMDI0In0sIm51bWJlciI6eyJtYXNrZWRWYWx1ZSI6IlhYWFhYWFhYWFhYWDQ0NDQiLCJiaW4iOiI1NTU1NTUifSwic2VjdXJpdHlDb2RlIjp7fSwiZXhwaXJhdGlvbk1vbnRoIjp7InZhbHVlIjoiMTEifSwidHlwZSI6eyJ2YWx1ZSI6IjAwMiJ9fX19fQ.iMPp2QaiLmx-"
-        print('lmnop--1 ',form_data)
+        print("lmnop--1 ", form_data)
         # form_data = {
         #     "first_name": "John",
         #     "last_name": "Doe",
@@ -268,7 +271,9 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
 
         transient_token_jwt = form_data["token"]
         try:
-            payment_processor_response = self.payment_with_transient_token(basket,user_data, transient_token_jwt, request.user.email)
+            payment_processor_response = self.payment_with_transient_token(
+                basket, user_data, transient_token_jwt, request.user.email
+            )
             # handle this in handle-processor
             # mn = LxmlObjectJsonEncoder().encode(payment_processor_response)
             # if mn.status != 'AUTHORIZED':
@@ -276,17 +281,18 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
             #     raise InvalidCybersourceDecision(payment_processor_response['status'])
             return payment_processor_response
         except ApiException as error:
-            print('unique-- ', error)
-            print('uni9 ,',error.body)
-            self.record_processor_response(error.body, transaction_id=None, basket=basket)
-            logger.exception('Payment failed for basket [%d].', basket,id)
+            print("unique-- ", error)
+            print("uni9 ,", error.body)
+            self.record_processor_response(
+                error.body, transaction_id=None, basket=basket
+            )
+            logger.exception("Payment failed for basket [%d].", basket, id)
             # This will display the generic error on the frontend
             # raise InvalidCybersourceDecision('DECLINED')
             raise GatewayError(error.reason)
-        
+
         # if payment_processor_response['status'] != 'AUTHORIZED':
         #     raise InvalidCybersourceDecision(payment_processor_response['status'])
-
 
         # if response.decision != Decision.accept:
         #     if response.duplicate_payment:
@@ -339,9 +345,8 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
             total=response.total,
             currency=response.currency,
             card_number=response.card_number,
-            card_type=response.card_type
+            card_type=response.card_type,
         )
-        
 
         response = []
         return response
@@ -517,7 +522,9 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
 
         requestObj = del_none(requestObj.__dict__)
 
-        self.record_processor_response(requestObj, transaction_id='[REQUEST]', basket=basket)
+        self.record_processor_response(
+            requestObj, transaction_id="[REQUEST]", basket=basket
+        )
 
         api_instance = PaymentsApi(self.cybersource_api_config)
 
@@ -577,7 +584,7 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
                 "white_list_status_source": None,
                 "xid": None,
             },
-            "error_information": 'yhaa haha',
+            "error_information": "yhaa haha",
             "id": "7055670670356906904953",
             "installment_information": None,
             "issuer_information": {
@@ -697,7 +704,7 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
     def handle_processor_response(self, response, basket=None):
         print("xc13 handle_processor_response")
         currency = basket.currency
-        transaction_id = response['processor_information']['transaction_id']
+        transaction_id = response["processor_information"]["transaction_id"]
         # transaction_id = (
         #     response.transactionResponse.transId
         #     if hasattr(response.transactionResponse, "transId")
@@ -708,7 +715,7 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
         self.record_processor_response(
             transaction_dict, transaction_id=transaction_id, basket=basket
         )
-        if response['status'] == 'AUTHORIZED':
+        if response["status"] == "AUTHORIZED":
             logger.info(
                 "Successfully created Cybersource Microform charge [%s] for basket [%d].",
                 "merchant_id",
@@ -725,10 +732,9 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
                 card_number="XXXX",
                 card_type=card_type,
             )
-        if response['error_information']:
-            raise InvalidCybersourceDecision(response['error_information'])
-        raise InvalidCybersourceDecision(response['status'])
-
+        if response["error_information"]:
+            raise InvalidCybersourceDecision(response["error_information"])
+        raise InvalidCybersourceDecision(response["status"])
 
     def issue_credit(self, order_number, basket, reference_number, amount, currency):
         raise NotImplementedError(

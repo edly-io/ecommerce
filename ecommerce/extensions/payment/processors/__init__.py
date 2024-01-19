@@ -78,7 +78,7 @@ class BasePaymentProcessor(metaclass=abc.ABCMeta):  # pragma: no cover
             KeyError: If no settings found for this payment processor
         """
         partner_short_code = self.site.siteconfiguration.partner.short_code
-        # return settings.PAYMENT_PROCESSOR_CONFIG[partner_short_code.lower()][self.NAME.lower()]
+        return settings.PAYMENT_PROCESSOR_CONFIG[partner_short_code.lower()][self.NAME.lower()]
         return {
             "mode": "SET-ME-PLEASE(sandbox,live)",
             # "client_id": "SET-ME-PLEASE",

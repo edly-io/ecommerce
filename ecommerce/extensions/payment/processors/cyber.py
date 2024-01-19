@@ -134,3 +134,17 @@ p = {'client_reference_information': {'code': 'EDLY-100012',
 
 print(p['status'])
 print(p['processor_information']['transaction_id'])
+
+xc = 'https://dev.payments.multisitesdev.edly.io/basket/'.replace('basket/', '')
+print(xc)
+
+production_host_name="api.cybersource.com"
+sandbox_host_name="apitest.cybersource.com"
+
+p=True
+
+run_environment = production_host_name if p else sandbox_host_name
+print(run_environment)
+p=False
+run_environment = production_host_name if p else sandbox_host_name
+print(run_environment)
