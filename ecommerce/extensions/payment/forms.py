@@ -9,6 +9,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 from oscar.core.loading import get_class, get_model
+from django.core.validators import RegexValidator
 
 from ecommerce.extensions.basket.constants import PURCHASER_BEHALF_ATTRIBUTE
 
@@ -452,11 +453,11 @@ class CybersourceMicroformPaymentForm(forms.Form):
         self.helper = FormHelper(self)
         self.helper.layout = Layout(
             Div('basket'),
-            Div(
-                Div('full_name'),
-                HTML('<p class="help-block-name"></p>'),
-                css_class='form-item col-md-12'
-            ),
+            # Div(
+            #     Div('full_name'),
+            #     HTML('<p class="help-block-name"></p>'),
+            #     css_class='form-item col-md-12'
+            # ),
             # Div(
             #     HTML('<label id="cardNumber-label">Card Number</label>'),
             #     Div('number-container', id='number-container'),
@@ -467,6 +468,47 @@ class CybersourceMicroformPaymentForm(forms.Form):
             #     Div('securityCode-container', id='securityCode-container'),
             #     css_class='form-item col-md-6 form-control'
             # ),
+            Div('basket'),
+            Div(
+                Div('first_name'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-6'
+            ),
+            Div(
+                Div('last_name'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-6'
+            ),
+            Div(
+                Div('address_line1'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-6'
+            ),
+            Div(
+                Div('address_line2'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-6'
+            ),
+            Div(
+                Div('city'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-6'
+            ),
+            Div(
+                Div('country'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-6'
+            ),
+            Div(
+                Div('state'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-6'
+            ),
+            Div(
+                Div('postal_code'),
+                HTML('<p class="help-block"></p>'),
+                css_class='form-item col-md-6'
+            ),
              Div(
                 # Field('cardholderName', css_class='form-control'),
                 HTML('<label id="cardNumber-label">Card Number</label>'),
@@ -487,15 +529,23 @@ class CybersourceMicroformPaymentForm(forms.Form):
                 HTML('<p class="help-block-expiry"></p>'),
                 css_class='row'
             ),
-            Div(
-                HTML('<input type="hidden" name="data_value" id="id_data_value" />'),
+             Div(
+                HTML('<div class="cybersource-microform-error"></div>'),
                 css_class='form-item col-md-12'
             ),
-            Div(
-                HTML('<input type="hidden" name="data_descriptor" id="id_data_descriptor" />'),
-                HTML('<div class="authorizenet-error"></div>'),
-                css_class='form-item col-md-12'
-            ),
+            # Div(
+            #     HTML('<input type="hidden" name="data_value" id="id_data_value" />'),
+            #     css_class='form-item col-md-12'
+            # ),
+            #             Div(
+            #     HTML('<input type="hidden" name="data_value" id="id_data_value" />'),
+            #     css_class='form-item col-md-12'
+            # ),
+            # Div(
+            #     HTML('<input type="hidden" name="data_descriptor" id="id_data_descriptor" />'),
+            #     HTML('<div class="authorizenet-error"></div>'),
+            #     css_class='form-item col-md-12'
+            # ),
         )
 
         for bound_field in list(self):
@@ -543,14 +593,23 @@ class CybersourceMicroformPaymentForm(forms.Form):
             'invalid_choice': _('There was a problem retrieving your basket. Refresh the page to try again.'),
         }
     )
-    full_name = forms.CharField(max_length=60, label=_('Full Name'),
-                                 widget=forms.TextInput(attrs={'placeholder': 'Name on the card'}))
+   
     # card_number = forms.CharField(max_length=16, required=False, label=_('Card Number'))
     # card_code = forms.CharField(max_length=4, required=False, label=_('CVV'))
-    expiry_month = forms.CharField(max_length=60, required=False, label=_('Expiry Month (mm)'))
-    expiry_year = forms.CharField(max_length=60, required=False, label=_('Expiry Year (yy)'))
-    data_descriptor = forms.CharField(max_length=255)
-    data_value = forms.CharField(max_length=255)
+    first_name = forms.CharField(max_length=60, label=_('First Name (required)'))
+    last_name = forms.CharField(max_length=60, label=_('Last Name (required)'))
+    address_line1 = forms.CharField(max_length=60, label=_('Address (required)'), required=False)
+    address_line2 = forms.CharField(max_length=29, required=False, label=_('Suite/Apartment Number'))
+    city = forms.CharField(max_length=32, label=_('Citxy (required)'))
+    # max_length for state field is set to default 60, if it needs to be changed,
+    # the equivalent (maxlength) attribute in the basket page JS code needs to be changed too.
+    state = forms.CharField(max_length=60, required=False, label=_('State/Province'))
+    postal_code = forms.CharField(max_length=10, required=False, label=_('Zip/Postal Code'))
+    country = forms.ChoiceField(choices=country_choices, label=_('Country (required)'))
+    expiry_month = forms.CharField(max_length=60,label=_('Expiry Month (mm)'))
+    expiry_year = forms.CharField(max_length=60, label=_('Expiry Year (yyyy)'))
+    token = forms.CharField()
+    # data_value = forms.CharField(max_length=255)
 
     def clean_basket(self):
         basket = self.cleaned_data['basket']
@@ -560,3 +619,45 @@ class CybersourceMicroformPaymentForm(forms.Form):
             Applicator().apply(basket, self.request.user, self.request)
 
         return basket
+
+    def clean(self):
+        #  wa wha wa
+        cleaned_data = super(CybersourceMicroformPaymentForm, self).clean()
+        # 
+        # Perform specific validation for the United States and Canada
+        country = cleaned_data.get('country')
+        if country in ('US', 'CA'):
+            state = cleaned_data.get('state')
+            address_line1 = cleaned_data.get('address_line1')
+
+            # Add a flag for the below code that requires state while running this test
+            # https://openedx.atlassian.net/browse/LEARNER-2355
+            # State will still be required client side for users not in the hide location fields variation
+
+            # Ensure that a valid 2-character state/province code is specified.
+            if not waffle.switch_is_active('optional_location_fields'):
+                if not state:
+                    raise ValidationError({'state': _('This field is required.')})
+                if not address_line1:
+                    raise ValidationError({'address_line1': _('This field is required.')})
+
+            # Ensure the postal code is present, and limited to 9 characters
+            postal_code = cleaned_data.get('postal_code')
+
+            # Add a flag for the below code that requires postal code while running this test
+            # https://openedx.atlassian.net/browse/LEARNER-2355
+            # I could require it client side, but am not because it is not currently marked as required for the user
+
+            if not waffle.switch_is_active('optional_location_fields'):
+                if not postal_code:
+                    raise ValidationError({'postal_code': _('This field is required.')})
+
+            if postal_code and len(postal_code) > 9:
+                raise ValidationError(
+                    {
+                        'postal_code': _(
+                            'Postal codes for the U.S. and Canada are limited to nine (9) characters.')
+                    })
+
+        return cleaned_data
+    

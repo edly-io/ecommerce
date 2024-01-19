@@ -35,6 +35,7 @@ define([
                     $('.help-block-card').css('color', 'red').html('*olp olp');
                 }
             });
+            console('yah ', $paymentButton)
 
             $paymentButton.on('click', function(e) {
                 e.preventDefault();

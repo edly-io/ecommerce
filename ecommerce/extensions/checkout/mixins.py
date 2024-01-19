@@ -97,6 +97,7 @@ class EdxOrderPlacementMixin(OrderPlacementMixin, metaclass=abc.ABCMeta):
         self._payment_events.append(event)
 
     def handle_payment(self, response, basket):  # pylint: disable=arguments-differ
+        #-123-
         """
         Handle any payment processing and record payment sources and events.
 

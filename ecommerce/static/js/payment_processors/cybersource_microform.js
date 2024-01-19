@@ -6,7 +6,7 @@ define([
     'js-cookie',
     'underscore.string',
     'pages/basket_page'
-], function($, Cookies, _s, BasketPage) {
+], function($,_s) {
     'use strict';
 
     return {
@@ -40,16 +40,16 @@ define([
                 'invalid': { 'color': '#a94442' }
               };
 
-              var additionalData = {
-                additional_data_name: 'additional_data_value'
-            };
-              $.each(additionalData, function(name, value) {
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: name,
-                    value: value
-                }).appendTo($paymentForm); // Replace with the actual ID of your form
-            });
+            //   var additionalData = {
+            //     additional_data_name: 'additional_data_value'
+            // };
+            //   $.each(additionalData, function(name, value) {
+            //     $('<input>').attr({
+            //         type: 'hidden',
+            //         name: name,
+            //         value: value
+            //     }).appendTo($paymentForm); // Replace with the actual ID of your form
+            // });
   
     
                 // setup
@@ -72,11 +72,21 @@ define([
 
                 $paymentButton.on('click', function(e) {
                     e.preventDefault();
+                    $('.cybersource-microform-error').html('');
+                    // alert('Please enter a valid two-digit month (e.g., 09).');
                     console.log('hola----here here------hola ');
                     console.log('year', $year.val(), $month.val());
                     // console.log('code ', $code.val());
                     // console.log('cc ', config.context)
+                    let isFormValid = $paymentForm.get(0).checkValidity();
+                    if (!isFormValid) {
+                        $paymentForm.get(0).reportValidity();
+                        return;
+                    }
 
+                    if(isDateInvalid($year.val(),$month.val())){
+                      return;
+                    }
                     
 
                     var options = {    
@@ -87,6 +97,8 @@ define([
                         if (err) {
                           // handle error
                           console.error(err);
+                          let errorMessage = "<p>*" + 'response.messages.message[i].text' + "</p><p>*" + err.message + "</p>";
+                          $('.cybersource-microform-error').css('color', 'red').append("<p>* " + err.message + "</p>");
                           // errorsOutput.textContent = err.message;
                         } else {
                           // At this point you may pass the token back to your server as you wish.
@@ -94,16 +106,42 @@ define([
                           console.log('final-trans-- ',JSON.stringify(token));
                           // flexResponse.value = JSON.stringify(token);
                           // form.submit();
-                        }
-                        
-                        
-                        // $paymentForm.submit();
-                      });
-                      
-    
-                    });
-            });
 
+                          $('<input>').attr({
+                            type: 'hidden',
+                            name: 'token',
+                            value: token
+                        }).appendTo($paymentForm);
+                          
+                           $paymentForm.submit();
+                        }
+                       
+                      });
+
+                    //   $('<input>').attr({
+                    //     type: 'hidden',
+                    //     name: 'token',
+                    //     value: 'ola-bonito-hola'
+                    // }).appendTo($paymentForm);
+                      
+                    //   $paymentForm.submit();
+    
+                    // });
+            });
+            function isDateInvalid(year, month) {
+              if (!(/^\d{4}$/.test(year))) {
+                  $('.cybersource-microform-error').css('color', 'red').append("<p>* " + 'Please enter a valid four-digit year (e.g., 2024).' + "</p>");
+                  return true;
+              }
+          
+              if (!/^(0[1-9]|1[0-2])$/.test(month)) {
+                  $('.cybersource-microform-error').css('color', 'red').append("<p>* " + 'Please enter a valid two-digit month (e.g., 09).' + "</p>");
+                  return true;
+              }
+          
+              return false;
+          }
+          
             // this.signingUrl = config.signingUrl;
 
             // The payment form should post to CyberSource
@@ -166,7 +204,7 @@ define([
          * Before posting to CyberSource, this handler retrieves signed data fields from the server. PCI fields
          * (e.g. credit card number, expiration) should NEVER be posted to the server, only to CyberSource.
          *
-         * @param event
+        //  * @param event
          */
         // onSubmit: function(event) {
         //     var $form = $(event.target),

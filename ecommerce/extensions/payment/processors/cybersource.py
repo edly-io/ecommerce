@@ -1010,6 +1010,8 @@ class CybersourceREST(Cybersource):
 
         requestObj = del_none(requestObj.__dict__)
 
+        # from here
+
         # HACK: log the processor request into the processor response model for analyzing declines
         self.record_processor_response(requestObj, transaction_id='[REQUEST]', basket=basket)
 
