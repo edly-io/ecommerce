@@ -216,7 +216,7 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
     # session['capture_contexts'] = capture_contexts[:20]
     # return new_capture_context
 
-    def _unexpired_capture_contexts(self, session):
+    # def _unexpired_capture_contexts(self, session):
         """
         Return all unexpired capture contexts in the supplied session.
 
@@ -340,16 +340,16 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
         #     # complete authorization for the entire order
         #     raise PartialAuthorizationError
 
-        return HandledProcessorResponse(
-            transaction_id=response.transaction_id,
-            total=response.total,
-            currency=response.currency,
-            card_number=response.card_number,
-            card_type=response.card_type,
-        )
+        # return HandledProcessorResponse(
+        #     transaction_id=response.transaction_id,
+        #     total=response.total,
+        #     currency=response.currency,
+        #     card_number=response.card_number,
+        #     card_type=response.card_type,
+        # )
 
-        response = []
-        return response
+        # response = []
+        # return response
 
     def payment_with_transient_token(
         self, basket, form_data, transient_token_jwt, user_email
@@ -425,9 +425,9 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
 
           });
         """
-        vc = self.test_response_handling()
-        # vc['status'] = 'tinga minga'
-        return vc
+        # vc = self.test_response_handling()
+        # # vc['status'] = 'tinga minga'
+        # return vc
         clientReferenceInformation = Ptsv2paymentsClientReferenceInformation(
             code=basket.order_number,
         )
