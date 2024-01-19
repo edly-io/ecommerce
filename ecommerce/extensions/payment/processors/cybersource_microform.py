@@ -702,20 +702,26 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
         }
 
     def handle_processor_response(self, response, basket=None):
-        print("xc13 handle_processor_response")
+        print("xc13 handle_processor_response12")
         currency = basket.currency
-        transaction_id = response["processor_information"]["transaction_id"]
+        print(response)
+        
         # transaction_id = (
         #     response.transactionResponse.transId
         #     if hasattr(response.transactionResponse, "transId")
         #     else None
         # )
+        
         transaction_dict = LxmlObjectJsonEncoder().encode(response)
-
+        print('pp--2',transaction_dict, type(transaction_dict))
+        
+        transaction_id = response.processor_information.transaction_id
+    
         self.record_processor_response(
             transaction_dict, transaction_id=transaction_id, basket=basket
         )
-        if response["status"] == "AUTHORIZED":
+    
+        if response.status == "AUTHORIZED":
             logger.info(
                 "Successfully created Cybersource Microform charge [%s] for basket [%d].",
                 "merchant_id",
@@ -732,9 +738,9 @@ class CybersourceMicroform(BaseClientSidePaymentProcessor):
                 card_number="XXXX",
                 card_type=card_type,
             )
-        if response["error_information"]:
-            raise InvalidCybersourceDecision(response["error_information"])
-        raise InvalidCybersourceDecision(response["status"])
+        if response.error_information:
+            raise InvalidCybersourceDecision(response.error_information)
+        raise InvalidCybersourceDecision(response.status)
 
     def issue_credit(self, order_number, basket, reference_number, amount, currency):
         raise NotImplementedError(

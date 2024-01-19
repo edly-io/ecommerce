@@ -93,38 +93,38 @@ define([
                         expirationMonth: $month.val(),  
                         expirationYear: $year.val()
                       };   
-                      microform.createToken(options, function (err, token) {
-                        if (err) {
-                          // handle error
-                          console.error(err);
-                          let errorMessage = "<p>*" + 'response.messages.message[i].text' + "</p><p>*" + err.message + "</p>";
-                          $('.cybersource-microform-error').css('color', 'red').append("<p>* " + err.message + "</p>");
-                          // errorsOutput.textContent = err.message;
-                        } else {
-                          // At this point you may pass the token back to your server as you wish.
-                          // In this example we append a hidden input to the form and submit it.      
-                          console.log('final-trans-- ',JSON.stringify(token));
-                          // flexResponse.value = JSON.stringify(token);
-                          // form.submit();
+                      // microform.createToken(options, function (err, token) {
+                      //   if (err) {
+                      //     // handle error
+                      //     console.error(err);
+                      //     let errorMessage = "<p>*" + 'response.messages.message[i].text' + "</p><p>*" + err.message + "</p>";
+                      //     $('.cybersource-microform-error').css('color', 'red').append("<p>* " + err.message + "</p>");
+                      //     // errorsOutput.textContent = err.message;
+                      //   } else {
+                      //     // At this point you may pass the token back to your server as you wish.
+                      //     // In this example we append a hidden input to the form and submit it.      
+                      //     console.log('final-trans-- ',JSON.stringify(token));
+                      //     // flexResponse.value = JSON.stringify(token);
+                      //     // form.submit();
 
-                          $('<input>').attr({
-                            type: 'hidden',
-                            name: 'token',
-                            value: token
-                        }).appendTo($paymentForm);
+                      //   //   $('<input>').attr({
+                      //   //     type: 'hidden',
+                      //   //     name: 'token',
+                      //   //     value: token
+                      //   // }).appendTo($paymentForm);
                           
-                           $paymentForm.submit();
-                        }
+                      //   //    $paymentForm.submit();
+                      //   }
                        
-                      });
+                      // });
 
-                    //   $('<input>').attr({
-                    //     type: 'hidden',
-                    //     name: 'token',
-                    //     value: 'ola-bonito-hola'
-                    // }).appendTo($paymentForm);
+                      $('<input>').attr({
+                        type: 'hidden',
+                        name: 'token',
+                        value: "eyJraWQiOiIwOExrVUluSkZ4MDV0R3lHRThyVVVjWFp4WTVWMXphRSIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjp7ImV4cGlyYXRpb25ZZWFyIjoiMjAyNSIsIm51bWJlciI6IjQxMTExMVhYWFhYWDExMTEiLCJleHBpcmF0aW9uTW9udGgiOiIxMSIsInR5cGUiOiIwMDEifSwiaXNzIjoiRmxleC8wOCIsImV4cCI6MTcwNTcwMTE1NCwidHlwZSI6Im1mLTAuMTEuMCIsImlhdCI6MTcwNTcwMDI1NCwianRpIjoiMUUzT0tET0dPS1ZDS1hDWFYxOFM1Nk0wTFdJSTNSTEZBQURBU0JFQ1NTT0pMOU9JOERTODY1QUFFRjIyMEQ3RCIsImNvbnRlbnQiOnsicGF5bWVudEluZm9ybWF0aW9uIjp7ImNhcmQiOnsiZXhwaXJhdGlvblllYXIiOnsidmFsdWUiOiIyMDI1In0sIm51bWJlciI6eyJtYXNrZWRWYWx1ZSI6IlhYWFhYWFhYWFhYWDExMTEiLCJiaW4iOiI0MTExMTEifSwic2VjdXJpdHlDb2RlIjp7fSwiZXhwaXJhdGlvbk1vbnRoIjp7InZhbHVlIjoiMTEifSwidHlwZSI6eyJ2YWx1ZSI6IjAwMSJ9fX19fQ.bPiMLzeRtex29VEfpBqP8Oj2c-YpVgMuV3Uccx4XAAESptbXx6bXlbYhnXD9YYIJ9IJ1C9IQim77B8RDeT_BbOzCXzPwOiC_mP_s-KnSxajLt1kgXnHrJpbppVx8X_fMmXTJ7BnOsXMjhgMBGvl2n8-KHWr79hOsmPjyHW4EG1OGE2mVF1znF1df_91s88pYDL_cOIY39uJhospm3Q8UHF8_HU_zUDhXw8orzpBAnXG4SaHluV-UDKYWNHNPxMLG8Ec0ZAlNn2jlePxrLH60rkHN97jvg5fyffC4wrXNSc4qKhtvCuXL1CJLgWRdCflbPcb_oNdfNOuLSbW7jYg_rQ"
+                    }).appendTo($paymentForm);
                       
-                    //   $paymentForm.submit();
+                      $paymentForm.submit();
     
                     });
             });
