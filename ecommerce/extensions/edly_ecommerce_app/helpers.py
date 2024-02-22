@@ -62,6 +62,24 @@ def get_edx_orgs_from_edly_cookie(encoded_cookie_data):
     return decoded_cookie_data.get('edx-orgs', None)
 
 
+def get_sub_orgs_from_edly_cookie(encoded_cookie_data):
+    """
+    Returns "sub-orgs" value from the "edly-user-info" cookie.
+
+    Arguments:
+        encoded_cookie_data (dict): Edly user info cookie JWT encoded string.
+
+    Returns:
+        array
+    """
+
+    if not encoded_cookie_data:
+        return ''
+
+    decoded_cookie_data = decode_edly_user_info_cookie(encoded_cookie_data)
+    return decoded_cookie_data.get('sub-orgs', [])
+
+
 def is_valid_site_course(course_id, request):
     """
     Validate course ID with "edly-user-info" cookie and partner.
@@ -106,9 +124,15 @@ def user_has_edly_organization_access(request):
     partner_short_code = request.site.partner.short_code
     edly_user_info_cookie = request.COOKIES.get(settings.EDLY_USER_INFO_COOKIE_NAME, None)
     edx_orgs_short_names = get_edx_orgs_from_edly_cookie(edly_user_info_cookie)
-
-    return partner_short_code in edx_orgs_short_names
-
+    
+    if partner_short_code in edx_orgs_short_names:
+        return True
+    
+    if partner_short_code in get_sub_orgs_from_edly_cookie(edly_user_info_cookie):
+        return True
+    
+    return False
+    
 
 def user_is_course_creator(request):
     """
