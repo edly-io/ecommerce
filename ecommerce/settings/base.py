@@ -594,7 +594,7 @@ REST_FRAMEWORK = {
         'ecommerce.extensions.api.throttles.ServiceUserThrottle',
     ),
     'DEFAULT_THROTTLE_RATES': {
-        'user': '75/minute',
+        'user': '5/minute',
     },
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
     'TEST_REQUEST_RENDERER_CLASSES': (
