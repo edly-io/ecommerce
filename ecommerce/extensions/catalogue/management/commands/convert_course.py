@@ -1,4 +1,3 @@
-from __future__ import absolute_import, unicode_literals
 
 import logging
 
@@ -52,7 +51,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.options = options  # pylint: disable=attribute-defined-outside-init
-        course_ids = list(map(six.text_type, self.options.get('course_ids', [])))
+        course_ids = list(map(str, self.options.get('course_ids', [])))
 
         self.partner = Partner.objects.get(code__iexact=options['partner'])  # pylint: disable=attribute-defined-outside-init
         site = self.partner.default_site

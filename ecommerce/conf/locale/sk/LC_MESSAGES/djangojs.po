@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # Marcel Miklosik <marcel.miklosik@gmail.com>, 2015
 # Vladimír Záhradník <vladimir@zahradnik.io>, 2015
 msgid ""

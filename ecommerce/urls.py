@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import os
 
 from auth_backends.urls import oauth2_urlpatterns
@@ -57,12 +55,11 @@ urlpatterns = AUTH_URLS + WELL_KNOWN_URLS + [
     url(r'^auto_auth/$', core_views.AutoAuth.as_view(), name='auto_auth'),
     url(r'^api-auth/', include((AUTH_URLS, 'rest_framework'))),
     url(r'^api-docs/', get_swagger_view(title='Ecommerce API'), name='api_docs'),
-    url(r'^bff/', include(('ecommerce.bff.urls', 'bff'))),
     url(r'^courses/', include(('ecommerce.courses.urls', 'courses'))),
     url(r'^credit/', include(('ecommerce.credit.urls', 'credit'))),
-    url(r'^coupons/', include(('ecommerce.coupons.urls', 'coupons'))),
     url(r'^enterprise/', include(('ecommerce.enterprise.urls', 'enterprise'))),
     url(r'^subscriptions/', include(('ecommerce.subscriptions.urls', 'subscriptions'))),
+    url(r'^coupons/', include(('ecommerce.coupons.urls', 'coupons'))),
     url(r'^health/$', core_views.health, name='health'),
     url(r'^i18n/', include(('django.conf.urls.i18n'))),
     url(r'^jsi18n/$', JavaScriptCatalog.as_view(), name='javascript-catalog'),

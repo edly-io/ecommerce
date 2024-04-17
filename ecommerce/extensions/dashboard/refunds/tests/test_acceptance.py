@@ -1,9 +1,9 @@
-from __future__ import absolute_import
 
 import os
 from unittest import SkipTest, skip
 
 import ddt
+import pytest
 from bok_choy.browser import browser
 from django.urls import reverse
 from oscar.core.loading import get_model
@@ -24,6 +24,7 @@ ALL_REFUND_STATUSES = (
 
 
 @ddt.ddt
+@pytest.mark.acceptance
 class RefundAcceptanceTestMixin(RefundTestMixin):
     @classmethod
     def setUpClass(cls):
@@ -31,6 +32,7 @@ class RefundAcceptanceTestMixin(RefundTestMixin):
             raise SkipTest
 
         cls.selenium = browser()
+        cls.selenium.set_page_load_timeout(30)
         super(RefundAcceptanceTestMixin, cls).setUpClass()
 
     @classmethod

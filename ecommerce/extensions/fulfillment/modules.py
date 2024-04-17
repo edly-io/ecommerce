@@ -3,16 +3,14 @@
 Fulfillment Modules are designed to allow specific fulfillment logic based on the type (or types) of products
 in an Order.
 """
-from __future__ import absolute_import
 
 import abc
 import datetime
 import json
 import logging
-from decimal import Decimal
+from urllib.parse import urlencode
 
 import requests
-import six
 import waffle
 from django.conf import settings
 from django.urls import reverse
@@ -33,6 +31,7 @@ from ecommerce.core.url_utils import get_lms_enrollment_api_url, get_lms_entitle
 from ecommerce.courses.models import Course
 from ecommerce.courses.utils import mode_for_product
 from ecommerce.enterprise.conditions import BasketAttributeType
+from ecommerce.enterprise.mixins import EnterpriseDiscountMixin
 from ecommerce.enterprise.utils import (
     get_enterprise_customer_uuid_from_voucher,
     get_or_create_enterprise_customer_user
@@ -60,7 +59,7 @@ StockRecord = get_model('partner', 'StockRecord')
 logger = logging.getLogger(__name__)
 
 
-class BaseFulfillmentModule(six.with_metaclass(abc.ABCMeta, object)):  # pragma: no cover
+class BaseFulfillmentModule(metaclass=abc.ABCMeta):  # pragma: no cover
     """
     Base FulfillmentModule class for containing Product specific fulfillment logic.
 
@@ -183,7 +182,7 @@ class DonationsFromCheckoutTestFulfillmentModule(BaseFulfillmentModule):
         return True
 
 
-class EnrollmentFulfillmentModule(BaseFulfillmentModule):
+class EnrollmentFulfillmentModule(EnterpriseDiscountMixin, BaseFulfillmentModule):
     """ Fulfillment Module for enrolling students after a product purchase.
 
     Allows the enrollment of a student via purchase of a 'seat'.
@@ -197,7 +196,7 @@ class EnrollmentFulfillmentModule(BaseFulfillmentModule):
         enrollment_api_url = get_lms_enrollment_api_url()
         if site:
             enrollment_api_url = '{}/api/enrollment/v1/enrollment'.format(site.siteconfiguration.lms_url_root)
-            
+
         timeout = settings.ENROLLMENT_FULFILLMENT_TIMEOUT
         headers = {
             'Content-Type': 'application/json',
@@ -635,7 +634,7 @@ class EnrollmentCodeFulfillmentModule(BaseFulfillmentModule):
             _range.save()
 
             vouchers = create_vouchers(
-                name=six.text_type('Enrollment code voucher [{}]').format(line.product.title),
+                name=str('Enrollment code voucher [{}]').format(line.product.title),
                 benefit_type=Benefit.PERCENTAGE,
                 benefit_value=100,
                 catalog=coupon_catalog,
@@ -827,7 +826,7 @@ class EnrollmentCodeFulfillmentModule(BaseFulfillmentModule):
         )
 
 
-class CourseEntitlementFulfillmentModule(BaseFulfillmentModule):
+class CourseEntitlementFulfillmentModule(EnterpriseDiscountMixin, BaseFulfillmentModule):
     """ Fulfillment Module for granting students an entitlement.
     Allows the entitlement of a student via purchase of a 'Course Entitlement'.
     """
@@ -845,6 +844,22 @@ class CourseEntitlementFulfillmentModule(BaseFulfillmentModule):
             A supported list of unmodified lines associated with "Course Entitlement" products.
         """
         return [line for line in lines if self.supports_line(line)]
+
+    def _create_enterprise_customer_user(self, order):
+        """
+        Create the enterprise customer user if an EnterpriseCustomer UUID is associated in the order's discount voucher.
+        """
+        enterprise_customer_uuid = None
+        for discount in order.discounts.all():
+            if discount.voucher:
+                enterprise_customer_uuid = get_enterprise_customer_uuid_from_voucher(discount.voucher)
+            if enterprise_customer_uuid is not None:
+                get_or_create_enterprise_customer_user(
+                    order.site,
+                    enterprise_customer_uuid,
+                    order.user.username
+                )
+                break
 
     def fulfill_product(self, order, lines, email_opt_in=False):
         """ Fulfills the purchase of a 'Course Entitlement'.
@@ -885,6 +900,8 @@ class CourseEntitlementFulfillmentModule(BaseFulfillmentModule):
             }
 
             try:
+                self._create_enterprise_customer_user(order)
+                self.update_orderline_with_enterprise_discount_metadata(order, line)
                 entitlement_option = Option.objects.get(code='course_entitlement')
 
                 entitlement_api_client = EdxRestApiClient(

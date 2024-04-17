@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 import json
 
@@ -87,7 +86,7 @@ class StockRecordViewSetTests(ProductSerializerMixin, DiscoveryTestMixin, Thrott
         self.assertEqual(response.status_code, 200)
 
         stockrecord = StockRecord.objects.get(id=self.stockrecord.id)
-        self.assertEqual(six.text_type(stockrecord.price_excl_tax), data['price_excl_tax'])
+        self.assertEqual(str(stockrecord.price_excl_tax), data['price_excl_tax'])
         self.assertEqual(stockrecord.price_currency, data['price_currency'])
 
     def test_update_without_permission(self):

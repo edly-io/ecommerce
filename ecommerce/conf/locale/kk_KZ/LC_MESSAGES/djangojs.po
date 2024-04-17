@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # Fatima Salmenova <fatima_dancer_94@mail.ru>, 2016
 # Sara Kopbulsynova <sara_95701@mail.ru>, 2016
 msgid ""

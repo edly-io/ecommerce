@@ -1,9 +1,9 @@
-from __future__ import absolute_import
 
 import json
 import logging
 import os
 from io import StringIO
+
 
 from django.conf import settings
 from django.core.management import call_command
@@ -13,9 +13,7 @@ from edx_django_utils.cache import TieredCache
 from requests import Timeout
 from slumber.exceptions import SlumberBaseException
 
-from ecommerce.core.url_utils import get_lms_url
 from ecommerce.extensions.edly_ecommerce_app.api.v1.views import StaffOrCourseCreatorOnlyMixin
-from ecommerce.extensions.partner.shortcuts import get_partner_for_site
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,6 @@
-from __future__ import absolute_import
+
+
+from urllib.parse import urljoin
 
 from path import Path
 from six.moves.urllib.parse import urljoin
@@ -14,15 +16,6 @@ LOGGING['handlers']['local'] = {'class': 'logging.NullHandler'}
 
 # Disable console logging to cut down on log size. Nose will capture the logs for us.
 LOGGING['handlers']['console'] = {'class': 'logging.NullHandler'}
-
-if os.getenv('DISABLE_MIGRATIONS'):
-    MIGRATION_MODULES = {
-        'default': None,
-        'sessions': None,
-        'profiles': None,
-        'snippets': None,
-        'scaffold_templates': None,
-    }
 
 # END TEST SETTINGS
 
@@ -66,7 +59,7 @@ EDX_API_KEY = 'replace-me'
 PAYMENT_PROCESSOR_CONFIG = {
     'edx': {
         'cybersource': {
-            'soap_api_url': 'https://ics2wstest.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.115.wsdl',
+            'soap_api_url': 'https://ics2wstest.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.166.wsdl',
             'merchant_id': 'fake-merchant-id',
             'transaction_key': 'fake-transaction-key',
             'profile_id': 'fake-profile-id',
@@ -83,6 +76,27 @@ PAYMENT_PROCESSOR_CONFIG = {
             'apple_pay_merchant_id_domain_association': 'fake-merchant-id-domain-association',
             'apple_pay_merchant_id_certificate_path': '',
             'apple_pay_country_code': 'US',
+        },
+        'cybersource-rest': {
+            'soap_api_url': 'https://ics2wstest.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.166.wsdl',
+            'merchant_id': 'fake-merchant-id',
+            'transaction_key': 'fake-transaction-key',
+            'profile_id': 'fake-profile-id',
+            'access_key': 'fake-access-key',
+            'secret_key': 'fake-secret-key',
+            'payment_page_url': 'https://replace-me/',
+            'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
+            'send_level_2_3_details': True,
+            'sop_profile_id': 'sop-fake-profile-id',
+            'sop_access_key': 'sop-fake-access-key',
+            'sop_secret_key': 'sop-fake-secret-key',
+            'sop_payment_page_url': 'https://sop-replace-me/',
+            'apple_pay_merchant_identifier': 'merchant.com.example',
+            'apple_pay_merchant_id_domain_association': 'fake-merchant-id-domain-association',
+            'apple_pay_merchant_id_certificate_path': '',
+            'apple_pay_country_code': 'US',
+            'flex_shared_secret_key_id': 'd2df1f49-dffa-4814-8da2-2751a62b79a6',
+            'flex_shared_secret_key': 'c9QEORcKDT7u27zLtuy2S0T/HfKo8gl+JnCy6OHtm9Q=',
         },
         'paypal': {
             'mode': 'sandbox',
@@ -107,7 +121,19 @@ PAYMENT_PROCESSOR_CONFIG = {
     },
     'other': {
         'cybersource': {
-            'soap_api_url': 'https://ics2wstest.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.115.wsdl',
+            'soap_api_url': 'https://ics2wstest.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.166.wsdl',
+            'merchant_id': 'other-fake-merchant-id',
+            'transaction_key': 'other-fake-transaction-key',
+            'profile_id': 'other-fake-profile-id',
+            'access_key': 'other-fake-access-key',
+            'secret_key': 'other-fake-secret-key',
+            'payment_page_url': 'https://replace-me/',
+            'receipt_path': PAYMENT_PROCESSOR_RECEIPT_PATH,
+            'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
+            'send_level_2_3_details': True,
+        },
+        'cybersource-rest': {
+            'soap_api_url': 'https://ics2wstest.ic3.com/commerce/1.x/transactionProcessor/CyberSourceTransaction_1.166.wsdl',
             'merchant_id': 'other-fake-merchant-id',
             'transaction_key': 'other-fake-transaction-key',
             'profile_id': 'other-fake-profile-id',

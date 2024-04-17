@@ -1,5 +1,5 @@
 """Exceptions and error messages used by payment processors."""
-from __future__ import absolute_import, unicode_literals
+from __future__ import unicode_literals
 
 from django.utils.translation import ugettext_lazy as _
 from oscar.apps.payment.exceptions import GatewayError, PaymentError
@@ -50,6 +50,7 @@ class InvalidBasketError(PaymentError):
 
 class AuthorizationError(PaymentError):
     """ Authorization was declined. """
+    pass
 
 
 class RedundantPaymentNotificationError(PaymentError):
@@ -81,3 +82,9 @@ class MissingProcessorResponseCardInfo(RefundError):
         for settled transaction.
     """
     pass
+
+
+class SDNFallbackDataEmptyError(Exception):
+    """ Error for when we call checkSDNFallback and the data is not yet populated.
+    This data is populated by running: ./manage.py populate_sdn_fallback_data_and_metadata
+    See ecommerce ADR 0007-sdn-fallback for more info """

@@ -1,8 +1,6 @@
-from __future__ import absolute_import, unicode_literals
 
 import logging
 
-import six
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -61,7 +59,7 @@ class StatusMixin:
         self.save()
 
     def __str__(self):
-        return six.text_type(self.id)
+        return str(self.id)
 
 
 class Refund(StatusMixin, TimeStampedModel):
@@ -163,7 +161,7 @@ class Refund(StatusMixin, TimeStampedModel):
         return self.status == settings.OSCAR_INITIAL_REFUND_STATUS
 
     def _issue_credit(self):
-        """Issue a credit to the purchaser via the payment processor used for the original order."""
+        """Issue a credit/refund to the purchaser via the payment processor used for the original order."""
         try:
             # NOTE: Update this if we ever support multiple payment sources for a single order.
             source = self.order.sources.first()

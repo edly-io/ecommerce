@@ -1,5 +1,4 @@
 """HTTP endpoints for interacting with orders."""
-from __future__ import absolute_import
 
 import logging
 from decimal import Decimal
@@ -9,17 +8,22 @@ import django_filters
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils.decorators import method_decorator
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from oscar.core.loading import get_class, get_model
+from requests.exceptions import ConnectionError, Timeout  # pylint: disable=redefined-builtin
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import DjangoModelPermissions, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
+from slumber.exceptions import HttpServerError, SlumberBaseException
 
 from ecommerce.courses.models import Course
+from ecommerce.courses.utils import get_course_run_detail
+from ecommerce.enterprise.mixins import EnterpriseDiscountMixin
 from ecommerce.extensions.analytics.utils import audit_log
 from ecommerce.extensions.api import serializers
 from ecommerce.extensions.api.filters import OrderFilter
@@ -27,7 +31,6 @@ from ecommerce.extensions.api.permissions import IsStaffOrOwner
 from ecommerce.extensions.api.throttles import ServiceUserThrottle
 from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
 from ecommerce.extensions.fulfillment.status import LINE, ORDER
-from ecommerce.extensions.fulfillment.utils import get_enterprise_customer_cost_for_line
 from ecommerce.extensions.offer.models import OFFER_PRIORITY_MANUAL_ORDER
 from ecommerce.extensions.order.benefits import ManualEnrollmentOrderDiscountBenefit
 from ecommerce.extensions.order.conditions import ManualEnrollmentOrderDiscountCondition
@@ -37,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 Order = get_model('order', 'Order')
 OrderLine = get_model('order', 'Line')
+Product = get_model('catalogue', 'Product')
 post_checkout = get_class('checkout.signals', 'post_checkout')
 Basket = get_model('basket', 'Basket')
 Applicator = get_class('offer.applicator', 'Applicator')
@@ -98,7 +102,7 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
+class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, EnterpriseDiscountMixin, ViewSet):
     """
         **Use Cases**
 
@@ -120,6 +124,7 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
             >>>             "discount_percentage": 75.0,
             >>>             "date_placed": '2020-02-11T09:38:47.634561+00:00',  # optional param, only for old records.
             >>>             "sales_force_id": '252F0060L00000ppWfu',
+            >>>             "mode": 'verified',
             >>>             "enterprise_customer_name": "an-enterprise-customer",
             >>>             "enterprise_customer_uuid": "394a5ce5-6ff4-4b2b-bea1-a273c6920ae1",
             >>>         },
@@ -128,6 +133,7 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
             >>>             "username": "metoo",
             >>>             "email": "metoo@example.com",
             >>>             "course_run_key": "",
+            >>>             "mode": 'professional',
             >>>             "enterprise_customer_name": "an-enterprise-customer",
             >>>             "enterprise_customer_uuid": "394a5ce5-6ff4-4b2b-bea1-a273c6920ae1",
             >>>         },
@@ -145,6 +151,7 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
             >>>             "discount_percentage": 75.0,
             >>>             "date_placed": '2020-02-11T09:38:47.634561+00:00',
             >>>             "sales_force_id": '252F0060L00000ppWfu',
+            >>>             "mode": 'verified',
             >>>             "enterprise_customer_name": "an-enterprise-customer",
             >>>             "enterprise_customer_uuid": "394a5ce5-6ff4-4b2b-bea1-a273c6920ae1",
             >>>             "status": "success",
@@ -156,6 +163,7 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
             >>>             "username": "metoo",
             >>>             "email": "metoo@example.com",
             >>>             "course_run_key": "",
+            >>>             "mode": 'professional',
             >>>             "enterprise_customer_name": "an-enterprise-customer",
             >>>             "enterprise_customer_uuid": "394a5ce5-6ff4-4b2b-bea1-a273c6920ae1",
             >>>             "status": "failure",
@@ -171,6 +179,16 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
     http_method_names = ['post']
 
     SUCCESS, FAILURE = "success", "failure"
+
+    @staticmethod
+    def existing_purchased_line(seat_product, user, site):
+        """ Returns existing OrderLine object purchased by user whether in the form of course entitlement
+        or course enrollment."""
+        course_uuid = get_course_run_detail(site, seat_product.course.id)['course_uuid']
+        products = Product.objects.filter(
+            Q(pk=seat_product.pk) | Q(attributes__code='UUID', attribute_values__value_text=course_uuid)
+        )
+        return OrderLine.objects.filter(product__in=products, order__user=user, status=LINE.COMPLETE).first()
 
     def create(self, request):
         """
@@ -210,9 +228,10 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
                     "lms_user_id": <int>,
                     "username": <string>,
                     "email": <string>,
-                    "course_run_key": <string>
-                    "discount_percentage": <float>
-                    "sales_force_id": <string>
+                    "course_run_key": <string>,
+                    "discount_percentage": <float>,
+                    "sales_force_id": <string>,
+                    "mode": <string>,
                     "enterprise_customer_name": <string>,
                     "enterprise_customer_uuid": <string>,
                 `request_user`: <User>
@@ -228,6 +247,7 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
                 learner_username,
                 learner_email,
                 course_run_key,
+                mode,
                 discount_percentage,
                 sales_force_id,
             ) = self._get_enrollment_data(enrollment)
@@ -253,16 +273,25 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
             return dict(enrollment, status=self.FAILURE, detail="Course not found", new_order_created=None)
 
         seat_product = course.seat_products.filter(
-            attributes__name='certificate_type'
-        ).exclude(
-            attribute_values__value_text='audit'
+            attributes__name='certificate_type',
+            attribute_values__value_text=mode
         ).first()
 
         # check if an order already exists with the requested data
-        order_line = OrderLine.objects.filter(product=seat_product, order__user=learner_user, status=LINE.COMPLETE)
-        if order_line.exists():
-            order = Order.objects.get(id=order_line.first().order_id)
-            self._update_orderline_with_enterprise_discount(order, discount_percentage)
+        try:
+            order_line = self.existing_purchased_line(seat_product, learner_user, request_site)
+        except (SlumberBaseException, ConnectionError, Timeout, HttpServerError, AttributeError) as ex:
+            logger.exception(
+                "Could not access existing purchased line. User: %s, Site: %s, course_run_key: %s, message: %s",
+                learner_user,
+                request_site,
+                course_run_key,
+                ex,
+            )
+            return dict(enrollment, status=self.FAILURE, detail="Failed to create free order", new_order_created=None)
+        if order_line:
+            order = order_line.order
+            self._update_all_orderline_with_enterprise_discount(order, discount_percentage)
             return dict(
                 enrollment,
                 status=self.SUCCESS,
@@ -284,7 +313,7 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
         try:
             order = self.place_free_order(basket)
             self._update_order_according_to_date_place(order, enrollment.get('date_placed'))
-            self._update_orderline_with_enterprise_discount(order, discount_percentage)
+            self._update_all_orderline_with_enterprise_discount(order, discount_percentage)
         except:  # pylint: disable=bare-except
             logger.exception(
                 '[Manual Order Creation Failure] Failed to place the order. User: %s, Course: %s, Basket: %s, '
@@ -306,33 +335,22 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
         )
         return dict(enrollment, status=self.SUCCESS, detail=order.number, new_order_created=True)
 
-    def _update_orderline_with_enterprise_discount(self, order, discount_percentage):
+    def _update_all_orderline_with_enterprise_discount(self, order, discount_percentage):
         """
-        Updates an orderline with calculated discount metrics if applicable
-
-        Args:
-            order: An Order object
-            discount_percentage: Discounted percentage for manual order.
-
-        Returns:
-            Nothing
-
-        Side effect:
-            Saves a line object if discount_percentage is not zero.
+        Updates all order's lines with calculated discount metrics if applicable
         """
         if discount_percentage is None:
             return
 
-        # we need to represent discount_percentage as a decimaled percent (.23 instead of 23)
-        discount = Decimal(discount_percentage)
-        effective_discount_percentage = discount * Decimal('.01')
+        # update_orderline_with_enterprise_discount function expects Decimal object
+        discount_percentage = Decimal(discount_percentage)
         for line in order.lines.all():
-            line.effective_contract_discount_percentage = effective_discount_percentage
-            line.effective_contract_discounted_price = get_enterprise_customer_cost_for_line(
-                line.unit_price_excl_tax,
-                effective_discount_percentage
+            self.update_orderline_with_enterprise_discount_metadata(
+                order,
+                line,
+                discount_percentage=discount_percentage,
+                is_manual_order=True
             )
-            line.save()
 
     def _update_order_according_to_date_place(self, order, date_placed):
         """
@@ -375,6 +393,7 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
             learner_username:  User's username.
             learner_email:  User's email.
             course_run_key:  Course key.
+            mode: Course mode.
 
         Optional Parameters:
             discount_percentage: Discounted percentage for manual enrollment.
@@ -383,28 +402,35 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
         Raises:
             ValidationError: If any required parameter is not present in enrollment.
         """
+        paid_modes = ['verified', 'professional']
         lms_user_id = enrollment.get('lms_user_id')
         learner_username = enrollment.get('username')
         learner_email = enrollment.get('email')
         course_run_key = enrollment.get('course_run_key')
         discount_percentage = enrollment.get('discount_percentage')
         sales_force_id = enrollment.get('sales_force_id')
-        if not (lms_user_id and learner_username and learner_email and course_run_key):
+        mode = enrollment.get('mode')
+        if not (lms_user_id and learner_username and learner_email and course_run_key and mode):
             enrollment_parameters_state = [
                 ("'lms_user_id'", bool(lms_user_id)),
                 ("'username'", bool(learner_username)),
                 ("'email'", bool(learner_email)),
                 ("'course_run_key'", bool(course_run_key)),
+                ("'mode'", bool(mode)),
             ]
             missing_params = ', '.join(name for name, present in enrollment_parameters_state if not present)
             logger.error(
                 '[Manual Order Creation Failure] Missing required enrollment data. Message: %s', missing_params
             )
             raise ValidationError('Missing required enrollment data: {}'.format(missing_params))
+
+        if mode not in paid_modes:
+            raise ValidationError('Course mode should be paid')
+
         if discount_percentage is not None:
             if not isinstance(discount_percentage, float) or (discount_percentage < 0.0 or discount_percentage > 100.0):
                 raise ValidationError('Discount percentage should be a float from 0 to 100.')
-        return lms_user_id, learner_username, learner_email, course_run_key, discount_percentage, sales_force_id
+        return lms_user_id, learner_username, learner_email, course_run_key, mode, discount_percentage, sales_force_id
 
     def _get_learner_user(self, lms_user_id, learner_username, learner_email):
         """
@@ -436,6 +462,7 @@ class ManualCourseEnrollmentOrderViewSet(EdxOrderPlacementMixin, ViewSet):
         benefit, _ = Benefit.objects.get_or_create(
             proxy_class=class_path(ManualEnrollmentOrderDiscountBenefit),
             value=100,
+            max_affected_items=1,
         )
 
         offer_kwargs = {
