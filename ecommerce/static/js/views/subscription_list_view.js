@@ -19,6 +19,19 @@ define([
               confirmationDialog) {
         'use strict';
 
+         // Custom sorting plugin for currency values
+         $.extend($.fn.dataTableExt.oSort, {
+            "currency-pre": function(value) {
+                return parseFloat(value.replace(/[^\d.-]/g, '')) || 0;
+            },
+            "currency-asc": function(a, b) {
+                return a - b;
+            },
+            "currency-desc": function(a, b) {
+                return b - a;
+            }
+        });
+
         return Backbone.View.extend({
             className: 'subscription-list-view',
 
@@ -83,10 +96,12 @@ define([
                             {
                                 title: gettext('Actual Price'),
                                 data: 'subscription_actual_price',
+                                type: 'currency'
                             },
                             {
                                 title: gettext('Price'),
                                 data: 'subscription_price',
+                                type: 'currency'
                             },
                             {
                                 title: gettext('Active Status'),
