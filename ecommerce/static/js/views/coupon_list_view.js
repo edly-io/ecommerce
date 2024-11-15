@@ -82,7 +82,6 @@ define([
 
                 if (!$.fn.dataTable.isDataTable('#couponTable')) {
                     couponTable = this.$el.find('#couponTable').DataTable({
-                        serverSide: true,
                         ajax: this.url,
                         autoWidth: false,
                         lengthMenu: [10, 25, 50, 100],
@@ -90,16 +89,8 @@ define([
                         paging: true,
                         initComplete: function() {
                             $('#couponTable_filter input').unbind()
-                            .bind('keyup', function(e) {
-                                // If the length is 3 or more characters, or the user pressed ENTER, search
-                                if (this.value.length >= 3 || e.keyCode === 13) {
-                                    couponTable.search(this.value).draw();
-                                }
-
-                                // Ensure we clear the search if they backspace far enough
-                                if (this.value === '') {
-                                    couponTable.search('').draw();
-                                }
+                            .bind('keyup', function() {
+                                couponTable.search(this.value).draw();
                             });
                         },
                         oLanguage: {
