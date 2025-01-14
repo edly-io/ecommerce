@@ -579,6 +579,7 @@ class BasketSummaryView(BasketLogicMixin, BasketView):
         context.update({
             'formset_lines_data': list(zip(formset, lines_data)),
             'homepage_url': get_lms_url(''),
+            'support_url': site_configuration.payment_support_url or get_lms_url(),
             'min_seat_quantity': 1,
             'max_seat_quantity': 100,
             'payment_processors': payment_processors,
