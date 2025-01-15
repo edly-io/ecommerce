@@ -5,6 +5,7 @@ import logging
 import re
 
 import stripe
+from django.urls import reverse
 from oscar.apps.payment.exceptions import GatewayError
 from oscar.core.loading import get_model
 
@@ -135,26 +136,90 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
         return new_capture_context
 
     def get_transaction_parameters(self, basket, request=None, use_client_side_checkout=True, **kwargs):
-        return {'payment_page_url': self.client_side_payment_url}
+        """
+        Create a Stripe Checkout Session for the basket.
+        Returns the payment page URL that the user should be redirected to.
+        """
+        order_number = basket.order_number
+        redirect_url = reverse('stripe:submit')
+        ecommerce_base_url = get_ecommerce_url()
+
+        product = basket.all_lines().first().product
+        course_org = ''
+        if product.course:
+            regex = '\\:(.*?)\\+'
+            course_org = re.findall(regex, product.course.id)[0]
+
+        description = '{order_number} - {organization}: {title}'.format(
+            order_number=order_number,
+            organization=course_org if course_org else basket.site.partner.name,
+            title=product.title
+        )
+
+        line_items = []
+        for line in basket.all_lines():
+            line_items.append({
+                'price_data': {
+                    'currency': basket.currency.lower(),
+                    'product_data': {
+                        'name': line.product.title,
+                        'description': description,
+                    },
+                    'unit_amount': str((line.line_price_incl_tax_incl_discounts * 100).to_integral_value()),
+                },
+                'quantity': line.quantity,
+            })
+
+        try:
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=line_items,
+                mode='payment',
+                success_url='{}{}?session_id={{CHECKOUT_SESSION_ID}}'.format(
+                    ecommerce_base_url,
+                    redirect_url,
+                ),
+                billing_address_collection="required",
+                cancel_url=self.cancel_url,
+                metadata={
+                    'basket_id': basket.id,
+                    'order_number': order_number
+                },
+                client_reference_id=order_number,
+            )
+            # using session_id as we are using stripe checkout session
+            basket_add_payment_intent_id_attribute(basket, session.id)
+            return {'payment_page_url': session.url}
+        except stripe.error.StripeError as e:
+            logger.exception(
+                "Stripe payment for basket [%d] failed with [%s]",
+                basket.id,
+                str(e)
+            )
+            raise GatewayError(str(e))
+
+    def retrieve_session(self, session_id):
+        """
+        Retrieve a Stripe Checkout Session by its ID.
+        """
+        try:
+            return stripe.checkout.Session.retrieve(session_id)
+        except stripe.error.InvalidRequestError:
+            logger.exception(
+                "Failed to retrieve Stripe Checkout Session with ID [%s]",
+                session_id
+            )
+            return None
 
     def handle_processor_response(self, response, basket=None):
         # pretty sure we should simply return/error if basket is None, as not
         # sure what it would mean if there
-        payment_intent_id = response['payment_intent_id']
+        payment_intent_id = response['payment_intent']
         # NOTE: In the future we may want to get/create a Customer. See https://stripe.com/docs/api#customers.
 
-        # rewrite order amount so it's updated for coupon & quantity and unchanged by the user
-        stripe.PaymentIntent.modify(
-            payment_intent_id,
-            **self._build_payment_intent_parameters(basket),
-        )
+        # Below changes are modified because we are using stripe sessions and not payment intents
         try:
-            confirm_api_response = stripe.PaymentIntent.confirm(
-                payment_intent_id,
-                # stop on complicated payments MFE can't handle yet
-                error_on_requires_action=True,
-                expand=['payment_method'],
-            )
+            confirm_api_response = stripe.PaymentIntent.retrieve(payment_intent_id)
         except stripe.error.CardError as err:
             self.record_processor_response(err.json_body, transaction_id=payment_intent_id, basket=basket)
             logger.exception('Card Error for basket [%d]: %s}', basket.id, err)
@@ -162,7 +227,7 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
 
         # proceed only if payment went through
         assert confirm_api_response['status'] == "succeeded"
-        self.record_processor_response(confirm_api_response, transaction_id=payment_intent_id, basket=basket)
+        self.record_processor_response(response, transaction_id=response.id, basket=basket)
 
         logger.info(
             'Successfully confirmed Stripe payment intent [%s] for basket [%d].',

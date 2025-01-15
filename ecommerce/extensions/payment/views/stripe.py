@@ -2,6 +2,7 @@
 import logging
 
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
+from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import redirect
@@ -37,10 +38,89 @@ class StripeSubmitView(EdxOrderPlacementMixin, BasePaymentSubmitView):
     and redirecting the user to the receipt page.
     """
     form_class = StripeSubmitForm
+    http_method_names = ['post', 'options', 'get']
 
     @property
     def payment_processor(self):
         return Stripe(self.request.site)
+
+    def _get_basket(self, session_id):
+        """
+        Retrieve a basket using a session id
+
+        Arguments:
+            session_id: session.id received from Stripe.
+
+        Returns:
+            It will return related basket or log exception and return None if
+            duplicate payment_intent_id* received or any other exception occurred.
+        """
+        try:
+            basket_attribute = BasketAttribute.objects.get(value_text=session_id)
+            basket = basket_attribute.basket
+            basket.strategy = strategy.Default()
+
+            Applicator().apply(basket, basket.owner, self.request)
+
+            basket_add_organization_attribute(basket, self.request.GET)
+        except MultipleObjectsReturned:
+            logger.warning(u"Duplicate payment_intent_id [%s] received from Stripe.", session_id)
+            return None
+        except ObjectDoesNotExist:
+            logger.warning(u"Could not find payment_intent_id [%s] among baskets.", session_id)
+            return None
+        except Exception:  # pylint: disable=broad-except
+            logger.exception(u"Unexpected error during basket retrieval while executing Stripe payment.")
+            return None
+        return basket
+
+    def get(self, request, *args, **kwargs):
+        """
+        Handle an incoming user returned to us by Stripe after approving payment.
+        """
+        session_id = request.GET.get('session_id')
+        session = self.payment_processor.retrieve_session(session_id)
+        if not session:
+            return redirect(self.payment_processor.error_url)
+
+        payment_intent_id = session.payment_intent
+        basket = self._get_basket(session_id)
+        if not basket:
+            return redirect(self.payment_processor.error_url)
+
+        basket.strategy = request.strategy
+        basket_add_payment_intent_id_attribute(basket, payment_intent_id)
+        basket_add_organization_attribute(basket, self.request.GET)
+
+        try:
+            billing_address = self.payment_processor.get_address_from_token(payment_intent_id)
+        except Exception:  # pylint: disable=broad-except
+            logger.exception(
+                'An error occurred while parsing the billing address for basket [%d]. No billing address will be '
+                'stored for the resulting order [%s].',
+                basket.id)
+            billing_address = None
+
+        try:
+            self.handle_payment(session, basket)
+        except Exception:
+            logger.exception('An error occurred while processing the Stripe payment for basket [%d].', basket.id)
+            return redirect('payment_error')
+
+        try:
+            order = self.create_order(self.request, basket, billing_address=billing_address)
+        except Exception:
+            logger.exception('An error occurred while processing the Stripe payment for basket [%d].', basket.id)
+            messages.error(request, "order_placement_error")
+            return redirect(self.payment_processor.error_url)
+
+        self.handle_post_order(order)
+        receipt_url = get_receipt_page_url(
+            site_configuration=self.request.site.siteconfiguration,
+            order_number=basket.order_number,
+            disable_back_button=True,
+        )
+        return redirect(receipt_url)
 
     def form_valid(self, form):
         form_data = form.cleaned_data

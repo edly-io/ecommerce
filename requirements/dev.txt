@@ -202,7 +202,7 @@ soupsieve==2.0.1          # via -r requirements/test.txt, beautifulsoup4
 sphinx==1.5.3             # via -r requirements/docs.txt, edx-sphinx-theme
 sqlparse==0.4.1           # via -r requirements/test.txt, django, django-debug-toolbar
 stevedore==3.2.2          # via -r requirements/test.txt, edx-django-utils, edx-opaque-keys
-stripe==1.70.0            # via -r requirements/test.txt
+stripe==4.1.0            # via -r requirements/test.txt
 tenacity==6.2.0           # via -r requirements/test.txt, pytest-selenium
 testfixtures==6.15.0      # via -r requirements/test.txt
 testtools==2.4.0          # via -r requirements/test.txt, cybersource-rest-client-python, fixtures, python-subunit

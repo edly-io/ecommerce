@@ -149,7 +149,7 @@ social-auth-core==3.2.0   # via -c requirements/pins.txt, edx-auth-backends, soc
 sorl-thumbnail==12.6.3    # via -r requirements/base.in
 sqlparse==0.4.1           # via django
 stevedore==3.2.2          # via edx-django-utils, edx-opaque-keys
-stripe==1.70.0            # via -r requirements/base.in
+stripe==4.1.0            # via -r requirements/base.in
 testtools==2.4.0          # via cybersource-rest-client-python, fixtures, python-subunit
 text-unidecode==1.3       # via faker
 traceback2==1.4.0         # via cybersource-rest-client-python, testtools, unittest2

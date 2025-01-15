@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payment', '0031_sdnfallbackdata'),
+        ('payment', '0031_delete_sdnfallbackdata'),
     ]
 
     operations = [

@@ -400,7 +400,7 @@ def basket_add_payment_intent_id_attribute(basket, payment_intent_id):
     BasketAttribute.objects.update_or_create(
         basket=basket,
         attribute_type=payment_intent_id_attribute,
-        defaults={'value_text': payment_intent_id.strip()}
+        defaults={'value_text': payment_intent_id}
     )
 
 
