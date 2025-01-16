@@ -327,7 +327,7 @@ MIDDLEWARE = (
     'crum.CurrentRequestUserMiddleware',
 )
 # END MIDDLEWARE CONFIGURATION
-
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # URL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
