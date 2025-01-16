@@ -34,19 +34,5 @@
     <input type="hidden" name="action" value="fulfill">
     <input type="submit" value="Fulfill Baskets">
 </form>
-
-<script>
-    // on Ready 
-    document.addEventListener('DOMContentLoaded', function () {
-        // get the messages dom node
-        const messages = document.querySelector('.messages');
-        if (messages) {
-            setTimeout(() => {
-                messages.remove();
-                document.cookie = 'messages=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            }, 10000);
-        }
-    });
-</script>
 </body>
 </html>
