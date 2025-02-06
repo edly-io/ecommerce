@@ -22,6 +22,10 @@ from ecommerce.extensions.payment.processors import (
     BaseClientSidePaymentProcessor,
     HandledProcessorResponse
 )
+from ecommerce.extensions.payment.utils import (
+    get_basket_program_uuid,
+)
+from ecommerce.programs.utils import get_program
 
 logger = logging.getLogger(__name__)
 
@@ -149,15 +153,26 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
         if product.course:
             regex = '\\:(.*?)\\+'
             course_org = re.findall(regex, product.course.id)[0]
+        
+        program_uuid = get_basket_program_uuid(basket)
+        program = None
 
-        description = '{order_number} - {organization}: {title}'.format(
+        if program_uuid:
+            program = get_program(program_uuid, basket.site.siteconfiguration)
+
+        description_prefix = 'Order#: {order_number}, Instance: {organization}'.format(
             order_number=order_number,
-            organization=course_org if course_org else basket.site.partner.name,
-            title=product.title
+            organization=course_org if course_org else basket.site.partner.name
         )
 
         line_items = []
+        product_titles = []
         for line in basket.all_lines():
+            description = '{prefix}: {title}'.format(
+                prefix=description_prefix,
+                title=line.product.title
+            )
+            product_titles.append(line.product.title)
             line_items.append({
                 'price_data': {
                     'currency': basket.currency.lower(),
@@ -169,6 +184,16 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
                 },
                 'quantity': line.quantity,
             })
+        
+        payment_intent_description = '{prefix}{program}, Course: {titles}'.format(
+            prefix=description_prefix,
+            program=', Program: ' + program.get('title') if program else '',
+            titles=', Course: '.join(product_titles)
+        )
+
+        MAX_DESCRIPTION_LENGTH = 997
+        if len(payment_intent_description) > MAX_DESCRIPTION_LENGTH:
+            payment_intent_description = payment_intent_description[:MAX_DESCRIPTION_LENGTH] + '...'
 
         try:
             session = stripe.checkout.Session.create(
@@ -181,6 +206,9 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
                 ),
                 billing_address_collection="required",
                 cancel_url=self.cancel_url,
+                payment_intent_data={
+                    'description': payment_intent_description
+                },
                 metadata={
                     'basket_id': basket.id,
                     'order_number': order_number
