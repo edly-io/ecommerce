@@ -4,6 +4,7 @@
 #
 #    make upgrade
 #
+setuptools==65.5.0
 alabaster==0.7.12         # via -r requirements/docs.txt, sphinx
 amqp==2.6.1               # via -r requirements/test.txt, kombu
 analytics-python==1.2.9   # via -r requirements/test.txt

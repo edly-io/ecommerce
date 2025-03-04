@@ -4,6 +4,7 @@
 #
 #    make upgrade
 #
+setuptools==65.5.0
 amqp==2.6.1               # via -r requirements/base.txt, kombu
 analytics-python==1.2.9   # via -r requirements/base.txt
 appdirs==1.4.4            # via -r requirements/base.txt, zeep

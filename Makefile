@@ -44,10 +44,12 @@ requirements: requirements.js
 
 requirements.tox:
 	pip3 install -U pip==20.0.2
+	pip3 install -U setuptools==65.5.0
 	pip3 install -r requirements/tox.txt --exists-action w
 
 requirements.tox:
 	pip install -U pip==20.0.2
+	pip3 install -U setuptools==65.5.0
 	pip install -r requirements/tox.txt --exists-action w
 
 production-requirements: requirements.js

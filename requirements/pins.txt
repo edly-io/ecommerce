@@ -8,6 +8,9 @@
 # pin when possible.  Writing an issue against the offending project and
 # linking to it here is good.
 
+
+setuptools==65.5.0
+
 # Newer version introduces `No installed app with label 'communication'.`
 django-oscar<2.1
 
