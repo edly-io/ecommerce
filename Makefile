@@ -43,11 +43,11 @@ requirements: requirements.js
 	pip3 install -r requirements/dev.txt --exists-action w
 
 requirements.tox:
-	pip3 install -U pip==20.1.1
+	pip3 install -U pip==20.2.4
 	pip3 install -r requirements/tox.txt --exists-action w
 
 requirements.tox:
-	pip install -U pip==20.1.1
+	pip install -U pip==20.2.4
 	pip install -r requirements/tox.txt --exists-action w
 
 production-requirements: requirements.js
