@@ -4,6 +4,7 @@
 #
 #    make upgrade
 #
+chardet==3.0.4
 filelock==3.8.2          # via tox
 packaging==22.0           # via tox
 pluggy==1.0.0            # via tox
