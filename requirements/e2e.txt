@@ -17,9 +17,9 @@ edx-rest-api-client==5.2.1  # via -c requirements/base.txt, -r requirements/e2e.
 idna==2.7                 # via -c requirements/base.txt, -c requirements/pins.txt, requests
 more-itertools==8.6.0     # via pytest
 newrelic==5.22.1.152      # via -c requirements/base.txt, edx-django-utils
-packaging==20.4           # via -c requirements/base.txt, pytest
+packaging==22.0           # via -c requirements/base.txt, pytest
 pbr==5.5.1                # via -c requirements/base.txt, stevedore
-pluggy==0.13.1            # via pytest
+pluggy==1.0.0             # via pytest
 psutil==5.7.3             # via -c requirements/base.txt, edx-django-utils
 py==1.9.0                 # via pytest
 pycparser==2.20           # via -c requirements/base.txt, cffi
@@ -35,7 +35,7 @@ pytest-variables==1.9.0   # via pytest-selenium
 pytest==5.3.5             # via -c requirements/pins.txt, -r requirements/e2e.in, pytest-base-url, pytest-html, pytest-metadata, pytest-randomly, pytest-selenium, pytest-timeout, pytest-variables
 python-dotenv==0.15.0     # via -r requirements/e2e.in
 pytz==2016.10             # via -c requirements/base.txt, -c requirements/pins.txt, django
-requests==2.24.0          # via -c requirements/base.txt, edx-rest-api-client, pytest-base-url, pytest-selenium, slumber
+requests==2.32.3          # via -c requirements/base.txt, edx-rest-api-client, pytest-base-url, pytest-selenium, slumber
 selenium==3.141.0         # via -r requirements/e2e.in, pytest-selenium
 six==1.15.0               # via -c requirements/base.txt, cryptography, packaging, tenacity
 slumber==0.7.1            # via -c requirements/base.txt, edx-rest-api-client

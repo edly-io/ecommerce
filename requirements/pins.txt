@@ -28,7 +28,7 @@ pytz==2016.10
 urllib3>=1.24.2,<2.0.0
 
 # Was causing some tox issues locally.
-virtualenv==16.7.9
+virtualenv==20.17.1
 
 # newer version seems to be causing failures
 # if tox -e py35-django22-pylint passes after
@@ -45,8 +45,7 @@ social-auth-core==3.2.0
 
 
 # greater versions failing with extract-tranlsations step.
-tox==3.14.6
-tox-battery==0.5.2
+tox==4.0.18
 
 # cybersource-rest-client-python requires 2.7, but requests gives 2.10 by default
 idna==2.7

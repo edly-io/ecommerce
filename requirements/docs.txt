@@ -16,7 +16,7 @@ jinja2==2.11.2            # via sphinx
 markupsafe==1.1.1         # via jinja2
 pygments==2.7.2           # via sphinx
 pytz==2016.10             # via -c requirements/pins.txt, babel
-requests==2.24.0          # via sphinx
+requests==2.32.3          # via sphinx
 six==1.15.0               # via edx-sphinx-theme, sphinx
 snowballstemmer==2.0.0    # via sphinx
 sphinx==1.5.3             # via -r requirements/docs.in, edx-sphinx-theme
