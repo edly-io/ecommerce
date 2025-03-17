@@ -46,7 +46,7 @@ django-filter==2.4.0      # via -r requirements/base.in
 django-haystack==3.1.0      # via django-oscar
 django-libsass==0.8       # via -r requirements/base.in
 django-model-utils==4.0.0  # via edx-rbac
-git+https://github.com/edly-io/django-oscar.git@v2.0.4#egg=django-oscar==v2.0.4
+git+https://github.com/edly-io/django-oscar.git@7e9680955091f0349b4c312852c607ae67104416
 django-phonenumber-field==2.0.1  # via django-oscar
 django-rest-swagger==2.2.0  # via -r requirements/base.in
 django-ses==1.0.3         # via -r requirements/production.in
