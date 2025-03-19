@@ -43,10 +43,10 @@ django-crum==0.7.8        # via edx-django-utils, edx-rbac
 django-extensions==3.0.9  # via -r requirements/base.in
 django-extra-views==0.11.0  # via django-oscar
 django-filter==2.4.0      # via -r requirements/base.in
-django-haystack==2.8.1    # via django-oscar
+django-haystack==3.1.0      # via django-oscar
 django-libsass==0.8       # via -r requirements/base.in
 django-model-utils==4.0.0  # via edx-rbac
-django-oscar==2.0.4       # via -c requirements/pins.txt, -r requirements/base.in
+git+https://github.com/edly-io/django-oscar.git@v2.0.4#egg=django-oscar==v2.0.4
 django-phonenumber-field==2.0.1  # via django-oscar
 django-rest-swagger==2.2.0  # via -r requirements/base.in
 django-ses==1.0.3         # via -r requirements/production.in
