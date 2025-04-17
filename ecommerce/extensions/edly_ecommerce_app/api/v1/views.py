@@ -5,6 +5,8 @@ Views for API v1.
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites.models import Site
 from django.contrib.sites.shortcuts import get_current_site
+from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.http import Http404
 from django.middleware import csrf
 from django.utils.decorators import method_decorator
@@ -18,6 +20,7 @@ import json
 
 from ecommerce.core.constants import ENABLE_SUBSCRIPTIONS_ON_RUNTIME_SWITCH
 from ecommerce.core.models import SiteConfiguration
+from ecommerce.courses.models import Course
 from ecommerce.extensions.edly_ecommerce_app.api.v1.constants import ERROR_MESSAGES
 from ecommerce.extensions.edly_ecommerce_app.helpers import (
     user_is_course_creator,
@@ -27,9 +30,17 @@ from ecommerce.extensions.edly_ecommerce_app.helpers import (
     validate_site_configurations_for_self_service_api,
     validate_site_theme,
 )
-from ecommerce.extensions.edly_ecommerce_app.permissions import CanAccessSiteCreation
+from ecommerce.extensions.edly_ecommerce_app.permissions import CanAccessSiteCreation, CanAccessSiteDeletion
 from ecommerce.extensions.partner.models import Partner
 from ecommerce.theming.models import SiteTheme
+from ecommerce.extensions.partner.models import StockRecord
+from ecommerce.extensions.order.models import Order, Line
+from ecommerce.extensions.offer.models import ConditionalOffer
+from ecommerce.extensions.order.models import MarkOrdersStatusCompleteConfig
+import logging
+
+logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 class SiteThemesActions(APIView):
@@ -204,6 +215,126 @@ class EdlySiteViewSet(APIView):
             BACKEND_SERVICE_EDX_OAUTH2_SECRET=payments_backend_values.get('secret', ''),
         )
         return oauth2_values
+
+class EdlySiteDeletionViewSet(APIView):
+    """
+    Delete the ecommerce site and its data.
+    """
+    permission_classes = [IsAuthenticated, CanAccessSiteDeletion] 
+
+    def post(self, request):
+        """
+        POST /edly_ecommerce_api/delete_site/
+        """
+        try:
+            with transaction.atomic():
+                self.process_site_deletion(request)
+            
+            return Response(
+                {'success': ERROR_MESSAGES.get('SITE_DELETION_SUCCESS')},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            logger.error(f"Site deletion failed: {str(e)}", exc_info=True)
+            return Response(
+                {
+                    'error': ERROR_MESSAGES.get('SITE_DELETION_FAILURE'),
+                    'detail': str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def get_current_site(self, request):
+        """Get current site value using domain value from request."""
+        site_domain = request.data.get('delete_site_url', '')
+        try:
+            site = Site.objects.get(domain=site_domain)
+        except Site.DoesNotExist:
+            site = None
+        return site
+
+    def get_current_partner(self, request):
+        site = self.get_current_site(request)
+        try:
+            partner = Partner.objects.get(default_site=site)
+        except Partner.DoesNotExist:
+            partner = None
+        return partner
+    
+    def delete_users(self, request):
+        """Delete all the sync user for a given site."""
+        user_emails = request.data.get('emails')
+        user_names = request.data.get('usernames')
+        if not all([len(user_emails), len(user_names)]):
+            logger.info(f"No user deleted for given site : {(str(request.site))}")
+            return 
+
+        users = User.objects.filter(
+            email__in=user_emails,
+            username__in=user_names
+        ).exclude(id=request.user.id)
+
+        MarkOrdersStatusCompleteConfig.objects.filter(changed_by__in=users).delete()
+        
+        users.delete()
+        logger.info(f"Successfully deleted user for {request.site}")
+    
+    def delete_courses(self, request):
+        """Delete the courses for the site."""
+        partner = self.get_current_partner(request)
+        courses = Course.objects.filter(partner=partner)
+
+        course_ids = courses.values_list('id', flat=True)
+
+        HistoricalCourse = Course.history.model
+        HistoricalCourse.objects.filter(id__in=course_ids).delete()
+        courses.delete()
+
+    def delete_partner_additional_data(self, request):
+        """
+        Delete all related data referencing the partner that is not automatically
+        deleted due to on_delete settings.
+        """
+        partner = self.get_current_partner(request)
+        
+        HistoricalConditionalOffer = ConditionalOffer.history.model
+        count, _ = HistoricalConditionalOffer.objects.filter(partner=partner).delete()
+        logger.info(f"Deleted {count} HistoricalConditionalOffer record(s) for partner {partner}")
+
+        HistoricalOrder = Order.history.model
+        count, _ = HistoricalOrder.objects.filter(partner=partner).delete()
+        logger.info(f"Deleted {count} HistoricalOrder record(s) for partner {partner}")
+
+        count, _ = Line.objects.filter(partner=partner).delete()
+        logger.info(f"Deleted {count} Line record(s) for partner {partner}")
+        HistoricalLine = Line.history.model
+        count, _ = HistoricalLine.objects.filter(partner=partner).delete()
+        logger.info(f"Deleted {count} HistoricalLine record(s) for partner {partner}")
+
+        HistoricalStockRecord = StockRecord.history.model
+        count, _ = HistoricalStockRecord.objects.filter(partner=partner).delete()
+        logger.info(f"Deleted {count} HistoricalStockRecord record(s) for partner {partner}")
+
+        partner.history.all().delete()
+
+    
+    def delete_site(self, request):
+        """Delete the site and partner for a given site."""
+        site = self.get_current_site(request)
+        site_partner = self.get_current_partner(request)
+        site_partner.delete()
+        site.delete()
+        logger.info(f"Successfully deleted site {site} and its partner")
+
+    def process_site_deletion(self, request):
+        """
+        Process deletion of a site.
+        """
+        self.delete_courses(request)
+        self.delete_partner_additional_data(request)
+        self.delete_users(request)
+        self.delete_site(request)
+
 
 
 class EdlySiteConfigViewset(APIView):
