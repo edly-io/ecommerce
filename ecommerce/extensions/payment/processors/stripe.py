@@ -214,6 +214,7 @@ class Stripe(ApplePayMixin, BaseClientSidePaymentProcessor):
                     'order_number': order_number
                 },
                 client_reference_id=order_number,
+                customer_email=request.user.email
             )
             # using session_id as we are using stripe checkout session
             basket_add_payment_intent_id_attribute(basket, session.id)
