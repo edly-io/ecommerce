@@ -584,6 +584,7 @@ class BasketSummaryView(BasketLogicMixin, BasketView):
             'max_seat_quantity': 100,
             'payment_processors': payment_processors,
             'lms_url_root': site_configuration.lms_url_root,
+            'show_no_refunds_available': site_configuration.get_edly_configuration_value('SHOW_NO_REFUNDS_AVAILABLE', False),
         })
         return context
 
