@@ -2,6 +2,7 @@
 import logging
 from itertools import chain
 
+from oscar.apps.offer import results
 from oscar.apps.offer.applicator import Applicator as OscarApplicator
 from oscar.core.loading import get_model
 
@@ -38,6 +39,65 @@ class Applicator(OscarApplicator):
         """
         offers = self.get_offers(basket, user, request, bundle_id)
         self.apply_offers(basket, offers)
+    
+    def apply_offers(self, basket, offers):
+        applications = results.OfferApplications()
+        logger.info('Starting to apply offers for basket %s. Total offers to check: %s', 
+                basket.id, len(offers))
+        
+        for offer in offers:
+            logger.info('Processing offer %s (ID: %s) for basket %s', 
+                    offer.name, offer.id, basket.id)
+            num_applications = 0
+            
+            # Keep applying the offer until either
+            # (a) We reach the max number of applications for the offer.
+            # (b) The benefit can't be applied successfully.
+            max_applications = offer.get_max_applications(basket.owner)
+            logger.info('Max applications allowed for offer %s: %s', 
+                    offer.id, max_applications)
+
+            while num_applications < max_applications:
+                result = offer.apply_benefit(basket)
+                num_applications += 1
+                
+                # Enhanced logging to show more details about the result
+                logger.info('Attempt %s for offer %s (ID: %s):', 
+                        num_applications, offer.name, offer.id)
+                logger.info('- Success: %s', result.is_successful)
+                logger.info('- Final: %s', result.is_final)
+                logger.info('- Result type: %s', type(result).__name__)
+                logger.info('- Available attributes: %s', dir(result))
+                
+                if not result.is_successful:
+                    # More descriptive error logging
+                    logger.info('Offer %s (ID: %s) failed to apply.', offer.name, offer.id)
+                    # Only try to access message if it exists
+                    if hasattr(result, 'message'):
+                        logger.info('Failure message: %s', result.message)
+                    break
+                
+                applications.add(offer, result)
+                if result.is_final:
+                    break
+
+        # Store this list of discounts with the basket so it can be
+        # rendered in templates
+        basket.offer_applications = applications
+
+        # Enhanced final logging
+        logger.info(
+            'Final offer applications for basket %s: %s',
+            basket.id,
+            {
+                offer.id: {
+                    'name': offer.name,
+                    'benefit': str(offer.benefit),
+                    'condition': str(offer.condition),
+                    'num_applications': len([x for x in applications if x.offer == offer])
+                } for offer in applications.offers
+            }
+        )
 
     def get_offers(self, basket, user=None, request=None, bundle_id=None):  # pylint: disable=arguments-differ
         """
@@ -62,6 +122,19 @@ class Applicator(OscarApplicator):
         # The default oscar implementations which return [] are here in case edX ever starts using these offers.
         user_offers = self.get_user_offers(user)
         session_offers = self.get_session_offers(request)
+
+        logger.info(
+            '[Offer Applicator] Offers considered for basket %s: '
+            'Session Offers: %s, User Offers: %s, Basket Offers: %s, '
+            'Program Offers: %s, Enterprise Offers: %s, Site Offers: %s',
+            basket.id,
+            [offer.id for offer in session_offers],
+            [offer.id for offer in user_offers],
+            [offer.id for offer in basket_offers],
+            [offer.id for offer in program_offers],
+            [offer.id for offer in enterprise_offers],
+            [offer.id for offer in site_offers],
+        )
 
         return list(
             sorted(

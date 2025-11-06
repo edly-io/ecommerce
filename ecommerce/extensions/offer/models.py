@@ -315,41 +315,75 @@ class ConditionalOffer(AbstractConditionalOffer):
 
     def is_condition_satisfied(self, basket):
         """
-        In addition to Oscar's check to see if the condition is satisfied,
-        a check for if basket owners email domain is within the allowed email domains.
+        Custom: In addition to Oscar's default check, allow coupons for program courses
+        even if the user already owns one or more of them.
         """
         if basket.owner and not self.is_email_valid(basket.owner.email):
-            logger.warning('[Code Redemption Failure] Unable to apply offer because the user\'s email '
-                           'does not meet the domain requirements. '
-                           'User: %s, Offer: %s, Basket: %s', basket.owner.username, self.id, basket.id)
+            logger.warning(
+                "[Code Redemption Failure] Unable to apply offer because the user's email "
+                "does not meet the domain requirements. "
+                "User: %s, Offer: %s, Basket: %s",
+                basket.owner.username, self.id, basket.id
+            )
             return False
 
         if self.benefit.range and self.benefit.range.enterprise_customer:
-            # If we are using enterprise conditional offers for enterprise coupons, the old style offer is not used.
             return False
 
         if self.benefit.range and self.benefit.range.catalog_query:
-            # The condition is only satisfied if all basket lines are in the offer range
             num_lines = basket.all_lines().count()
             voucher = self.get_voucher()
             code = voucher and voucher.code
             username = basket.owner and basket.owner.username
+
+            # prevent multiple-item restriction errors
             if voucher and num_lines > 1 and voucher.usage != Voucher.MULTI_USE:
-                logger.warning('[Code Redemption Failure] Unable to apply offer because this Voucher '
-                               'can only be used on single item baskets. '
-                               'User: %s, Offer: %s, Basket: %s, Code: %s',
-                               username, self.id, basket.id, code)
+                logger.warning(
+                    '[Code Redemption Failure] Unable to apply offer because this Voucher '
+                    'can only be used on single item baskets. '
+                    'User: %s, Offer: %s, Basket: %s, Code: %s',
+                    username, self.id, basket.id, code
+                )
                 return False
-            is_satisfied = len(self.benefit.get_applicable_lines(self, basket)) == num_lines
+
+            applicable_lines = self.benefit.get_applicable_lines(self, basket)
+            owned_product_skus = set()
+
+            # identify courses the user already owns (paid enrollments)
+            try:
+                from ecommerce.courses.models import Course
+                from ecommerce.extensions.catalogue.models import Product
+                from ecommerce.programs.utils import get_purchased_course_skus_for_user
+
+                owned_product_skus = set(get_purchased_course_skus_for_user(username))
+            except Exception as exc:
+                logger.exception("Error checking owned products for user %s: %s", username, exc)
+
+            # ignore already-owned SKUs when checking applicability
+            basket_skus = {
+                line.product.stockrecords.first().partner_sku
+                for line in basket.all_lines()
+            }
+            eligible_skus = basket_skus - owned_product_skus
+
+            applicable_skus = {
+                line.product.stockrecords.first().partner_sku
+                for line in applicable_lines
+            }
+
+            is_satisfied = eligible_skus.issubset(applicable_skus)
+
             if not is_satisfied:
-                logger.warning('[Code Redemption Failure] Unable to apply offer because this Voucher '
-                               'is not valid for all courses in basket. '
-                               'User: %s, Offer: %s, Basket: %s, Code: %s',
-                               username, self.id, basket.id, code)
+                logger.warning(
+                    "[Code Redemption Failure] Unable to apply offer because this Voucher "
+                    "is not valid for all *remaining* courses in basket. "
+                    "User: %s, Offer: %s, Basket: %s, Code: %s",
+                    username, self.id, basket.id, code
+                )
 
             return is_satisfied
 
-        return super(ConditionalOffer, self).is_condition_satisfied(basket)  # pylint: disable=bad-super-call
+        return super(ConditionalOffer, self).is_condition_satisfied(basket)
 
 
 def validate_credit_seat_type(course_seat_types):
