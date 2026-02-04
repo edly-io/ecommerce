@@ -50,7 +50,9 @@ VoucherOffer = get_model('voucher', 'Voucher_offers')
 
 
 def _add_redemption_course_ids(new_row_to_append, header_row, redemption_course_ids):
-    if any(row in [_('Catalog Query'), _('Program UUID')] for row in header_row):
+    # Only add redemption course columns for Catalog Query coupons; Program UUID and
+    # regular course coupons do not include these columns in the report.
+    if _('Catalog Query') in header_row:
         if len(redemption_course_ids) > 1:
             new_row_to_append[_('Redeemed For Course IDs')] = ', '.join(redemption_course_ids)
         else:
