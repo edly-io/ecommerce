@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # Myagmarjav Enkhbileg <miigaa.lucky@gmail.com>, 2018
 msgid ""
 msgstr ""

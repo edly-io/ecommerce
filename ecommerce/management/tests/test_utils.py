@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 import mock
 from django.db import transaction

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, unicode_literals
 
 import datetime
 import json
@@ -18,7 +17,6 @@ from oscar.core.loading import get_model
 from oscar.test import factories
 from oscar.test.factories import BasketFactory
 from rest_framework.throttling import UserRateThrottle
-from six.moves import range
 from waffle.testutils import override_switch
 
 from ecommerce.core.constants import ALLOW_MISSING_LMS_USER_ID
@@ -70,6 +68,7 @@ class BasketCreateViewTests(BasketCreationMixin, ThrottlingMixin, TransactionTes
     UNAVAILABLE = False
     UNAVAILABLE_MESSAGE = 'Unavailable'
     FAKE_PROCESSOR_NAME = 'awesome-processor'
+    MOCK_ACCESS_TOKEN = False
 
     def setUp(self):
         super(BasketCreateViewTests, self).setUp()
@@ -974,7 +973,7 @@ class BasketCalculateViewTests(ProgramTestMixin, ThrottlingMixin, TestCase):
 
         """
         sku_list = [product.stockrecords.first().partner_sku for product in products]
-        qs = six.moves.urllib.parse.urlencode(
+        qs = urllib.parse.urlencode(
             {'sku': sku_list},
             True
         )

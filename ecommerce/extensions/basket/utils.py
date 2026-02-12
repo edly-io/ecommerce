@@ -1,8 +1,8 @@
-from __future__ import absolute_import
 
 import datetime
 import json
 import logging
+from urllib.parse import unquote, urlencode
 
 import newrelic.agent
 import pytz
@@ -17,7 +17,7 @@ from six.moves.urllib.parse import unquote, urlencode
 
 from ecommerce.core.url_utils import absolute_url
 from ecommerce.courses.utils import mode_for_product
-from ecommerce.extensions.basket.constants import PURCHASER_BEHALF_ATTRIBUTE
+from ecommerce.extensions.basket.constants import PAYMENT_INTENT_ID_ATTRIBUTE, PURCHASER_BEHALF_ATTRIBUTE
 from ecommerce.extensions.order.exceptions import AlreadyPlacedOrderException
 from ecommerce.extensions.order.utils import UserAlreadyPlacedOrder
 from ecommerce.extensions.payment.constants import DISABLE_MICROFRONTEND_FOR_BASKET_PAGE_FLAG_NAME
@@ -30,6 +30,8 @@ Applicator = get_class('offer.applicator', 'Applicator')
 Basket = get_model('basket', 'Basket')
 BasketAttribute = get_model('basket', 'BasketAttribute')
 BasketAttributeType = get_model('basket', 'BasketAttributeType')
+BillingAddress = get_model('order', 'BillingAddress')
+Country = get_model('address', 'Country')
 BUNDLE = 'bundle_identifier'
 ORGANIZATION_ATTRIBUTE_TYPE = 'organization'
 ENTERPRISE_CATALOG_ATTRIBUTE_TYPE = 'enterprise_catalog_uuid'
@@ -39,6 +41,29 @@ Refund = get_model('refund', 'Refund')
 Voucher = get_model('voucher', 'Voucher')
 
 logger = logging.getLogger(__name__)
+
+
+# TODO: Remove this as part of PCI-81
+def add_flex_microform_flag_to_url(url, request, force_flag=None):
+    microform_flag_name = 'payment.cybersource.flex_microform_enabled'
+    flag_is_active = waffle.flag_is_active(
+        request,
+        microform_flag_name
+    )
+
+    if not flag_is_active and force_flag is None:
+        return url
+
+    if force_flag is not None:
+        flag_is_active = force_flag
+
+    flag = 'dwft_{}={}'.format(microform_flag_name, 1 if flag_is_active else 0)
+    join = '&' if '?' in url else '?'
+    return '{url}{join}{flag}'.format(
+        url=url,
+        join=join,
+        flag=flag,
+    )
 
 
 def get_payment_microfrontend_or_basket_url(request):
@@ -138,6 +163,16 @@ def prepare_basket(request, products, voucher=None):
                 request.user.username,
             )
             continue
+
+        # Multiple clicks can try adding twice, return if product is seat already in basket
+        if is_duplicate_seat_attempt(basket, product):
+            logger.info(
+                'User [%s] repeated request to add [%s] seat of course [%s], will ignore',
+                request.user.username,
+                mode_for_product(product),
+                product.course_id
+            )
+            return basket
 
         if product.is_enrollment_code_product or \
                 not UserAlreadyPlacedOrder.user_already_placed_order(user=request.user,
@@ -351,6 +386,25 @@ def basket_add_organization_attribute(basket, request_data):
 
 
 @newrelic.agent.function_trace()
+def basket_add_payment_intent_id_attribute(basket, payment_intent_id):
+    """
+    Adds the Stripe payment_intent_id attribute on basket.
+
+    Arguments:
+        basket(Basket): order basket
+        payment_intent_id (string): Payment Intent Identifier
+
+    """
+
+    payment_intent_id_attribute, __ = BasketAttributeType.objects.get_or_create(name=PAYMENT_INTENT_ID_ATTRIBUTE)
+    BasketAttribute.objects.update_or_create(
+        basket=basket,
+        attribute_type=payment_intent_id_attribute,
+        defaults={'value_text': payment_intent_id}
+    )
+
+
+@newrelic.agent.function_trace()
 def basket_add_enterprise_catalog_attribute(basket, request_data):
     """
     Add enterprise catalog UUID attribute on basket, if the catalog UUID value
@@ -520,3 +574,38 @@ def apply_voucher_on_basket_and_check_discount(voucher, request, basket):
     logger.info('Coupon Code [%s] is not valid for basket [%s]', voucher.code, basket.id)
     basket.clear_vouchers()
     return False, msg
+
+
+def is_duplicate_seat_attempt(basket, product):
+    """
+    Checks basket for duplicate seat product
+
+    Args:
+        basket (Basket): basket object onto which we'll (potentially) add the new product
+        product (Product): product to search for in the basket
+    """
+
+    product_type = product.get_product_class().name
+    found_product_quantity = basket.product_quantity(product)
+
+    return bool(product_type == 'Seat' and found_product_quantity)
+
+
+def get_billing_address_from_payment_intent_data(payment_intent):
+    """
+    Take stripes response_data dict, instantiates a BillingAddress object
+    and return it.
+    """
+    billing_details = payment_intent['payment_method']['billing_details']
+    customer_address = billing_details['address']
+    address = BillingAddress(
+        first_name=billing_details['name'],  # Stripe only has a single name field
+        last_name='',
+        line1=customer_address['line1'],
+        line2='' if not customer_address['line2'] else customer_address['line2'],  # line2 is optional
+        line4=customer_address['city'],  # Oscar uses line4 for city
+        postcode='' if not customer_address['postal_code'] else customer_address['postal_code'],  # postcode is optional
+        state='' if not customer_address['state'] else customer_address['state'],  # state is optional
+        country=Country.objects.get(iso_3166_1_a2__iexact=customer_address['country'])
+    )
+    return address

@@ -1,15 +1,15 @@
 """
 Methods for fetching enterprise API data.
 """
-from __future__ import absolute_import
+
 
 import logging
+from urllib.parse import urlencode
 
 from django.conf import settings
 from edx_django_utils.cache import TieredCache
 from requests.exceptions import ConnectionError as ReqConnectionError
 from requests.exceptions import Timeout
-from six.moves.urllib.parse import urlencode
 from slumber.exceptions import SlumberHttpBaseException
 
 from ecommerce.core.utils import get_cache_key
@@ -118,10 +118,13 @@ def catalog_contains_course_runs(site, course_run_ids, enterprise_customer_uuid,
     Determine if course runs are associated with the EnterpriseCustomer.
     """
     query_params = {'course_run_ids': course_run_ids}
+    api = site.siteconfiguration.enterprise_catalog_api_client
+
+    # Determine API resource to use
     api_resource_name = 'enterprise-customer'
     api_resource_id = enterprise_customer_uuid
     if enterprise_customer_catalog_uuid:
-        api_resource_name = 'enterprise_catalogs'
+        api_resource_name = 'enterprise-catalogs'
         api_resource_id = enterprise_customer_catalog_uuid
 
     api = site.siteconfiguration.enterprise_api_client

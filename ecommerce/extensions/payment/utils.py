@@ -1,22 +1,13 @@
-from __future__ import absolute_import
-
 import json
+import lxml
 import logging
 import re
 
-import lxml
-import requests
-import six  # pylint: disable=ungrouped-imports
-from django.conf import settings
-from django.contrib.auth import logout
 from django.utils.translation import ugettext_lazy as _
 from oscar.core.loading import get_model
-from requests.exceptions import HTTPError, Timeout
-from six.moves.urllib.parse import urlencode
 
 from ecommerce.core.constants import SEAT_PRODUCT_CLASS_NAME
 from ecommerce.extensions.analytics.utils import parse_tracking_context
-from ecommerce.extensions.payment.models import SDNCheckFailure
 
 logger = logging.getLogger(__name__)
 Basket = get_model('basket', 'Basket')
@@ -74,14 +65,14 @@ class LxmlObjectJsonEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 
-def middle_truncate(string, chars):
+def middle_truncate(provided_string, chars):
     """Truncate the provided string, if necessary.
 
     Cuts excess characters from the middle of the string and replaces
     them with a string indicating that truncation has occurred.
 
     Arguments:
-        string (unicode or str): The string to be truncated.
+        provided_string (unicode or str): The string to be truncated.
         chars (int): The character limit for the truncated string.
 
     Returns:
@@ -92,8 +83,8 @@ def middle_truncate(string, chars):
         ValueError: If the provided character limit is less than the length of
             the truncation indicator.
     """
-    if len(string) <= chars:
-        return string
+    if len(provided_string) <= chars:
+        return provided_string
 
     # Translators: This is a string placed in the middle of a truncated string
     # to indicate that truncation has occurred. For example, if a title may only
@@ -106,7 +97,7 @@ def middle_truncate(string, chars):
         raise ValueError
 
     slice_size = (chars - indicator_length) // 2
-    start, end = string[:slice_size], string[-slice_size:]
+    start, end = provided_string[:slice_size], provided_string[-slice_size:]
     truncated = u'{start}{indicator}{end}'.format(start=start, indicator=indicator, end=end)
 
     return truncated
@@ -159,122 +150,3 @@ def embargo_check(user, site, products):
             pass
 
     return True
-
-
-def checkSDN(request, name, city, country):
-    """
-    Performs an SDN check and returns hits of the user failures.
-    """
-    hit_count = 0
-
-    site_configuration = request.site.siteconfiguration
-    basket = Basket.get_basket(request.user, site_configuration.site)
-
-    if site_configuration.enable_sdn_check:
-        sdn_check = SDNClient(
-            api_url=settings.SDN_CHECK_API_URL,
-            api_key=settings.SDN_CHECK_API_KEY,
-            sdn_list=site_configuration.sdn_api_list
-        )
-        try:
-            response = sdn_check.search(name, city, country)
-            hit_count = response['total']
-            if hit_count > 0:
-                sdn_check.deactivate_user(
-                    basket,
-                    name,
-                    city,
-                    country,
-                    response
-                )
-                logout(request)
-        except (HTTPError, Timeout):
-            # If the SDN API endpoint is down or times out
-            # the user is allowed to make the purchase.
-            pass
-
-    return hit_count
-
-
-class SDNClient:
-    """A utility class that handles SDN related operations."""
-
-    def __init__(self, api_url, api_key, sdn_list):
-        self.api_url = api_url
-        self.api_key = api_key
-        self.sdn_list = sdn_list
-
-    def search(self, name, city, country):
-        """
-        Searches the OFAC list for an individual with the specified details.
-        The check returns zero hits if:
-            * request to the SDN API times out
-            * SDN API returns a non-200 status code response
-            * user is not found on the SDN list
-
-        Args:
-            name (str): Individual's full name.
-            city (str): Individual's city.
-            country (str): ISO 3166-1 alpha-2 country code where the individual is from.
-        Returns:
-            dict: SDN API response.
-        """
-        params = urlencode({
-            'sources': self.sdn_list,
-            'type': 'individual',
-            'name': six.text_type(name).encode('utf-8'),
-            # We are using the city as the address parameter value as indicated in the documentation:
-            # http://developer.trade.gov/consolidated-screening-list.html
-            'address': six.text_type(city).encode('utf-8'),
-            'countries': country
-        })
-        sdn_check_url = '{api_url}?{params}'.format(
-            api_url=self.api_url,
-            params=params
-        )
-        auth_header = {'Authorization': 'Bearer {}'.format(self.api_key)}
-
-        try:
-            response = requests.get(
-                sdn_check_url,
-                headers=auth_header,
-                timeout=settings.SDN_CHECK_REQUEST_TIMEOUT
-            )
-        except requests.exceptions.Timeout:
-            logger.warning('Connection to US Treasury SDN API timed out for [%s].', name)
-            raise
-
-        if response.status_code != 200:
-            logger.warning(
-                'Unable to connect to US Treasury SDN API for [%s]. Status code [%d] with message: [%s]',
-                name, response.status_code, response.content
-            )
-            raise requests.exceptions.HTTPError('Unable to connect to SDN API')
-
-        return response.json()
-
-    def deactivate_user(self, basket, name, city, country, search_results):
-        """ Deactivates a user account.
-
-        Args:
-            basket (Basket): The user's basket.
-            name (str): The user's name.
-            city (str): The user's city.
-            country (str): ISO 3166-1 alpha-2 country code where the individual is from.
-            search_results (dict): Results from a call to `search` that will
-                be recorded as the reason for the deactivation.
-        """
-        site = basket.site
-        snd_failure = SDNCheckFailure.objects.create(
-            full_name=name,
-            username=basket.owner.username,
-            city=city,
-            country=country,
-            site=site,
-            sdn_check_response=search_results
-        )
-        for line in basket.lines.all():
-            snd_failure.products.add(line.product)
-
-        logger.warning('SDN check failed for user [%s] on site [%s]', name, site.name)
-        basket.owner.deactivate_account(site.siteconfiguration)

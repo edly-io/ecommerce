@@ -1,0 +1,9 @@
+{% load static %}
+
+<script>
+  window.CyberSourceConfig = {
+    context: "{{ client_side_payment_processor.get_context }}",
+    postURL: "{% url 'cybersource:microform_submit' %}",
+  };
+</script>
+<script src="{% static 'js/views/cybersource_microform.js' %}"></script>

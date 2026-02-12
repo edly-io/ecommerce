@@ -26,13 +26,16 @@ define([
             onFail: function() {
                 var message = gettext('Problem occurred during checkout. Please contact support.');
                 $('#messages').html(_s.sprintf('<div class="alert alert-error">%s</div>', message));
+                var $btn = $('.payment-buttons').find('.payment-button[data-processor-name]');
+                $btn.find('.loader').css("display", "none");
             },
 
             onSuccess: function(data) {
+                var method = (data.payment_processor === 'stripe') ? 'GET' : 'POST';
                 var $form = $('<form>', {
                     class: 'hidden',
                     action: data.payment_page_url,
-                    method: 'POST',
+                    method: method,
                     'accept-method': 'UTF-8'
                 });
 
@@ -43,6 +46,8 @@ define([
                         value: value
                     }).appendTo($form);
                 });
+                var $btn = $('.payment-buttons').find('.payment-button[data-processor-name]');
+                $btn.find('.loader').css("display", "none");
 
                 $form.appendTo('body').submit();
             },
@@ -516,8 +521,8 @@ define([
                     var $btn = $(e.target),
                         deferred = new $.Deferred(),
                         promise = deferred.promise(),
-                        paymentProcessor = $btn.data('processor-name'),
-                        discountJwt = $btn.closest('#paymentForm').find('input[name="discount_jwt"]'),
+                        paymentProcessor = $(this).data('processor-name'),
+                        discountJwt = $(this).closest('#paymentForm').find('input[name="discount_jwt"]'),
                         data = {
                             basket_id: basketId,
                             payment_processor: paymentProcessor
@@ -527,10 +532,11 @@ define([
                         data.discount_jwt = discountJwt.val();
                     }
 
-                    Utils.disableElementWhileRunning($btn, function() {
+                    Utils.disableElementWhileRunning($(this), function() {
                         return promise;
                     });
                     BasketPage.checkoutPayment(data);
+                    $(this).find('.loader').css("display", "inline-block");
                 });
 
                 // Increment the quantity field until max

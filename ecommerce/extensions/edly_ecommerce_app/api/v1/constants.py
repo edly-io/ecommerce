@@ -13,6 +13,8 @@ ERROR_MESSAGES = {
     'DJANGO_SETTINGS_UPDATE_FAILURE': _('Django settings update failed.'),
     'SITE_CONFIGURATIONS_UPDATE_SUCCESS': _('Site Configurations updated successfully.'),
     'SITE_CONFIGURATIONS_UPDATE_FAILURE': _('Site Configurations update failed.'),
+    'SITE_DELETION_SUCCESS': _('Ecommerce site deletion was successful.'),
+    'SITE_DELETION_FAILURE': _('Ecommerce site deletion failed.'),
 }
 
 CLIENT_SITE_SETUP_FIELDS = [

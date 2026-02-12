@@ -3,8 +3,8 @@ from __future__ import absolute_import
 import datetime
 import hashlib
 import logging
+from urllib.parse import urljoin, urlsplit
 
-import six  # pylint: disable=ungrouped-imports
 import waffle
 from analytics import Client as SegmentClient
 from dateutil.parser import parse
@@ -24,12 +24,12 @@ from jsonfield.fields import JSONField
 from requests.exceptions import ConnectionError as ReqConnectionError
 from requests.exceptions import Timeout
 from simple_history.models import HistoricalRecords
-from six.moves.urllib.parse import urljoin, urlsplit
 from slumber.exceptions import HttpNotFoundError, SlumberBaseException
 
 from ecommerce.core.constants import ALL_ACCESS_CONTEXT, ALLOW_MISSING_LMS_USER_ID
 from ecommerce.core.exceptions import MissingLmsUserIdException
 from ecommerce.core.utils import log_message_and_raise_validation_error
+from ecommerce.extensions.basket.constants import ENABLE_STRIPE_PAYMENT_PROCESSOR
 from ecommerce.extensions.edly_ecommerce_app.helpers import clean_django_settings_override
 from ecommerce.extensions.payment.exceptions import ProcessorNotFoundError
 from ecommerce.extensions.payment.helpers import get_processor_class, get_processor_class_by_name
@@ -279,7 +279,7 @@ class SiteConfiguration(models.Model):
                     self.site.id,
                     name
                 )
-                raise ValidationError(six.text_type(exc))
+                raise ValidationError(str(exc))
 
     def _clean_client_side_payment_processor(self):
         """
@@ -322,7 +322,7 @@ class SiteConfiguration(models.Model):
             if processor.NAME in self.payment_processors_set and processor.is_enabled()
         ]
 
-    def get_client_side_payment_processor_class(self):
+    def get_client_side_payment_processor_class(self, request):
         """ Returns the payment processor class to be used for client-side payments.
 
         If no processor is set, returns None.
@@ -330,9 +330,16 @@ class SiteConfiguration(models.Model):
          Returns:
              BasePaymentProcessor
         """
+        desired_processor = self.client_side_payment_processor
+
+        # Force client_side_payment_processor to be Stripe when waffle flag is set.
+        # This allows slowly increasing the percentage of users redirected to Stripe.
+        if waffle.flag_is_active(request, ENABLE_STRIPE_PAYMENT_PROCESSOR):
+            desired_processor = 'stripe'
+
         if self.client_side_payment_processor:
             for processor in self._all_payment_processors():
-                if processor.NAME == self.client_side_payment_processor:
+                if processor.NAME == desired_processor:
                     return processor
 
         return None

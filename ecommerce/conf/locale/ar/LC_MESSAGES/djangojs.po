@@ -5,6 +5,8 @@
 #
 # Translators:
 # Translators:
+# Translators:
+# Translators:
 # Ahmed Jazzar <ahmed.mojaz@gmail.com>, 2015
 # 6e68c7971a89e50e680ae9444d303c8f, 2016
 # Bushra Hashem <purple.planet1996@gmail.com>, 2015
@@ -68,11 +70,14 @@ msgstr "يجب حدوثه بعد تاريخ ابتداء المساق"
 msgid "Max uses for multi-use coupons must be higher than 2."
 msgstr "يجب أن يكون الحد الأقصى لاستخدام القسائم متعددة الاستخدام أكثر من 2."
 
+<<<<<<< HEAD
 #: ecommerce/static/js/models/coupon_model.js:166
 msgid "A valid Program UUID is required."
 msgstr "مطلوب UUID برنامج صالح."
 
 #: ecommerce/static/js/models/coupon_model.js:190
+=======
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/static/js/models/coupon_model.js:151
 msgid "Must occur before end date"
 msgstr "يجب حدوثه قبل تاريخ انتهاء المساق"
@@ -194,6 +199,7 @@ msgstr "حدثت مشكلة أثناء الخروج. يرجى الاتصال ب�
 
 #: ecommerce/static/js/pages/basket_page.js:101
 msgid "This field is required"
+<<<<<<< HEAD
 msgstr "هذه الخانة مطلوبه"
 
 #: ecommerce/static/js/pages/basket_page.js:145
@@ -216,6 +222,30 @@ msgstr "شهر غير صالح"
 msgid "Invalid year"
 msgstr "عام غير صالح"
 
+=======
+msgstr ""
+
+#: ecommerce/static/js/pages/basket_page.js:145
+msgid "Invalid card number"
+msgstr ""
+
+#: ecommerce/static/js/pages/basket_page.js:147
+msgid "Unsupported card type"
+msgstr ""
+
+#: ecommerce/static/js/pages/basket_page.js:149
+msgid "Invalid security number"
+msgstr ""
+
+#: ecommerce/static/js/pages/basket_page.js:154
+msgid "Invalid month"
+msgstr ""
+
+#: ecommerce/static/js/pages/basket_page.js:156
+msgid "Invalid year"
+msgstr ""
+
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/static/js/pages/basket_page.js:158
 msgid "Card expired"
 msgstr "انتهت صلاحية البطاقة"
@@ -403,6 +433,7 @@ msgstr "(مرشّح من إجمالي _MAX_ قسيمة)"
 msgid "Display _MENU_ coupons"
 msgstr "عرض قسائم _MENU_"
 
+<<<<<<< HEAD
 #: ecommerce/static/js/views/coupon_list_view.js:74
 msgid "Name"
 msgstr "الاسم"
@@ -427,6 +458,8 @@ msgstr "الفئة"
 msgid "Coupon Report"
 msgstr "تقرير القسيمة"
 
+=======
+>>>>>>> upstream/open-release/koa.master
 #: ecommerce/static/js/views/course_form_view.js:55
 msgid "Free (Audit)"
 msgstr "مجاني (مستمع)"
@@ -443,7 +476,11 @@ msgstr ""
 #: ecommerce/static/js/views/course_form_view.js:67
 msgid ""
 "Paid certificate track with initial verification and Verified Certificate."
+<<<<<<< HEAD
 msgstr "مسار الشهادة المدفوعة مع التحقق الأولي وشهادة التحقق."
+=======
+msgstr ""
+>>>>>>> upstream/open-release/koa.master
 
 #: ecommerce/static/js/views/course_form_view.js:62
 msgid "Also includes the free audit track."

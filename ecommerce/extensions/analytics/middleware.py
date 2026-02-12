@@ -1,7 +1,10 @@
 """
 Middleware for analytics app to parse the Google Analytics (GA) cookie and the LMS user_id.
 """
-from __future__ import absolute_import
+import logging
+
+from django.utils.deprecation import MiddlewareMixin
+
 
 import logging
 

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 import logging
 
@@ -113,25 +112,7 @@ def send_course_purchase_email(sender, order=None, request=None, **kwargs):  # p
                 site_configuration=order.site.siteconfiguration
             )
             credit_provider_id = getattr(product.attr, 'credit_provider', None)
-            product_mode = mode_for_product(product)
-            if not credit_provider_id:
-                if product_mode != 'credit':
-                    # send course purchase email for verified courses
-                    send_notification(
-                        order.user,
-                        'COURSE_PURCHASED',
-                        {
-                            'course_title': product.title,
-                        },
-                        order.site
-                    )
-                else:
-                    logger.error(
-                        'Failed to send credit receipt notification. Credit seat product [%s] has no provider.',
-                        product.id
-                    )
-                    return
-            elif product.is_seat_product:
+            if credit_provider_id:
                 provider_data = get_credit_provider_details(
                     credit_provider_id=credit_provider_id,
                     site_configuration=order.site.siteconfiguration

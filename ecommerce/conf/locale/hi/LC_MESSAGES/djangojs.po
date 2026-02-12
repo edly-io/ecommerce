@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # Shivani Sharma <shivanigauniyal@gmail.com>, 2015
 msgid ""
 msgstr ""

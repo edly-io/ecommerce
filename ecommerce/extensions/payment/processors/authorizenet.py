@@ -89,9 +89,14 @@ class AuthorizeNet(BaseClientSidePaymentProcessor):
         }
         payment_return_setting.settingValue = json.dumps(payment_return_configrations)
 
+        payment_options_setting = apicontractsv1.settingType()
+        payment_options_setting.settingName = apicontractsv1.settingNameEnum.hostedPaymentPaymentOptions
+        payment_options_setting.settingValue = json.dumps({"showBankAccount": False})
+
         settings = apicontractsv1.ArrayOfSetting()
         settings.setting.append(payment_button_setting)
         settings.setting.append(payment_return_setting)
+        settings.setting.append(payment_options_setting)
         return settings
 
     def get_authorizenet_lineitems(self, basket):

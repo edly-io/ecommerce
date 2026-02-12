@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # JEN-HAO HSIEH <orienthauz@gmail.com>, 2015
 # Julia Oppenheimer <juliaoppenheimer2017@gmail.com>, 2019
 # Mushiyo, 2015

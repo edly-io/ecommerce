@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 from django.conf import settings
 from rest_framework.throttling import UserRateThrottle
@@ -12,8 +11,8 @@ class ServiceUserThrottle(UserRateThrottle):
         and defaults to UserRateThrottle's configured setting otherwise.
         """
         service_users = [
-            settings.ECOMMERCE_SERVICE_WORKER_USERNAME, 
-            settings.PROSPECTUS_WORKER_USERNAME, 
+            settings.ECOMMERCE_SERVICE_WORKER_USERNAME,
+            settings.PROSPECTUS_WORKER_USERNAME,
             settings.DISCOVERY_SERVICE_WORKER_USERNAME,
             ]
         if request.user.username in service_users:

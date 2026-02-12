@@ -1,9 +1,7 @@
-from __future__ import absolute_import
 
 import abc
 import logging
 
-import six
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
@@ -89,7 +87,7 @@ class BasePaymentSubmitView(View):
             self.request.basket.id
         )
 
-        errors = {field: error[0] for field, error in six.iteritems(form.errors)}
+        errors = {field: error[0] for field, error in form.errors.items()}
         logger.debug(errors)
 
         data = {'field_errors': errors}

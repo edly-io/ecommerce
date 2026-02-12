@@ -5,6 +5,10 @@
 # 
 # Translators:
 # Translators:
+<<<<<<< HEAD
+=======
+# Translators:
+>>>>>>> upstream/open-release/koa.master
 # sunanda chakraborty <corporate.saifurs@gmail.com>, 2017
 msgid ""
 msgstr ""

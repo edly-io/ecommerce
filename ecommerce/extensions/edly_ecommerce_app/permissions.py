@@ -24,3 +24,14 @@ class CanAccessSiteCreation(BasePermission):
         Checks for user's permission for current site.
         """
         return request.user.is_staff and request.user.username == EDLY_PANEL_WORKER_USER
+
+class CanAccessSiteDeletion(BasePermission):
+    """
+    Checks if a user has the access to create and update methods for sites.
+    """
+
+    def has_permission(self, request, view):
+        """
+        Checks for user's permission for current site.
+        """
+        return request.user.username == EDLY_PANEL_WORKER_USER

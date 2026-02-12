@@ -67,6 +67,10 @@
         {
             name: 'js/views/authorizenet',
             exclude: ['js/common']
+        },
+        {
+            name: 'js/views/cybersource_microform',
+            exclude: ['js/common']
         }
     ]
 })

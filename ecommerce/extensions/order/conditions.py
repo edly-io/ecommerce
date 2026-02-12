@@ -1,9 +1,7 @@
-from __future__ import absolute_import, unicode_literals
 
 import logging
 
 import crum
-import six
 from django.urls import reverse
 from oscar.core.loading import get_model
 
@@ -70,7 +68,7 @@ class ManualEnrollmentOrderDiscountCondition(
         basket_id = basket.id
         offer_id = offer.id
         # extract product ids to log
-        product_ids = ', '.join([six.text_type(line.product.id) for line in basket.lines.all()])
+        product_ids = ', '.join([str(line.product.id) for line in basket.lines.all()])
         product_type = None
         product_cert = None
 

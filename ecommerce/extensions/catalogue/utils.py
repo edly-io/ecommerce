@@ -1,4 +1,3 @@
-from __future__ import absolute_import, unicode_literals
 
 import logging
 from hashlib import md5
@@ -186,28 +185,28 @@ def generate_sku(product, partner):
 
     if product.is_coupon_product:
         _hash = ' '.join((
-            six.text_type(product.id),
-            six.text_type(partner.id)
+            str(product.id),
+            str(partner.id)
         )).encode('utf-8')
     elif product.is_enrollment_code_product:
         _hash = ' '.join((
             getattr(product.attr, 'course_key', ''),
             getattr(product.attr, 'seat_type', ''),
-            six.text_type(partner.id)
+            str(partner.id)
         )).encode('utf-8')
     elif product.is_seat_product:
         _hash = ' '.join((
             getattr(product.attr, 'certificate_type', ''),
-            six.text_type(product.attr.course_key),
-            six.text_type(product.attr.id_verification_required),
+            str(product.attr.course_key),
+            str(product.attr.id_verification_required),
             getattr(product.attr, 'credit_provider', ''),
-            six.text_type(partner.id)
+            str(partner.id)
         )).encode('utf-8')
     elif product.is_course_entitlement_product:
         _hash = ' '.join((
             getattr(product.attr, 'certificate_type', ''),
-            six.text_type(product.attr.UUID),
-            six.text_type(partner.id)
+            str(product.attr.UUID),
+            str(partner.id)
         )).encode('utf-8')
     elif product.is_subscription_product:
         _hash = ' '.join((
@@ -215,7 +214,6 @@ def generate_sku(product, partner):
             str(product.attr.subscription_type),
             str(partner.id)
         )).encode('utf-8')
-
     else:
         raise Exception('Unexpected product class')
 

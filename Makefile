@@ -1,6 +1,6 @@
 NODE_BIN=./node_modules/.bin
 DIFF_COVER_BASE_BRANCH=master
-PYTHON_ENV=py35
+PYTHON_ENV=py38
 DJANGO_ENV_VAR=$(if $(DJANGO_ENV),$(DJANGO_ENV),django22)
 
 help:
@@ -40,20 +40,24 @@ requirements.js:
 	$(NODE_BIN)/bower install --allow-root
 
 requirements: requirements.js
-	pip install -r requirements/dev.txt --exists-action w
+	pip3 install -r requirements/dev.txt --exists-action w
+
+requirements.tox:
+	pip3 install -U pip==20.0.2
+	pip3 install -r requirements/tox.txt --exists-action w
 
 requirements.tox:
 	pip install -U pip==20.0.2
 	pip install -r requirements/tox.txt --exists-action w
 
 production-requirements: requirements.js
-	pip install -r requirements.txt --exists-action w
+	pip3 install -r requirements.txt --exists-action w
 
 migrate: requirements.tox
-	tox -e $(PYTHON_ENV)-migrate
+	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-migrate
 
 serve: requirements.tox
-	tox -e $(PYTHON_ENV)-serve
+	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-serve
 
 clean:
 	find . -name '*.pyc' -delete
@@ -66,10 +70,10 @@ run_check_isort: requirements.tox
 	tox -e $(PYTHON_ENV)-check_isort
 
 run_isort: requirements.tox
-	tox -e $(PYTHON_ENV)-run_isort
+	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-run_isort
 
 run_pycodestyle: requirements.tox
-	tox -e $(PYTHON_ENV)-pycodestyle
+	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-pycodestyle
 
 run_pep8: run_pycodestyle
 
@@ -85,6 +89,9 @@ validate_js:
 
 validate_python: clean requirements.tox
 	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-tests
+
+acceptance: clean requirements.tox
+	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-acceptance
 
 fast_validate_python: clean requirements.tox
 	DISABLE_ACCEPTANCE_TESTS=True tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-tests
@@ -110,13 +117,13 @@ e2e: requirements.tox
 	tox -e $(PYTHON_ENV)-e2e
 
 extract_translations: requirements.tox
-	tox -e $(PYTHON_ENV)-extract_translations
+	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-extract_translations
 
 dummy_translations: requirements.tox
-	tox -e $(PYTHON_ENV)-dummy_translations
+	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-dummy_translations
 
 compile_translations: requirements.tox
-	tox -e $(PYTHON_ENV)-compile_translations
+	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-compile_translations
 
 fake_translations: extract_translations dummy_translations compile_translations
 
@@ -130,13 +137,13 @@ update_translations: pull_translations fake_translations
 
 # extract_translations should be called before this command can detect changes
 detect_changed_source_translations: requirements.tox
-	tox -e $(PYTHON_ENV)-detect_changed_translations
+	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-detect_changed_translations
 
 check_translations_up_to_date: fake_translations detect_changed_source_translations
 
 # Validate translations
 validate_translations: requirements.tox
-	tox -e $(PYTHON_ENV)-validate_translations
+	tox -e $(PYTHON_ENV)-${DJANGO_ENV_VAR}-validate_translations
 
 # Scan the Django models in all installed apps in this project for restricted field names
 check_keywords: requirements.tox
@@ -146,13 +153,13 @@ export CUSTOM_COMPILE_COMMAND = make upgrade
 upgrade: ## update the requirements/*.txt files with the latest packages satisfying requirements/*.in
 	pip install -q -r requirements/pip_tools.txt
 	pip-compile --rebuild --upgrade -o requirements/pip_tools.txt requirements/pip_tools.in
-	pip-compile --rebuild --upgrade -o requirements/tox.txt requirements/tox.in
-	pip-compile --rebuild --upgrade -o requirements/base.txt requirements/base.in
-	pip-compile --rebuild --upgrade -o requirements/docs.txt requirements/docs.in
-	pip-compile --rebuild --upgrade -o requirements/e2e.txt requirements/e2e.in
-	pip-compile --rebuild --upgrade -o requirements/test.txt requirements/test.in
-	pip-compile --rebuild --upgrade -o requirements/dev.txt requirements/dev.in
-	pip-compile --rebuild --upgrade -o requirements/production.txt requirements/production.in
+	pip-compile --upgrade -o requirements/tox.txt requirements/tox.in
+	pip-compile --upgrade -o requirements/base.txt requirements/base.in
+	pip-compile --upgrade -o requirements/docs.txt requirements/docs.in
+	pip-compile --upgrade -o requirements/e2e.txt requirements/e2e.in
+	pip-compile --upgrade -o requirements/test.txt requirements/test.in
+	pip-compile --upgrade -o requirements/dev.txt requirements/dev.in
+	pip-compile --upgrade -o requirements/production.txt requirements/production.in
 	# Let tox control the Django version for tests
 	sed '/^[dD]jango==/d' requirements/test.txt > requirements/test.tmp
 	mv requirements/test.tmp requirements/test.txt
