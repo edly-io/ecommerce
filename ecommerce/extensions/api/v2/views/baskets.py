@@ -471,6 +471,8 @@ class BasketCalculateView(generics.GenericAPIView):
                            "WARNING as an ERROR and raise an exception.", basket_owner.username)
             requested_username = request.user.username
 
+        basket_owner.add_lms_user_id('ecommerce_missing_lms_user_id_middleware', called_from)
+
         # If a username is passed in, validate that the user has staff access or is the same user.
         if requested_username:
             if basket_owner.username.lower() == requested_username.lower():
