@@ -123,6 +123,13 @@ PAYMENT_PROCESSOR_CONFIG = {
             'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
             'merchant_auth_name': "fake_merchant_auth_name",
             'transaction_key': "edx_fake_key",
+        },
+        'myfatoorah': {
+            'api_token': 'fake-myfatoorah-api-token',
+            'base_url': 'https://apitest.myfatoorah.com',
+            'webhook_secret': 'fake-myfatoorah-webhook-secret',
+            'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
+            'error_path': PAYMENT_PROCESSOR_ERROR_PATH,
         }
     },
     'other': {
@@ -176,6 +183,13 @@ PAYMENT_PROCESSOR_CONFIG = {
             'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
             'merchant_auth_name': "fake_merchant_auth_name",
             'transaction_key': "edx_fake_key",
+        },
+        'myfatoorah': {
+            'api_token': 'other-fake-myfatoorah-api-token',
+            'base_url': 'https://apitest.myfatoorah.com',
+            'webhook_secret': 'other-fake-myfatoorah-webhook-secret',
+            'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
+            'error_path': PAYMENT_PROCESSOR_ERROR_PATH,
         }
     }
 }

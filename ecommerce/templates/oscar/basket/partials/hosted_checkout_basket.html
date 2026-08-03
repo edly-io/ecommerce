@@ -168,6 +168,9 @@
                             {% elif processor.NAME == 'authorizenet' %}
                                 {# Translators: Do NOT translate the name Authorizenet. #}
                                 {% trans "Checkout with AuthorizeNet" as tmsg %}{{ tmsg | force_escape }}
+                            {% elif processor.NAME == 'myfatoorah' %}
+                                {# Translators: Do NOT translate the name MyFatoorah. #}
+                                {% trans "Checkout with MyFatoorah" as tmsg %}{{ tmsg | force_escape }}
                             {% endif %}
                         </button>
                     {% endfor %}

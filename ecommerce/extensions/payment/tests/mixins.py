@@ -1,5 +1,8 @@
 
+import base64
 import datetime
+import hashlib
+import hmac
 import os
 import re
 from decimal import Decimal
@@ -1059,3 +1062,146 @@ class CyberSourceRESTAPIMixin:
             lambda x: x.group(1) + x.group(2).upper(),
             processor_json
         ).replace('links', '_links').replace('_self', 'self')
+
+
+class MyFatoorahMixin:
+    """ Mixin with MyFatoorah-specific response builders and mocks.
+
+    MyFatoorah is reached with plain ``requests`` calls, so responses are registered
+    with ``responses`` rather than by patching an SDK.
+    """
+
+    INVOICE_ID = 1234567
+    PAYMENT_ID = '0715570031362701'
+    INVOICE_URL = 'https://apitest.myfatoorah.com/KWT/ip/0715570031362701'
+    MASKED_CARD_NUMBER = '424242xxxxxx4242'
+    CARD_BRAND = 'Visa'
+
+    def myfatoorah_url(self, endpoint):
+        base_url = settings.PAYMENT_PROCESSOR_CONFIG['edx']['myfatoorah']['base_url']
+        return urljoin(base_url, endpoint)
+
+    def send_payment_response(self, invoice_id=None, invoice_url=None, is_success=True):
+        """ Build a SendPayment response body. """
+        if not is_success:
+            return {
+                'IsSuccess': False,
+                'Message': 'Invalid token',
+                'ValidationErrors': None,
+                'Data': None,
+            }
+
+        return {
+            'IsSuccess': True,
+            'Message': 'Invoice Created Successfully!',
+            'ValidationErrors': None,
+            'Data': {
+                'InvoiceId': invoice_id if invoice_id is not None else self.INVOICE_ID,
+                'InvoiceURL': invoice_url or self.INVOICE_URL,
+                'CustomerReference': None,
+                'UserDefinedField': None,
+            },
+        }
+
+    def payment_status_response(self, basket=None, invoice_status='Paid', transaction_status='Succss',
+                                invoice_value=None, customer_reference=None, paid_currency=None,
+                                include_card=True):
+        """ Build a GetPaymentStatus response body.
+
+        Defaults describe a settled payment matching ``basket``. Override the keyword
+        arguments to describe pending, failed, or tampered payments.
+        """
+        if invoice_value is None:
+            invoice_value = float(basket.total_incl_tax) if basket else 20.0
+        if customer_reference is None and basket is not None:
+            customer_reference = basket.order_number
+        if paid_currency is None and basket is not None:
+            paid_currency = basket.currency
+
+        transaction = {
+            'TransactionDate': '2026-08-01T10:00:00',
+            'PaymentGateway': 'VISA/MASTER',
+            'PaymentId': self.PAYMENT_ID,
+            'AuthorizationId': '556677',
+            'TransactionStatus': transaction_status,
+            'TransationValue': str(invoice_value),
+            'PaidCurrency': paid_currency,
+            'Error': None,
+        }
+        if include_card:
+            transaction['Card'] = {
+                'NameOnCard': 'Test Learner',
+                'Number': self.MASKED_CARD_NUMBER,
+                'ExpiryMonth': '12',
+                'ExpiryYear': '30',
+                'Brand': self.CARD_BRAND,
+                'Issuer': 'Test Bank',
+            }
+
+        return {
+            'IsSuccess': True,
+            'Message': 'Invoice Data Retrieved Successfully!',
+            'ValidationErrors': None,
+            'Data': {
+                'InvoiceId': self.INVOICE_ID,
+                'InvoiceStatus': invoice_status,
+                'InvoiceReference': '2026000123',
+                'CustomerReference': customer_reference,
+                'CreatedDate': '2026-08-01T09:59:00',
+                'InvoiceValue': invoice_value,
+                'CustomerName': 'Test Learner',
+                'CustomerEmail': 'learner@example.com',
+                'InvoiceTransactions': [transaction],
+            },
+        }
+
+    def mock_send_payment(self, body=None, status=200, **kwargs):
+        """ Register a mocked SendPayment response. """
+        body = body if body is not None else self.send_payment_response(**kwargs)
+        responses.add(
+            responses.POST,
+            self.myfatoorah_url('/v2/SendPayment'),
+            json=body,
+            status=status,
+        )
+        return body
+
+    def mock_payment_status(self, body=None, status=200, **kwargs):
+        """ Register a mocked GetPaymentStatus response. """
+        body = body if body is not None else self.payment_status_response(**kwargs)
+        responses.add(
+            responses.POST,
+            self.myfatoorah_url('/v2/GetPaymentStatus'),
+            json=body,
+            status=status,
+        )
+        return body
+
+    def signature_for(self, body, secret=None):
+        """ Compute the ``myfatoorah-signature`` header value for a webhook body. """
+        if secret is None:
+            secret = settings.PAYMENT_PROCESSOR_CONFIG['edx']['myfatoorah']['webhook_secret']
+        message = ','.join(
+            '{key}={value}'.format(key=key, value='' if value is None else value)
+            for key, value in body['Data'].items()
+        )
+        return base64.b64encode(
+            hmac.new(secret.encode('utf-8'), message.encode('utf-8'), hashlib.sha256).digest()
+        ).decode('utf-8')
+
+    def webhook_body(self, payment_id=None, invoice_id=None, event_code=1):
+        """ Build a webhook V2 PAYMENT_STATUS_CHANGED body. """
+        return {
+            'Event': {
+                'Code': event_code,
+                'Name': 'PAYMENT_STATUS_CHANGED',
+                'CountryIsoCode': 'KWT',
+                'CreationDate': '2026-08-01T10:00:00',
+            },
+            'Data': {
+                'InvoiceId': invoice_id if invoice_id is not None else self.INVOICE_ID,
+                'PaymentId': payment_id if payment_id is not None else self.PAYMENT_ID,
+                'InvoiceStatus': 'Paid',
+                'TransactionStatus': 'Succss',
+            },
+        }

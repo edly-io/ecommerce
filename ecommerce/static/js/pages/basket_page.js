@@ -31,7 +31,10 @@ define([
             },
 
             onSuccess: function(data) {
-                var method = (data.payment_processor === 'stripe') ? 'GET' : 'POST';
+                // These processors hand back a hosted page to visit, not a form target
+                // to submit to, so they must be reached with a GET.
+                var getRedirectProcessors = ['stripe', 'myfatoorah'];
+                var method = (getRedirectProcessors.indexOf(data.payment_processor) !== -1) ? 'GET' : 'POST';
                 var $form = $('<form>', {
                     class: 'hidden',
                     action: data.payment_page_url,

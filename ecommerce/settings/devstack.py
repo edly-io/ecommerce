@@ -111,6 +111,14 @@ PAYMENT_PROCESSOR_CONFIG = {
             'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
             'merchant_auth_name': config_from_yaml.get('AUTHORIZENET_MERCHANT_AUTH_NAME'),
             'transaction_key': config_from_yaml.get('AUTHORIZENET_TRANSACTION_KEY'),
+        },
+        'myfatoorah': {
+            'api_token': config_from_yaml.get('MYFATOORAH_API_TOKEN'),
+            # Sandbox. Live is region-specific -- see _oscar.py.
+            'base_url': config_from_yaml.get('MYFATOORAH_BASE_URL', 'https://apitest.myfatoorah.com'),
+            'webhook_secret': config_from_yaml.get('MYFATOORAH_WEBHOOK_SECRET'),
+            'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
+            'error_path': PAYMENT_PROCESSOR_ERROR_PATH,
         }
     },
 }
