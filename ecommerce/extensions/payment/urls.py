@@ -1,7 +1,17 @@
 
 from django.conf.urls import include, url
 
-from ecommerce.extensions.payment.views import PaymentFailedView, SDNFailure, authorizenet, cybersource, cybersource_microform, paypal, stripe, cowpay
+from ecommerce.extensions.payment.views import (
+    PaymentFailedView,
+    SDNFailure,
+    authorizenet,
+    cowpay,
+    cybersource,
+    cybersource_microform,
+    myfatoorah,
+    paypal,
+    stripe
+)
 
 CYBERSOURCE_APPLE_PAY_URLS = [
     url(r'^authorize/$', cybersource.CybersourceApplePayAuthorizationView.as_view(), name='authorize'),
@@ -42,6 +52,13 @@ COWPAY_URLS = [
     url(r'^execute/$', cowpay.CowpayExecutionView.as_view(), name='execute'),
 ]
 
+MYFATOORAH_URLS = [
+    # Where the learner is returned to after MyFatoorah's hosted payment page.
+    url(r'^callback/$', myfatoorah.MyFatoorahCallbackView.as_view(), name='callback'),
+    # Server-to-server notification from MyFatoorah; signed, not authenticated.
+    url(r'^webhook/$', myfatoorah.MyFatoorahWebhookView.as_view(), name='webhook'),
+]
+
 urlpatterns = [
     url(r'^cybersource/', include((CYBERSOURCE_URLS, 'cybersource'))),
     url(r'^error/$', PaymentFailedView.as_view(), name='payment_error'),
@@ -50,4 +67,5 @@ urlpatterns = [
     url(r'^stripe/', include((STRIPE_URLS, 'stripe'))),
     url(r'^authorizenet/', include((AUTHORIZENET_URLS, 'authorizenet'))),
     url(r'^cowpay/', include((COWPAY_URLS, 'cowpay'))),
+    url(r'^myfatoorah/', include((MYFATOORAH_URLS, 'myfatoorah'))),
 ]

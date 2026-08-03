@@ -137,6 +137,7 @@ PAYMENT_PROCESSORS = (
     'ecommerce.extensions.payment.processors.authorizenet.AuthorizeNet',
     'ecommerce.extensions.payment.processors.authorizenet.AuthorizenetClient',
     'ecommerce.extensions.payment.processors.cowpay.Cowpay',
+    'ecommerce.extensions.payment.processors.myfatoorah.MyFatoorah',
 )
 
 PAYMENT_PROCESSOR_RECEIPT_PATH = '/checkout/receipt/'
@@ -195,7 +196,17 @@ PAYMENT_PROCESSOR_CONFIG = {
             'transaction_key': None,
             'redirect_url': None,
             'production_mode': False,
-        }
+        },
+        'myfatoorah': {
+            # Real tokens belong in the tenant's DJANGO_SETTINGS_OVERRIDE, never here.
+            'api_token': None,
+            # Sandbox is https://apitest.myfatoorah.com. Live is region-specific:
+            # api.myfatoorah.com (KW/BH/JO/OM), api-sa, api-ae, api-qa, api-eg.
+            'base_url': 'https://apitest.myfatoorah.com',
+            'webhook_secret': None,
+            'cancel_checkout_path': PAYMENT_PROCESSOR_CANCEL_PATH,
+            'error_path': PAYMENT_PROCESSOR_ERROR_PATH,
+        },
     },
 }
 
